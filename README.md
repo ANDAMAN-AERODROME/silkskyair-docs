@@ -5,128 +5,106 @@ Documentation source, training manuals, and governance notes for the SilkSkyAir 
 ## Contents
 
 ```
-manual/             # Staff training manual (markdown source of truth → Notion)
+manuals/             # Markdown source of truth → Notion (see Layout below)
 screenshots/        # PNGs captured by the doc-shots Playwright suites
-scripts/            # Automation: publish to Notion, seed staging demo data
+scripts/            # Automation: publish to Notion
 plans/              # Project planning notes
 reviews/            # Code review artifacts
 weekly-reports/     # Weekly engineering reports
 weekly-statements/  # Weekly statements
 ```
 
+## `manuals/` layout — two axes
+
+The manuals library is organized along two axes:
+
+```
+manuals/
+├── index.md                                ← "Documentation" (root)
+├── domains/                                ← AXIS 1: feature manuals by domain
+│   ├── index.md                            ← "Manuals by Domain"
+│   ├── sky-stories/
+│   │   ├── index.md                        ← "SkyStories" landing
+│   │   ├── related-tours.md
+│   │   ├── captions-and-media-editing.md
+│   │   └── keyword-multi-locale-sync.md
+│   └── bookings/
+│       ├── index.md                        ← "Bookings" landing
+│       ├── payment-before-confirmation.md
+│       ├── multi-tour-promos.md
+│       └── customer-notes.md
+└── releases/                               ← AXIS 2: release compilations
+    ├── index.md                            ← "Releases" landing
+    └── w22.md                              ← W22 Release Manual (links to feature pages)
+```
+
+**Conventions:**
+
+- `index.md` in each directory becomes a Notion parent page for that directory.
+- Non-index `.md` files are leaf pages parented to their directory's `index.md`.
+- Frontmatter `title` is the Notion page title (only field required today).
+- `<!-- children -->` marker in a markdown body is replaced by the publisher with an auto-generated bulleted list of all child page links. Use it in landing pages.
+- Cross-links between pages use **relative `.md` paths**, e.g. `[Related Tours](../domains/sky-stories/related-tours.md)`. The publisher rewrites these to the corresponding Notion page URLs.
+- Images use **absolute repo-rooted paths**, e.g. `![Alt](/screenshots/sky-stories/related-tours/01-stories-index.png)`. The publisher rewrites the `/screenshots/` prefix to the GitHub raw URL.
+
+**Adding a new feature manual:** create `domains/<domain>/<feature>.md` with a `title` frontmatter and the standard step-by-step body. Add it to whichever release compilation(s) it ships in (e.g. append a link in `releases/w22.md`).
+
+**Adding a new release manual:** create `releases/<release>.md` with a `title` frontmatter and a curated list of links to the feature manuals it includes.
+
+**Adding a new domain:** create `domains/<domain>/index.md` (with `title` + a short intro + `<!-- children -->`).
+
+## `screenshots/` layout
+
+Mirrors the `manuals/` domain hierarchy:
+
+```
+screenshots/
+├── sky-stories/
+│   ├── related-tours/                01-…png, 02-…png, …
+│   ├── captions-and-media-editing/
+│   └── keyword-multi-locale-sync/
+└── bookings/
+    ├── payment-before-confirmation/
+    ├── multi-tour-promos/
+    └── customer-notes/
+```
+
+PNGs are produced by the Playwright doc-shots specs in the app repos (`silkskyair-www/tests/docs/` and `silkskyair-manager/tests/docs/`) via the shared `takeDocShot(page, "<domain>/<feature>/<NN>-<name>")` helper.
+
 ## NPM scripts
 
-All scripts require this package's deps. Install once:
-
 ```bash
-pnpm install --ignore-workspace
+pnpm install --ignore-workspace   # one-time (silkskyair-docs is not in the pnpm workspace)
+pnpm publish:dry                  # dry-run — walk the tree + print the plan
+pnpm publish                      # real publish (requires NOTION_TOKEN)
 ```
 
-(The `--ignore-workspace` flag is needed because `silkskyair-docs` is not a
-member of the top-level pnpm workspace.)
+### Publish to Notion
 
-### `pnpm publish:dry` / `pnpm publish`
-
-Rebuild the Notion pages under **Documentation → Staff Training Manual —
-W22 Release** from the markdown files in `manual/`.
+The publisher walks `manuals/` recursively, mirrors the tree as Notion page hierarchy, and writes each page's body with:
+- Cross-links resolved to Notion page URLs
+- `<!-- children -->` markers replaced with auto-generated child lists
+- `/screenshots/...` image paths rewritten to the public GitHub raw URL
 
 ```bash
-# Validate without writing to Notion
-pnpm publish:dry
-
-# Publish for real (requires NOTION_TOKEN; optional MANUAL_PARENT_PAGE_ID)
 NOTION_TOKEN=secret_xxx pnpm publish
+
+# First-time only, when the root "Documentation" page doesn't yet exist
+# anywhere reachable by the integration:
+NOTION_TOKEN=secret_xxx DOCS_PARENT_PAGE_ID=<parent-page-id> pnpm publish
 ```
 
-Image references in the markdown (`./screenshots/...`) are rewritten to
-`https://raw.githubusercontent.com/ANDAMAN-AERODROME/silkskyair-docs/main/screenshots/...`,
-so the silkskyair-docs repo must be public on GitHub for Notion to render
-the images.
+Two-pass design: the first pass upserts all pages with just titles (so Notion URLs exist for cross-link resolution); the second pass writes the full body of each page with everything resolved.
 
-The script supports `--only=<slug>` to publish a single page (faster
-iteration while authoring).
-
-### `pnpm seed:staging`
-
-Idempotent staging-data seeder for the W22 staff training manual. Creates
-the demo records the doc-shots Playwright specs depend on, and writes
-their identifiers to `.cache/staging-fixtures.json` — the single source of
-truth that every doc-shot spec reads via `loadDocFixtures()`.
-
-```bash
-# One-time setup
-cp .env.staging.example .env.staging
-# fill in SUPABASE_SERVICE_KEY (from 1Password)
-
-# Run all commands
-pnpm seed:staging
-
-# Or one at a time
-pnpm seed:staging --only=booking-note
-pnpm seed:staging --only=story-tour
-pnpm seed:staging --only=keyword          # prints a note (no DB seed needed)
-
-# Validate without writing
-pnpm seed:staging --dry-run
-```
-
-The seed script auto-loads `.env.<DOCS_TARGET>` (default `staging`). The
-env vars it expects are the standard Supabase names — no custom prefix:
-
-| Env var | Source |
-|---|---|
-| `SUPABASE_URL` | `.env.staging` (committed in example form) |
-| `SUPABASE_SERVICE_KEY` | 1Password → fill into `.env.staging` |
-| `SEED_ACTOR_USER_ID` (optional) | Defaults to `peter@andaman.co.th`'s staging UUID |
-
-What gets seeded:
-
-| Command | What it does | Fixture key written | Idempotent? |
-|---|---|---|---|
-| `booking-note` | Creates a booking + customer-submitted note (via the public RPC). Reuses any existing seed-tagged booking on rerun. | `bookingWithCustomerNote.id` | Yes |
-| `story-tour` | Creates or reuses the `training-related-tours-demo` Sky Story and links one active Tour (that has a hero or feature image) via the `skystories.set_tours` RPC. | `skyStoryRelatedTours.slug` | Yes |
-| `keyword` | No DB seed needed — the keyword-sync doc-shot spec creates its own keyword per run. | (none) | n/a |
-
-The `multiTourPromo.deeplink` fixture is hand-maintained — the seed script
-doesn't yet provision promotions. After creating an active multi-tour
-promo in Manager, add the key by hand:
-
-```bash
-echo '{"multiTourPromo":{"deeplink":"/book?promo=W22LAUNCH"}}' >> .cache/staging-fixtures.json
-# (or merge it in manually if other keys are already present)
-```
+For images to render in Notion, the `silkskyair-docs` repo must be public on GitHub (Notion fetches via `raw.githubusercontent.com/.../silkskyair-docs/main/screenshots/...`).
 
 ## Capturing screenshots
 
-The Playwright doc-shots suites live in the app repos, not here:
+The Playwright doc-shots suites live in the app repos. Each spec is a thin wrapper around an existing E2E fixture — it imports the canonical setup helpers, drives the same flow, and inserts `takeDocShot()` at customer-visible moments.
 
 ```bash
-cd silkskyair-www
-pnpm doc-shots           # captures specs 1–4 to silkskyair-docs/screenshots/
-
-cd silkskyair-manager
-pnpm doc-shots           # captures specs 5, 6 + the Manager half of 4
+cd silkskyair-www      && pnpm doc-shots     # specs 1–4
+cd silkskyair-manager  && pnpm doc-shots     # specs 5–7
 ```
 
-Both suites write to `silkskyair-docs/screenshots/` (resolved via
-`DOCS_SCREENSHOTS_DIR` if you need to override) and read demo-record
-identifiers from `silkskyair-docs/.cache/staging-fixtures.json` (resolved
-via `DOCS_FIXTURES_FILE`). After capture, commit the PNGs and push —
-Notion auto-renders them on the next page view.
-
-### Configuration vs fixtures
-
-The doc-shots system distinguishes two kinds of input:
-
-- **Configuration** (env vars, change rarely, scoped to runtime):
-  `DOCS_TARGET`, `DOCS_BASE_URL`, `DOCS_SCREENSHOTS_DIR`,
-  `DOCS_FIXTURES_FILE`, `DOCS_PUBLIC_BASE_URL`, `DOCS_CAPTIONS_STORY_ID`,
-  `DOCS_KEYWORD_VERIFY_STORY_SLUG`.
-
-- **Fixtures** (data-shape identifiers, populated by `pnpm seed:staging`,
-  shared across specs via the JSON file): `skyStoryRelatedTours.slug`,
-  `bookingWithCustomerNote.id`, `multiTourPromo.deeplink`.
-
-Per-spec env vars (the old `DOC_RELATED_TOURS_STORY_SLUG`,
-`DOC_BOOKING_WITH_CUSTOMER_NOTE_ID`, etc.) were removed — they didn't
-scale and forced operators to copy IDs around between shells.
+Both write PNGs to `silkskyair-docs/screenshots/<domain>/<feature>/`. After capture, commit and push — Notion picks up the new images on the next page view.
