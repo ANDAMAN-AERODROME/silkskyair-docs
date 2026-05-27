@@ -1,0 +1,20 @@
+{
+  "name": "silkskyair-docs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Documentation source, training manuals, governance notes",
+  "scripts": {
+    "publish:dry": "tsx scripts/publish-to-notion.ts --dry-run",
+    "publish": "tsx scripts/publish-to-notion.ts"
+  },
+  "dependencies": {
+    "@notionhq/client": "^2.2.15",
+    "@tryfabric/martian": "^1.2.4",
+    "gray-matter": "^4.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.4.0"
+  }
+}
