@@ -148,10 +148,20 @@ If multiple repos are touched by a feature, run the gate in each.
 - **User manual:** `manual/11-partner-dashboard-cleanup.md` — explains why Commission Rate + Performance Overview were temporarily removed (pre-launch confusion about commission expectations); states the commission rate is still applied server-side and communicated by email per month.
 - **Acceptance gate:** code + both e2e + manual.
 
-### F1.6 — Available Tours widget [R6] — **DEFERRED**
-- **Audit state:** ❌ Not started, **blocked on client spec** (data source, card content, pagination, empty state).
-- **Action:** Move R6-T0/T2/T3/T4 to W24 (or later). Do **not** start any code work until R6-T1 spec is signed off.
-- **Placeholder manual page:** none — when spec arrives, manual entry will be added as the next available number.
+### F1.6 — Available Tours widget [R6] ✅ DONE
+- **Audit state:** ✅ Done. Spec answered in the W23 close-out session (layout: take AgreementWidget slot; list: all active tours, vertical scroll in fixed-height card; card: hero image + gradient fallback; CTAs on hover: Book Tour / Copy Link / Open Tour with Book Tour pre-selecting the tour in the wizard).
+- **Code changes:**
+  1. `silkskyair-partner/app/api/tours/route.ts` — joined `tour_media role='hero'`, generated a 1 h signed URL per tour, surfaced `heroUrl` in the response.
+  2. NEW `silkskyair-partner/components/home/widgets/available-tours-widget.tsx` — widget + `useAvailableTours` hook.
+  3. `silkskyair-partner/app/home/page.tsx` — replaced `AgreementWidget` with `AvailableToursWidget` (Agreement import commented + reason noted).
+  4. `silkskyair-partner/components/bookings/create/create-booking-drawer.tsx` — `useEffect` hydrates `resolvedTour` from `/api/tours` when the wizard opens cold with `?tour=<slug>`, so step 4 (review) gets the data it needs.
+  5. `silkskyair-partner/lib/bookings/types.ts:TourSummary` — added optional `heroUrl`.
+  6. `silkskyair-partner/.env.example` — added `NEXT_PUBLIC_WWW_URL` documentation block.
+  7. Migration `20260528140000_partner_available_tours_i18n.sql` — 6 keys × EN/TH/RU under `partner.dashboard.availableTours.*`.
+- **Simple Happy Path E2E:** `silkskyair-partner/e2e/partner-available-tours-simple.spec.ts` — widget mounts on `/home` with heading + at least one tour row. Green.
+- **Complex Happy Path E2E:** `silkskyair-partner/e2e/partner-available-tours-full.spec.ts` — hover reveals all 3 CTAs; Copy Link writes the expected `/tour/<slug>` URL to the clipboard + shows the "Link copied" chip; Open Tour spawns a new tab on the same URL; Book Tour navigates to `/bookings?create=true&tour=<slug>`. Green.
+- **User manual:** `silkskyair-docs/manuals/domains/partners/available-tours.md`.
+- **Acceptance gate:** code + migration + both E2E + manual — ALL GREEN.
 
 ### F1.7 — "Invite Member" → "Invite Team" [R7]
 - **Audit state:** ❌ Not started. `silkskyair-partner/app/team/page.tsx:170` still has `i18n("team.invite") || "Invite Member"`.
