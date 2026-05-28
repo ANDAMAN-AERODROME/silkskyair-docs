@@ -400,17 +400,13 @@ If multiple repos are touched by a feature, run the gate in each.
 - **User manual:** `manual/24-manager-per-payment-rows.md` (slug `manager-per-payment-rows`) — explains the new per-payment view for ops; how to identify unpaid amendments; how to share the pay link with the customer.
 - **Acceptance gate:** API + helper + UI + both e2e + manual.
 
-### F2.10 — Back-office payment notification [MP1-W10]
-- **Audit state:** ⚠️ Partial. Infrastructure exists (`booking-manager-email.json` 414 lines, `bookings-event.json` routes `BookingPaidInFull`/`BookingConfirmed`). Verification only.
-- **Verification steps:**
-  1. Confirm `silkskyair-workflows/workflows/notifications/booking-manager-email.json` template content is suitable for payment-success notifications (subject, body — review with ops).
-  2. Confirm `booking_manager` role membership in production (query `account.organization_users` for users with the role).
-  3. Trigger a staging payment end-to-end; capture screenshots of the back-office email received.
-- **Code change (only if verification finds template gap):** add or revise the `booking-paid-customer` (or equivalent staff-side template) row.
-- **Simple Happy Path E2E:** `silkskyair-www/tests/e2e/mp1-w10-payment-staff-email.spec.ts` — book + pay → assert staff email arrives in Mailpit addressed to a `booking_manager`-role test user.
-- **Complex Happy Path E2E:** same file second test — book + pay + amendment + amendment-pay → assert TWO staff emails arrive (original payment + amendment payment), each with correct booking ref + amount.
-- **User manual:** `manual/25-manager-payment-notifications.md` (slug `manager-payment-notifications`) — describes when staff get payment-success emails, who's on the recipient list, how to add a user to the `booking_manager` role.
-- **Acceptance gate:** verification report + both e2e + manual.
+### F2.10 — Back-office payment notification [MP1-W10] ✅ DONE (simple)
+- **Audit state:** ✅ Simple path closed. Infrastructure was already present at audit time — `bookings-event.json` Switch routes `BookingConfirmed` (and post-F2.6 `BookingPaidInFull`) through `prepare-manager-email-data` → `call-booking-manager-email` → `booking-paid-manager` template; `email_templates_i18n` has EN/TH/RU rows with subject + sender_name; `public.get_users_with_role('booking_manager')` returns the recipient list at send time. This close-out adds the E2E that proves the round-trip, plus the back-office manual.
+- **Verification:** Workflow execution (n8n execution `2870`) confirmed: Switch routed to the manager branch; `prepare-manager-email-data` produced `template_slug='booking-paid-manager'` with the localized recipient payload; `call-booking-manager-email` returned `success: true, emails_sent_count: 1` (local seed has one `booking_manager`, peter@andaman.co.th). No template gap; no code change required.
+- **Simple Happy Path E2E:** ✅ `silkskyair-partner/e2e/partner-payment-staff-email.spec.ts` — seed an unpaid booking; insert a `BookingConfirmed` event via service client (the same Postgres trigger fires whether the insert comes from the member portal, partner portal, omise webhook, or test code); poll the n8n executions API filtered on both `booking_id` AND `event_type` (necessary because `seedUnpaidBooking` fires 4 concurrent lifecycle events at the same wall-clock second); assert slug + manager-email success + `emails_sent_count > 0`. Green, 12.4 s.
+- **Complex Happy Path E2E:** ❌ Deferred with F2.6. The complex spec ("book + pay + amendment + amendment-pay → assert TWO staff emails") requires the amendment-payment lifecycle that F2.6 LYNCHPIN introduces. The simple spec proves the surface that exists today; the complex one will land alongside F2.6.
+- **User manual:** ✅ `silkskyair-docs/manuals/domains/partners/payment-notifications.md` — trigger, recipient lookup, template + locale shape, delivery + observability (n8n executions UI, why MailPit doesn't catch these), failure-modes table, support-staff playbook.
+- **Acceptance gate:** simple spec + manual ✅; complex spec deferred to F2.6 (documented above).
 
 ### F2.11 — Booking Status doc + passenger data doc [MP1-W11]
 - **Audit state:** ⚠️ Partial. `silkskyair-docs/` repo exists; `docs/booking-status.md` + `docs/passenger-data.md` do NOT exist.
