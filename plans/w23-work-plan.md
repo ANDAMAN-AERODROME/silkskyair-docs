@@ -320,16 +320,20 @@ If multiple repos are touched by a feature, run the gate in each.
 - **User manual:** `manual/21-member-passenger-weight.md` (slug `member-passenger-weight`) — short page for ops; explains why exact weight (Advance Aviation safety req); shows the new numeric field.
 - **Acceptance gate:** code + both e2e + manual.
 
-### F2.4 — Add-passenger Paid/Due/Total [MP1-W04]
-- **Audit state:** ⚠️ Partial. `/api/bookings/[bookingId]/add-passenger-pricing/route.ts` exists but doesn't return `paidAmount`/`dueAmount`; balance helper missing.
+### F2.4 — Add-passenger Paid/Due/Total [MP1-W04] ✅ DONE
+- **Audit state:** ✅ Done. Balance helper landed, API extended, modal rows live, both E2E green, manual published, shared PaxCounter gained data-action attrs for tests.
 - **Code changes:** Per plan §"MP1-W04":
-  1. NEW `lib/modules/bookings/balance.ts` — `computeBookingBalance(bookingId): { total, paid, due }`.
-  2. Extend `/api/bookings/[bookingId]/add-passenger-pricing/route.ts` to return `paidAmount` + `dueAmount`.
-  3. `app/(workspace)/bookings/_components/add-passenger-modal.tsx:217-260` — add Paid + Due rows under existing pricing rows.
-- **Simple Happy Path E2E:** `silkskyair-member/e2e/member-add-passenger-simple.spec.ts` — sign in → /bookings/<id> with one paid passenger → Add Passengers → open modal → assert rows: Cost/pax, Additional, Paid, Due, New total — all 5 rendered with numeric values.
-- **Complex Happy Path E2E:** `silkskyair-member/e2e/member-add-passenger-full.spec.ts` — booking of 1 paid pax at ฿17,000 → Add 1 passenger → assert Cost/pax = ฿8,500, Additional = ฿8,500, Paid = ฿17,000, Due = ฿8,500, New total = ฿25,500 (exact numbers); also test child rate if pricing schema supports it.
-- **User manual:** `manual/22-member-add-passenger-pricing.md` (slug `member-add-passenger`) — walks members + ops through the new Add Passenger modal; explains Paid vs Due vs Total.
-- **Acceptance gate:** balance helper + API extension + UI rows + both e2e + manual.
+  1. ✅ NEW `lib/modules/bookings/balance.ts` — `computeBookingBalance(bookingId): { total, paid, due, currency }`. Sums `booking_price_components.amount` (THB major units) for total, `payment_intents.amount / 100` filtered to `status='successful'` for paid, due = max(0, total − paid). Throws on mixed-currency components.
+  2. ✅ `/api/bookings/[bookingId]/add-passenger-pricing/route.ts` now calls the helper and returns `paidAmount` + `dueAmount` alongside the existing `currentTotal`.
+  3. ✅ `app/(workspace)/bookings/_components/add-passenger-modal.tsx` — Paid + Due rows added between Additional cost and the New estimated total. Container tagged `data-section='add-passenger-pricing'`; rows tagged `data-row='cost-per-pax' / 'additional' / 'paid' / 'due' / 'new-total'`. Hidden when fields are undefined (back-compat).
+  4. ✅ i18n: `bookings.addPassengers.paid` + `.due` in `en.json` / `th.json` / `ru.json`.
+  5. ✅ AddPassengerGhostCard gained `data-action="open-add-passenger-modal"` for stable E2E selection.
+  6. ✅ `silkskyair-ui/src/components/pax-counter.tsx` — PaxCounter wrapper gets `data-pax-counter="<label>"`, buttons get `data-action="pax-counter-increment|decrement"` + accessible `aria-label`. Generic instrumentation; usable by any spec that drives a stepper. UI package rebuilt (`pnpm build`).
+- **Simple Happy Path E2E:** ✅ `silkskyair-member/e2e/member-add-passenger-simple.spec.ts` — sign in via real magic-link flow → /bookings/<seeded id> → click ghost card → wait for dialog → assert all 5 data-row attrs visible with numeric currency values. Green.
+- **Complex Happy Path E2E:** ✅ `silkskyair-member/e2e/member-add-passenger-full.spec.ts` — seeds a confirmed shared-flight booking (total ฿17,000, paid ฿17,000) → reads the pricing API to capture canonical per-pax cost → opens modal → asserts every row's exact THB formatting at default (adults=1) → clicks Adults `+` → asserts additional + new-total scale; Paid + Due rows stay invariant. Green.
+- **Test infra:** NEW `silkskyair-member/e2e/fixtures/auth.fixture.ts` (`signInViaMagicLink` extracted from F2.2 complex spec, `uniqueE2eEmail`) and NEW `silkskyair-member/e2e/fixtures/supabase.fixture.ts` (`seedConfirmedBooking` — provisions member_profile + member_account + bookings + price_components + events walked to BookingConfirmed + successful payment_intent; clears trigger-inserted artefacts so the math is deterministic). `playwright.config.ts` now also loads `.env.local` so the fixture sees `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`.
+- **User manual:** ✅ `silkskyair-docs/manuals/domains/members/add-passenger-pricing.md` — explains the 5 rows, why Paid + Due matter, edge cases (private charter, zero-paid, missing tour), and a support-staff playbook for the most common "why is the modal asking for more money" questions.
+- **Acceptance gate:** balance helper + API extension + UI rows + both e2e + manual — ALL GREEN.
 
 ### F2.5 — Customer change-request confirmation emails [MP1-W05]
 - **Audit state:** ❌ Not started. Templates not in `bookings-event.json`.
