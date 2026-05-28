@@ -307,9 +307,9 @@ If multiple repos are touched by a feature, run the gate in each.
 - **User manual:** `manual/20-member-magic-link-auth.md` (slug `member-magic-link`) — explains members log in by email link only; covers how to handle "didn't get the email" support requests.
 - **Acceptance gate:** code + both e2e + manual.
 
-### F2.3 — Positive-number weight [MP1-W03] — **CROSS-APP**
+### F2.3 — Positive-number weight [MP1-W03] — **CROSS-APP** ✅ DONE
 
-**Scope update (W23 in-flight):** F2.3 is cross-app, not member-only. The Partner Portal already shipped `<input type="number">` for weight a few releases ago but the schema kept the FK to `weight_ranges`; partners typing a number got a 500. F2.3 now lands the schema + both apps' validation together. **Partner side complete** (migration `20260528120000_passenger_weight_numeric.sql` + PATCH validation in `silkskyair-partner/app/api/bookings/[id]/passengers/[passengerId]/route.ts`); **member side code-complete** (UI swap in `passenger-edit-drawer.tsx` + `validateWeight()` + PATCH validation); **member-side E2E specs and manual page #21 still pending**.
+**Scope update (W23 in-flight):** F2.3 was cross-app, not member-only. The Partner Portal already shipped `<input type="number">` for weight a few releases ago but the schema kept the FK to `weight_ranges`; partners typing a number got a 500. F2.3 landed the schema + both apps' validation together. **Now fully closed**: partner side (migration `20260528120000_passenger_weight_numeric.sql` + PATCH validation in `silkskyair-partner/app/api/bookings/[id]/passengers/[passengerId]/route.ts`) + member side (UI swap in `passenger-edit-drawer.tsx` + `validateWeight()` + PATCH validation) + member E2E specs (simple + complex, both green) + manual `silkskyair-docs/manuals/domains/members/passenger-weight.md`.
 
 #### Original plan below:
 
