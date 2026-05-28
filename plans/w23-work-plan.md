@@ -345,18 +345,21 @@ If multiple repos are touched by a feature, run the gate in each.
 - **User manual:** ✅ `silkskyair-docs/manuals/domains/members/add-passenger-pricing.md` — explains the 5 rows, why Paid + Due matter, edge cases (private charter, zero-paid, missing tour), and a support-staff playbook for the most common "why is the modal asking for more money" questions.
 - **Acceptance gate:** balance helper + API extension + UI rows + both e2e + manual — ALL GREEN.
 
-### F2.5 — Customer change-request confirmation emails [MP1-W05]
-- **Audit state:** ❌ Not started. Templates not in `bookings-event.json`.
-- **Code changes:** Per plan §"MP1-W05":
-  1. `silkskyair-api/supabase/migrations/<TS>_member_amendment_received_templates.sql` (NEW) — UPSERT two new template rows: `booking-change-request-received-member-date-time`, `booking-change-request-received-member-add-passenger` (follow layout of existing `booking-change-request-approved-member`).
-  2. `silkskyair-workflows/workflows/bookings/bookings-event.json` — extend `prepare-member-email-data` Switch with new branches on `AmendmentRequested` event sub-typed by amendment kind.
-- **Simple Happy Path E2E:** `silkskyair-www/tests/e2e/mp1-w05-amendment-received-emails.spec.ts` (cross-repo) — member submits date-time change request → assert email arrives in Mailpit within 10s with the correct template subject.
-- **Complex Happy Path E2E:** same file second test — member submits add-passenger change request → assert different template arrives; also verify subject + body include correct booking ref + requested change details.
-- **User manual:** Folded into `manual/23-member-amendments-end-to-end.md` (covers F2.5 + F2.6 + F2.7 + F2.8 together as the amendment lifecycle).
-- **Acceptance gate:** migration + workflow + both e2e + (shared) manual section.
+### F2.5 — Customer change-request confirmation emails [MP1-W05] ✅ DONE
+- **Audit state:** ✅ Done. Templates seeded, workflow wired, route stashes subtype, both E2E green, manual published.
+- **Code changes:**
+  1. ✅ `silkskyair-api/supabase/migrations/20260529100000_member_amendment_received_templates.sql` — 2 new `email_templates` rows (`booking-change-request-received-member-date-time`, `booking-change-request-received-member-add-passenger`) + 6 `email_templates_i18n` rows (en/th/ru × 2 templates), with subject/body/sender_name following the F1.15 customer-cancellation template shape. Idempotent UPSERTs.
+  2. ✅ `silkskyair-member/app/api/bookings/[bookingId]/change-requests/route.ts` — also stashes `amendment_subtype` in the `booking_events.metadata` so the workflow can route on it without joining back to `booking_change_requests`.
+  3. ✅ `silkskyair-workflows/workflows/bookings/bookings-event.json` — Switch output 5 (BAR / BookingAmendmentRequested) now fans out to **both** the manager branch (existing) AND `prepare-member-email-data` (new — mirrors F1.15's CR wiring); `prepare-member-email-data`'s Code node gained an `amendmentSubtypeSlugs` map that picks the per-subtype template based on the metadata. Deployed to local n8n.
+- **Simple Happy Path E2E:** ✅ `silkskyair-partner/e2e/partner-amendment-received-emails.spec.ts` (first test) — seed booking → insert `BookingAmendmentRequested` with `amendment_subtype='change_datetime'` → poll n8n executions filtered on `booking_id` + `event_type` → assert `template_slug='booking-change-request-received-member-date-time'` + `call-booking-member-email` succeeds. Green.
+- **Complex Happy Path E2E:** ✅ same file second test — same flow with `amendment_subtype='add_passengers'` → assert the OTHER template slug + body variables populated (`reference_code` matches the seed, `contact_email` non-empty) + `recipient_email='john.smith@example.com'` (the seed customer). Green.
+- **Test result:** both tests run in **27.8 s** together.
+- **User manual:** ✅ `silkskyair-docs/manuals/domains/members/amendment-received-emails.md` — trigger flow, template table, observability, failure-modes table, support-staff playbook. (Plan originally said fold into a shared amendment-lifecycle doc; that umbrella doc isn't needed now that F2.6/7/8 are deferred to W24, so this lives standalone.)
+- **Not covered (deliberate):** `remove_passengers` and `change_tour` subtypes fall through to no email — plan only specified the two templates above; adding the missing two is a follow-up migration in the same pattern.
+- **Acceptance gate:** migration + route + workflow + both E2E + manual — ALL GREEN.
 
-### F2.6 — Booking status state machine [MP1-W06] ← **LYNCHPIN**
-- **Audit state:** ❌ Not started. No `processing` status, no `is_state_changing`, no `PaymentSuccessful` emission in omise.json.
+### F2.6 — Booking status state machine [MP1-W06] ← **LYNCHPIN** — 🚫 DEFERRED to W24
+- **Audit state:** ❌ Not started, deferred per user decision 2026-05-29 — scope (6 migrations + omise.json edit + new RPC + open lifecycle decision about `BookingPaidInFull` restore semantics) needs more focused time than the W23 close-out window allows. The dependent items (F2.7, F2.8, F2.9, and the complex half of F2.10) defer with it.
 - **Code changes:** Per plan §"MP1-W06" — six new migrations + omise.json edit:
   1. `<TS>_add_processing_status.sql` — INSERT `processing` row into `booking_statuses`.
   2. `<TS>_event_state_changing_flag.sql` — `ALTER booking_event_types ADD COLUMN is_state_changing boolean DEFAULT true`.
