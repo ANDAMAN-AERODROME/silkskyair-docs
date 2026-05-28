@@ -105,8 +105,8 @@ If multiple repos are touched by a feature, run the gate in each.
 - **User manual:** `manual/08-manager-invitation-from-name.md` — explains the new behaviour to ops ("invited users now see 'Silk Sky Partner Portal' as sender"); shows before/after screenshots of received email; explains how to override `from_name` per template via DB.
 - **Acceptance gate:** migration applied to staging + e2e green + manual page.
 
-### F1.3 — Role-label humanization [R3]
-- **Audit state:** ❌ Not started. `silkskyair-partner/lib/auth/roles.ts` does not exist.
+### F1.3 — Role-label humanization [R3] ✅ DONE (partner-side)
+- **Audit state:** ✅ Done partner-side. `lib/auth/roles.ts` shipped earlier; spec `silkskyair-partner/e2e/partner-team-role-labels.spec.ts` now locks in the regression — asserts no raw `organization_manager` / `organization_member` / `organization_support` slug appears on /team and a humanised "Manager" / "Менеджер" / "ผู้จัดการ" label is visible. Account-portal Create-Account chip remains deferred (separate repo, X0-T1).
 - **Code changes:**
   1. NEW `silkskyair-partner/lib/auth/roles.ts` — export `formatRoleLabel(role: string, i18n: I18n): string`; tries `i18n(\`team.role.\${role}\`)`, falls back to title-cased role with underscores split.
   2. `silkskyair-partner/components/team/team-table.tsx:74-75` — replace local helper with import.
@@ -118,8 +118,8 @@ If multiple repos are touched by a feature, run the gate in each.
 - **User manual:** `manual/09-partner-team-role-labels.md` — explains that role labels now consistently read in plain English everywhere ops surfaces them; shows screenshots of /team, drawer, Create-Account page.
 - **Acceptance gate:** helper + 4 call-site swaps + Account-side fix + both e2e green.
 
-### F1.4 — Members → Clients terminology [R4]
-- **Audit state:** ❌ Not started. No migration in `silkskyair-api`.
+### F1.4 — Members → Clients terminology [R4] ✅ DONE
+- **Audit state:** ✅ Done. i18n migration shipped earlier; spec `silkskyair-partner/e2e/partner-clients-rename.spec.ts` asserts the sidebar link to `/members` and the `/members` page heading both read the localized "Clients" label (EN/TH/RU), and verifies the literal word "Members" no longer appears in `<main>`. Partner-side audit gap closed.
 - **Code changes (consolidated as Batch A1 — see also F1.7/F1.8/F1.9/F1.11):**
   1. `silkskyair-api/supabase/migrations/20260513120000_review_rename_keys.sql` — UPSERT `i18n.entries`:
      - `sidebar.members`: EN "Clients" / TH "ลูกค้า" / RU "Клиенты"
@@ -135,8 +135,8 @@ If multiple repos are touched by a feature, run the gate in each.
 - **User manual:** `manual/10-partner-clients-terminology.md` — explains the terminology change ("we now say Clients everywhere — same data, new word"); screenshots of partner sidebar, manager sidebar, member-detail page.
 - **Acceptance gate:** A1 migration applied + manager JSX edits + both e2e green + manual.
 
-### F1.5 — Dashboard cleanup (hide Reporting/Commission cards) [R5]
-- **Audit state:** ❌ Not started. `silkskyair-partner/app/home/page.tsx:7` still imports `ReportingWidget`, `:77` still mounts it, `:75` still `lg:grid-cols-3`.
+### F1.5 — Dashboard cleanup (hide Reporting/Commission cards) [R5] ✅ DONE
+- **Audit state:** ✅ Done. `ReportingWidget` import + render commented out (`R5-DISABLED-2026-05` markers in `app/home/page.tsx`). Spec `silkskyair-partner/e2e/partner-dashboard-no-reporting.spec.ts` asserts the widget's heading copy ("Performance Overview" / "Обзор результатов" / "ภาพรวมผลการดำเนินงาน") does not appear on /home, plus a positive check that the F1.6 AvailableToursWidget renders in the slot. AgreementWidget also moved out in F1.6 — that's F1.6's territory, not double-covered here.
 - **Code changes:** `silkskyair-partner/app/home/page.tsx`
   - Comment out `import { ReportingWidget } from "@/components/home/widgets/reporting-widget"` at line 7.
   - Comment out the `<ReportingWidget … />` JSX at line 77.
@@ -163,8 +163,8 @@ If multiple repos are touched by a feature, run the gate in each.
 - **User manual:** `silkskyair-docs/manuals/domains/partners/available-tours.md`.
 - **Acceptance gate:** code + migration + both E2E + manual — ALL GREEN.
 
-### F1.7 — "Invite Member" → "Invite Team" [R7]
-- **Audit state:** ❌ Not started. `silkskyair-partner/app/team/page.tsx:170` still has `i18n("team.invite") || "Invite Member"`.
+### F1.7 — "Invite Member" → "Invite Team" [R7] ✅ DONE
+- **Audit state:** ✅ Done. Fallback string at `app/team/page.tsx:170` reads "Invite Team" now. Spec `silkskyair-partner/e2e/partner-team-invite-rename.spec.ts` asserts the `/team` CTA renders the new label and the legacy "Invite Member" copy is absent.
 - **Code changes:**
   1. Folded into Batch A1 migration — UPSERT `i18n.entries` `settings:team.invite` = "Invite Team" (+ TH/RU).
   2. `silkskyair-partner/app/team/page.tsx:170` — change fallback string `"Invite Member"` → `"Invite Team"`.
@@ -207,8 +207,8 @@ If multiple repos are touched by a feature, run the gate in each.
 - **User manual:** `manual/14-partner-edit-passenger.md` — covers the nationality-picker change and how partner staff resolve the previous FK error.
 - **Acceptance gate:** investigation done + endpoint + selector swap + both e2e + manual.
 
-### F1.11 — Payment terminology (Full / Net) [R13 + R14]
-- **Audit state:** ❌ Not started.
+### F1.11 — Payment terminology (Full / Net) [R13 + R14] ✅ DONE
+- **Audit state:** ✅ Done. `payment.directPayment` i18n value reads "Full Payment" (en) and `payment.indirectPayment` reads "Net Payment (after deducting commission)" (en). Spec `silkskyair-partner/e2e/partner-payment-terminology.spec.ts` asserts both buttons on the booking-detail payment section render the new EN/TH/RU labels and neither still leads with the legacy "Direct payment" / "Indirect payment" phrasing.
 - **Code changes:** Batch A1 migration rows:
   - `bookings:payment.directPayment` = "Full Payment" / TH "ชำระเต็มจำนวน" / RU "Полная оплата"
   - `bookings:payment.indirectPayment` = "Net Payment (after deducting commission)" / TH "ชำระสุทธิ (หักค่าคอมมิชชั่นแล้ว)" / RU "Чистая оплата (после вычета комиссии)"
@@ -241,8 +241,8 @@ If multiple repos are touched by a feature, run the gate in each.
 - **User manual:** Folded into `manual/15-partner-payment-flow.md` (card-payment section). Mention the `OMISE_PUBLIC_KEY` env provisioning note in the ops appendix.
 - **Acceptance gate:** code + env provisioned in Vercel + both e2e + manual section.
 
-### F1.14 — TOTAL AMOUNT + PromptPay parity on Indirect [R19]
-- **Audit state:** ❌ Not started. Both `payment-checkout.tsx:345` (TOTAL AMOUNT) and `:460` (PromptPay amount) are still gated by `paymentCollectedBy === "direct"`.
+### F1.14 — TOTAL AMOUNT + PromptPay parity on Indirect [R19] ✅ DONE
+- **Audit state:** ✅ Done. Direct-only guards lifted in `payment-checkout.tsx`; the TOTAL AMOUNT card carries `data-payment-total` and the PromptPay method exposes `data-payment-method='promptpay'`. Spec `silkskyair-partner/e2e/partner-indirect-payment-parity.spec.ts` seeds an indirect booking, clicks Net Payment, and asserts both elements render — plus a sanity check that the Card tab is also present.
 - **Code changes:**
   1. `silkskyair-partner/components/bookings/payment-checkout.tsx:345-353` — remove the `paymentCollectedBy === "direct" &&` wrapper around TOTAL AMOUNT card so both flows show it.
   2. `silkskyair-partner/components/bookings/payment-checkout.tsx:460-464` — same removal around PromptPay amount display.
