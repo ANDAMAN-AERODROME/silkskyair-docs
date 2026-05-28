@@ -307,7 +307,12 @@ If multiple repos are touched by a feature, run the gate in each.
 - **User manual:** `manual/20-member-magic-link-auth.md` (slug `member-magic-link`) — explains members log in by email link only; covers how to handle "didn't get the email" support requests.
 - **Acceptance gate:** code + both e2e + manual.
 
-### F2.3 — Positive-number weight [MP1-W03]
+### F2.3 — Positive-number weight [MP1-W03] — **CROSS-APP**
+
+**Scope update (W23 in-flight):** F2.3 is cross-app, not member-only. The Partner Portal already shipped `<input type="number">` for weight a few releases ago but the schema kept the FK to `weight_ranges`; partners typing a number got a 500. F2.3 now lands the schema + both apps' validation together. **Partner side complete** (migration `20260528120000_passenger_weight_numeric.sql` + PATCH validation in `silkskyair-partner/app/api/bookings/[id]/passengers/[passengerId]/route.ts`); **member side code-complete** (UI swap in `passenger-edit-drawer.tsx` + `validateWeight()` + PATCH validation); **member-side E2E specs and manual page #21 still pending**.
+
+#### Original plan below:
+
 - **Audit state:** ❌ Not started.
 - **Code changes:** Per plan §"MP1-W03" — replace `WeightRangeSelector` in `app/(workspace)/bookings/_components/passenger-edit-drawer.tsx` with `<input type="number" min="0" max="250" step="0.1">`; update `lib/modules/bookings/passenger-validation.ts:validateWeight()` from bucket-id to positive-numeric; capture Advance Aviation rationale (deferred to F2.11).
 - **Simple Happy Path E2E:** `silkskyair-member/e2e/member-weight-edit-simple.spec.ts` — sign in → /bookings/<id> → edit passenger → enter `72.5` → save → reload → assert weight = "72.5 kg".

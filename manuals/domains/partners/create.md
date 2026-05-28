@@ -20,7 +20,7 @@ title: "Create a Partner (Back-office)"
 
 Navigate to `/partners` from the sidebar.
 
-![Step 1 — Partners list](screenshots/partner-create/01-partners-list.png)
+![Step 1 — Partners list](/screenshots/partners/create/01-partners-list.png)
 
 **What you should see:** the Partner Management page with the existing partners listed, headline counters (Active, Users, Bookings, Top Performer, Cap), and a **+ New Partner** button at the top right.
 
@@ -28,7 +28,7 @@ Navigate to `/partners` from the sidebar.
 
 Click **+ New Partner**. The drawer slides in from the right.
 
-![Step 2 — Empty New Partner drawer](screenshots/partner-create/02-empty-form.png)
+![Step 2 — Empty New Partner drawer](/screenshots/partners/create/02-empty-form.png)
 
 **What you should see:** an empty drawer titled "New partner" with a "Create partner" subtitle, an X close button on the right, and form sections for Details, Location, Commission & Status, and (further down) Countries / Team. The Save Partner CTA sits in a footer pinned to the bottom of the drawer.
 
@@ -42,7 +42,7 @@ Fill in the partner's information:
 - **Address**, **Latitude**, **Longitude** — physical location and map coordinates.
 - **Commission %** — share you award to this partner on each booking.
 
-![Step 3 — Filled drawer](screenshots/partner-create/03-filled-form.png)
+![Step 3 — Filled drawer](/screenshots/partners/create/03-filled-form.png)
 
 **What you should see:** every field populated with the values you typed, the Logo avatar showing your uploaded image, and the status badge defaulting to Active.
 
@@ -50,7 +50,7 @@ Fill in the partner's information:
 
 Click **Save Partner** in the bottom-right footer.
 
-![Step 4 — After Save](screenshots/partner-create/04-after-save.png)
+![Step 4 — After Save](/screenshots/partners/create/04-after-save.png)
 
 **What you should see:** three things at once —
 
@@ -66,7 +66,7 @@ If you have unsaved changes and try to close the drawer (X / Escape / clicking t
 
 Close the drawer (X, Escape, or backdrop) — since the form is no longer dirty, it closes cleanly. Then click the partner's row in the list to reopen the record.
 
-![Step 5 — Reopened via row click](screenshots/partner-create/05-reopened-via-row.png)
+![Step 5 — Reopened via row click](/screenshots/partners/create/05-reopened-via-row.png)
 
 **What you should see:** the drawer reopens in edit mode with every value you saved earlier. The round-trip is honest — close, navigate, reopen, and the record is intact.
 

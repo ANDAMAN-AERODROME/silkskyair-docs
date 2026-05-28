@@ -29,7 +29,7 @@ ssa: F3.1+F3.2+F3.3
 
 Append `?fbclid=test-w23-walkthrough` to the homepage URL (or click an actual ad). The query parameter triggers `session.ts` `initSession()` which writes the attribution to `sessionStorage` under key `ssa:analytics:session`.
 
-![Step 1 — Homepage with fbclid](./screenshots/meta-capi/01-homepage-with-fbclid.png)
+![Step 1 — Homepage with fbclid](/screenshots/meta-capi/01-homepage-with-fbclid.png)
 
 **What you should see:** Normal homepage. Open DevTools → Application → Session Storage → `ssa:analytics:session` should contain a JSON object with `fbclid: "test-w23-walkthrough"`, `landing_url` (full URL incl. query), and any `_fbp` / `_fbc` cookies Meta Pixel set.
 
@@ -37,7 +37,7 @@ Append `?fbclid=test-w23-walkthrough` to the homepage URL (or click an actual ad
 
 Click any **Book Now** CTA on the homepage.
 
-![Step 2 — Booking widget open](./screenshots/meta-capi/02-widget-open.png)
+![Step 2 — Booking widget open](/screenshots/meta-capi/02-widget-open.png)
 
 **What you should see:** The booking widget opens. The captured FB attribution survives subsequent navigations within the same tab (sessionStorage scope) — it doesn't matter how many pages the customer browses before booking.
 
@@ -45,7 +45,7 @@ Click any **Book Now** CTA on the homepage.
 
 Run through the booking steps as normal (tour → date+slot → contact → submit → OTP → card). Use test card `4242 4242 4242 4242`.
 
-![Step 3 — Payment](./screenshots/meta-capi/03-payment.png)
+![Step 3 — Payment](/screenshots/meta-capi/03-payment.png)
 
 **What you should see:** Standard booking-payment flow (see manual page 2 for the full walkthrough). At the submit step the widget reads from `sessionStorage` via `getFbAttribution()` and forwards `fbclid` / `fbp` / `fbc` / `landing_url` in the POST body to `/api/bookings/submit`.
 
@@ -53,7 +53,7 @@ Run through the booking steps as normal (tour → date+slot → contact → subm
 
 After 3DS (if any) the customer lands on the confirmed step.
 
-![Step 4 — Confirmed](./screenshots/meta-capi/04-confirmed.png)
+![Step 4 — Confirmed](/screenshots/meta-capi/04-confirmed.png)
 
 **What you should see:** Booking reference code displayed. Behind the scenes, `/api/bookings/submit` has written the FB attribution into `analytics.client_interactions.metadata` on the same row that carries `client_ip` / `user_agent` / `referrer`. Note the booking reference for Part B.
 
@@ -65,7 +65,7 @@ After 3DS (if any) the customer lands on the confirmed step.
 
 Sign in to BackOffice → Bookings → open the booking made in Part A.
 
-![Step 5 — Booking detail](./screenshots/meta-capi/05-booking-detail.png)
+![Step 5 — Booking detail](/screenshots/meta-capi/05-booking-detail.png)
 
 **What you should see:** The standard booking detail page with all existing sections (booking summary, flight, contact, etc.).
 
@@ -73,7 +73,7 @@ Sign in to BackOffice → Bookings → open the booking made in Part A.
 
 Scroll to the Client Interaction section (Globe icon).
 
-![Step 6 — Client Interaction section](./screenshots/meta-capi/06-client-interaction.png)
+![Step 6 — Client Interaction section](/screenshots/meta-capi/06-client-interaction.png)
 
 **What you should see:** The section now renders additional rows below the existing IP / Submitted / User Agent / Referrer:
 
@@ -94,7 +94,7 @@ A booking made without any FB signal renders only the original four rows — no 
 
 On the same booking detail page, scroll to **Event History**.
 
-![Step 7 — Event history with MetaCapi event](./screenshots/meta-capi/07-event-history.png)
+![Step 7 — Event history with MetaCapi event](/screenshots/meta-capi/07-event-history.png)
 
 **What you should see:** After the booking is confirmed, the bookings-event workflow's IF gate (`if-has-analytics-metadata`) sees the FB attribution, invokes the Meta CAPI dispatcher, and records the outcome:
 
@@ -110,7 +110,7 @@ A booking with **no** FB attribution at all has **none** of these events — the
 
 If the dispatcher fired but Meta rejected, the event's metadata carries the error message — useful for diagnosing token rotation issues.
 
-![Step 8 — MetaCapiFailed metadata](./screenshots/meta-capi/08-meta-capi-failed-detail.png)
+![Step 8 — MetaCapiFailed metadata](/screenshots/meta-capi/08-meta-capi-failed-detail.png)
 
 **What you should see:** Expanded event row showing `metadata.error` with the rejection reason returned by Meta.
 
