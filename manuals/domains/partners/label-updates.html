@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Partner Portal Label &amp; Terminology Updates (W23)</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Partner Portal Label &amp; Terminology Updates (W23)</h1>
+<blockquote>
+<p><strong>App:</strong> Partner Portal (+ a mirrored rename in BackOffice)
+<strong>Who uses it:</strong> Everyone — these are user-visible wording changes only.
+<strong>What it does:</strong> Bundles the string-only relabels shipped in W23 from the Partnership Portal review (Round 3). No behavior changed — only the words on screen. This page is the single reference for &quot;what got renamed and where,&quot; so it doesn&#39;t need a full step-by-step manual.</p>
+</blockquote>
+<h2>Before you start</h2>
+<ul>
+<li><strong>Local URL:</strong> <code>http://localhost:3050</code> (Partner Portal). The one BackOffice rename is at <code>http://localhost:3000</code>.</li>
+<li><strong>Account:</strong> any Partner Portal account works for verification (e.g. <code>peter@andaman.co.th</code> on local).</li>
+<li><strong>How to verify:</strong> these are i18n / JSX string changes. Open each surface listed below and confirm the new wording renders — no functional testing needed.</li>
+</ul>
+<h2>What changed</h2>
+<table>
+<thead>
+<tr>
+<th>Where</th>
+<th>Before</th>
+<th>After</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Sidebar nav item (Partner)</td>
+<td>Members</td>
+<td><strong>Clients</strong></td>
+<td>&quot;Clients&quot; is the customer-facing term partners use (R4).</td>
+</tr>
+<tr>
+<td>Clients page title</td>
+<td>Members</td>
+<td><strong>Clients</strong></td>
+<td>Matches the sidebar rename (R4).</td>
+</tr>
+<tr>
+<td>Clients page subtitle</td>
+<td>—</td>
+<td><strong>Manage your registered clients</strong></td>
+<td>Fills an empty subtitle (R4).</td>
+</tr>
+<tr>
+<td>Clients &quot;create&quot; action</td>
+<td>Add Member</td>
+<td><strong>Add Client</strong></td>
+<td>Consistent client terminology (R4).</td>
+</tr>
+<tr>
+<td>BackOffice sidebar + Members page chrome</td>
+<td>Members / All Members</td>
+<td><strong>Clients / All Clients</strong></td>
+<td>Mirrors the partner-side rename so both apps agree (R4-T6). URL stays <code>/members</code>.</td>
+</tr>
+<tr>
+<td>Team → invite button</td>
+<td>Invite Member</td>
+<td><strong>Invite Team</strong></td>
+<td>The button invites staff to your org, not clients (R7).</td>
+</tr>
+<tr>
+<td>Team → archived status</td>
+<td><em>(raw key leaked)</em></td>
+<td><strong>Archived</strong></td>
+<td>New i18n key — the status label was rendering its raw key before (R8).</td>
+</tr>
+<tr>
+<td>Booking create → step 4</td>
+<td><em>(duplicate of step 5)</em></td>
+<td><strong>Shared/Private Flight</strong></td>
+<td>Step 4&#39;s label was a copy of step 5&#39;s; gives the step its own name (R9).</td>
+</tr>
+<tr>
+<td>Booking create → confirm CTA</td>
+<td>Confirm Booking</td>
+<td><strong>Submit Booking</strong></td>
+<td>Clearer that this submits the booking for processing (R10).</td>
+</tr>
+<tr>
+<td>Payment → direct option</td>
+<td>Direct Payment</td>
+<td><strong>Full Payment</strong></td>
+<td>Plain-language label for &quot;partner collects the full amount&quot; (R13).</td>
+</tr>
+<tr>
+<td>Payment → indirect option</td>
+<td>Indirect Payment</td>
+<td><strong>Net Payment (after deducting commission)</strong></td>
+<td>Spells out what &quot;net&quot; means for the partner (R14).</td>
+</tr>
+<tr>
+<td>Any role chip (Team, drawers, Create-Account)</td>
+<td>Organization_manager</td>
+<td><strong>Organization Manager</strong></td>
+<td>Role slugs are now humanised via a shared formatter (R3 — F1.3).</td>
+</tr>
+</tbody></table>
+<h2>Step-by-step (spot checks)</h2>
+<h3>Spot check 1 — &quot;Clients&quot; in the sidebar</h3>
+<p>Open the Partner Portal. The sidebar item that used to read <strong>Members</strong> now reads <strong>Clients</strong>, and the page it opens is titled <strong>Clients</strong> with an <strong>+ Add Client</strong> button.</p>
+<p><img src="../../../screenshots/partners/label-updates/01-sidebar-clients.png" alt="Spot check 1 — Clients in the sidebar"></p>
+<p><strong>What you should see:</strong> sidebar <strong>Clients</strong>, page title <strong>Clients</strong>, subtitle &quot;Manage your registered clients,&quot; and an <strong>+ Add Client</strong> button.</p>
+<h3>Spot check 2 — Full Payment / Net Payment</h3>
+<p>Open an unpaid booking with commission and look at the Payment section.</p>
+<p><img src="../../../screenshots/partners/label-updates/02-payment-full-net.png" alt="Spot check 2 — Full Payment / Net Payment labels"></p>
+<p><strong>What you should see:</strong> the two payment options now read <strong>Full Payment</strong> and <strong>Net Payment (after deducting commission)</strong> (formerly &quot;Direct Payment&quot; / &quot;Indirect Payment&quot;).</p>
+<h3>Spot check 3 — Humanised role chip</h3>
+<p>Open the Team page (or a team-member drawer) and look at a role chip.</p>
+<p><img src="../../../screenshots/partners/label-updates/03-role-chip.png" alt="Spot check 3 — Humanised role chip"></p>
+<p><strong>What you should see:</strong> a role like <code>organization_manager</code> rendered as <strong>Organization Manager</strong> — title-cased with spaces — instead of the old <code>Organization_manager</code>.</p>
+<h2>Tips &amp; common questions</h2>
+<ul>
+<li><strong>Did any behavior change?</strong> No. Every item here is a wording change. URLs, routes, and logic are unchanged — in particular the Clients page is still served from <code>/members</code>.</li>
+<li><strong>Why is the role formatter its own thing?</strong> Each surface used to have its own tiny role-label helper that fell back to a naive first-letter-uppercase, leaking <code>Organization_manager</code>. A single shared <code>formatRoleLabel</code> now prefers the i18n translation and otherwise title-cases the slug, so the chip never reads <code>organization_manager</code> again. The Account Portal&#39;s Create-Account page ships its own copy of the same helper.</li>
+<li><strong>Where are the strings stored?</strong> The Partner Portal strings are DB-backed i18n, landed in one migration (<code>silkskyair-api</code> <code>20260527130000_review_rename_keys.sql</code>, all of en/th/ru). The BackOffice Members→Clients rename is hard-coded JSX (the Manager UI isn&#39;t i18n-driven).</li>
+<li><strong>RU translations.</strong> The migration used <code>ON CONFLICT DO UPDATE</code>, renaming existing rows in place and inserting the Russian locale where it was previously empty for these keys.</li>
+</ul>
+<h2>Reference</h2>
+<ul>
+<li><strong>i18n batch:</strong> silkskyair-api commit <code>202b619</code> — <code>20260527130000_review_rename_keys.sql</code> (R4/R7/R8/R9/R10/R13/R14, 27 rows × en/th/ru).</li>
+<li><strong>BackOffice rename:</strong> silkskyair-manager commit <code>042c7b2</code> — <code>lib/modules/registry.ts</code> + <code>members-manager.tsx</code> (R4-T6).</li>
+<li><strong>Role formatter:</strong> <a href="https://github.com/">silkskyair-partner/lib/auth/roles.ts</a> — <code>formatRoleLabel(role, i18n)</code> (partner commit <code>1ea63f6</code>, R3 / F1.3).</li>
+<li><strong>Shipped:</strong> W23 — covers F1.3, F1.4, F1.7, F1.9, F1.11 plus review items R8 and R10.</li>
+</ul>
+
+</article>
+</body>
+</html>

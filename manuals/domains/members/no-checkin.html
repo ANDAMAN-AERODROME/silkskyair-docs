@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Check-in is not part of Phase 1 (Member Portal)</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Check-in is not part of Phase 1 (Member Portal)</h1>
+<blockquote>
+<p><strong>App:</strong> Member Portal
+<strong>Who needs to know:</strong> Support staff fielding &quot;where&#39;s my boarding pass?&quot; / &quot;how do I check in online?&quot; questions from customers. Engineers reading the booking detail page who notice the absence of any check-in surface and want context.
+<strong>What it does:</strong> Documents that <strong>W23 Phase 1 explicitly disables online check-in in the Member Portal</strong>. The customer-facing check-in flow (collect passenger info, accept dangerous goods declaration, watch the safety video, generate boarding pass) is not available; the operator runs check-in on the day of the flight via operator-side tooling.</p>
+</blockquote>
+<h2>Why check-in was disabled</h2>
+<p>Advance Aviation&#39;s Phase 1 launch focuses on the booking + payment lifecycle. The online check-in tree the platform shipped earlier (boarding pass generation, dangerous goods declaration, safety video, multi-step indicator) was a Phase 2 ambition that wasn&#39;t validated with operators in time for the W23 release window. The decision in §F2.1 / MP1-W01: ship Phase 1 without it, restore in Phase 2 when the operator workflow is settled.</p>
+<h2>What customers see (and don&#39;t)</h2>
+<p>On the Member Portal <code>/bookings/&lt;id&gt;</code> booking detail page, the check-in widget that used to render below the booking summary for confirmed bookings is gone:</p>
+<ul>
+<li>No green <strong>&quot;Check In Now&quot;</strong> banner.</li>
+<li>No amber <strong>&quot;Complete Info&quot;</strong> banner.</li>
+<li>No <strong>&quot;Download Boarding Pass&quot;</strong> CTA when the booking departure is imminent.</li>
+<li>No <strong>&quot;Confirm Check-In&quot;</strong> button anywhere on the page.</li>
+</ul>
+<p>The Cancellation + Refund actions in the rail are now always shown when the booking is eligible (previously these hid once the customer had checked in — without check-in, that gate is gone).</p>
+<h2>What support staff should say</h2>
+<blockquote>
+<p>&quot;Online check-in isn&#39;t part of the current release. The team at the aerodrome will check you in when you arrive — please bring your passport / national ID and a copy of your booking confirmation. If you&#39;d like to update your weight, passport details, or passenger info before the flight, you can still do that from the Member Portal booking page.&quot;</p>
+</blockquote>
+<p>If a customer references a check-in link they received in an older booking confirmation email, that link will now 404. Forward them to the booking detail page on the Member Portal where they can edit passenger details.</p>
+<h2>What&#39;s been removed</h2>
+<p>For audit / re-enable context — these are the surfaces that no longer exist in the Member Portal:</p>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Was</th>
+<th>Now</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/bookings/&lt;id&gt;/checkin</code> page</td>
+<td>Multi-step check-in flow</td>
+<td><code>notFound()</code> → 404</td>
+</tr>
+<tr>
+<td><code>/checkin/&lt;id&gt;</code> magic-link entry</td>
+<td>Token-verified public check-in</td>
+<td>404</td>
+</tr>
+<tr>
+<td><code>/api/bookings/&lt;id&gt;/checkin</code></td>
+<td>GET / POST check-in state</td>
+<td>404 across all methods</td>
+</tr>
+<tr>
+<td><code>/api/bookings/&lt;id&gt;/checkin/complete</code></td>
+<td>Mark check-in complete</td>
+<td>404</td>
+</tr>
+<tr>
+<td>Check-in widget on <code>/bookings/&lt;id&gt;</code></td>
+<td>Green &quot;Check In Now&quot; / amber &quot;Complete Info&quot; / &quot;Download Boarding Pass&quot;</td>
+<td>Removed entirely</td>
+</tr>
+<tr>
+<td>Middleware <code>/checkin/</code> bypass</td>
+<td>Public token-verified path</td>
+<td>Removed (no more bypass)</td>
+</tr>
+</tbody></table>
+<p>Every file that was touched carries a <code>CHECKIN-DISABLED-2026-05</code> marker comment so a <code>grep -rln CHECKIN-DISABLED-2026-05 silkskyair-member</code> lists every surface that needs to be restored if Phase 2 reactivates check-in.</p>
+<h2>Re-enable path</h2>
+<p>The original code lives in git history immediately before each marker. To restore:</p>
+<ol>
+<li>Identify all 17 marker files with <code>grep -rl CHECKIN-DISABLED-2026-05 silkskyair-member</code>.</li>
+<li>For each, revert the marker&#39;d portion to the previous commit&#39;s content.</li>
+<li>Drop the routes/page stubs in favour of the originals.</li>
+<li>Re-enable the <code>/checkin/</code> and <code>/bookings/&lt;id&gt;/checkin?token=…</code> middleware bypass.</li>
+<li>Restore <code>isCheckedIn</code> prop on <code>BookingDetailContent</code>, <code>PassengersSection</code>, <code>BookingActionsRail</code>, and the page.tsx <code>booking_checkin_state</code> fetch.</li>
+<li>Remove the marker comments.</li>
+<li>Delete <code>silkskyair-member/e2e/member-no-checkin-routes.spec.ts</code> and the parked simple spec.</li>
+</ol>
+<h2>Reference</h2>
+<ul>
+<li><strong>Source markers:</strong> <code>grep -rln CHECKIN-DISABLED-2026-05 silkskyair-member</code> — should list 17 files.</li>
+<li><strong>E2E:</strong><ul>
+<li><code>silkskyair-member/e2e/member-no-checkin-routes.spec.ts</code> — asserts 4 routes return 404 + the marker file count.</li>
+<li><code>silkskyair-member/e2e/member-no-checkin-simple.spec.ts</code> — <code>test.fixme()</code> placeholder pending the F2.2 magic-link auth fixture; will assert the UI surface is absent on the authenticated booking detail page.</li>
+</ul>
+</li>
+<li><strong>Plan:</strong> <code>silkskyair-docs/plans/w23-work-plan.md</code> §F2.1 (MP1-W01).</li>
+</ul>
+
+</article>
+</body>
+</html>

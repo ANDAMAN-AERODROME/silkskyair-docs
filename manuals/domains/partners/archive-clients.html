@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Archive a Client (Partner Portal)</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Archive a Client (Partner Portal)</h1>
+<blockquote>
+<p><strong>App:</strong> Partner Portal
+<strong>Who uses it:</strong> Partner staff with the <code>module:partner-members:access</code> privilege, managing their organization&#39;s client list.
+<strong>What it does:</strong> Lets partner staff archive a client from the Clients list — a one-way, soft action that hides the client from the default view without deleting any data. Archived clients stay queryable via a <strong>Show archived</strong> toggle and are clearly badged.</p>
+</blockquote>
+<h2>Before you start</h2>
+<ul>
+<li><strong>Local URL:</strong> <code>http://localhost:3050/members</code> (the page is titled <strong>Clients</strong> — the URL stays <code>/members</code>). Staging / production: the same path on <code>staging.partner.silkskyair.com</code> / <code>partner.silkskyair.com</code>.</li>
+<li><strong>Account:</strong> Sign in with a Partner Portal account that can manage clients (e.g. <code>peter@andaman.co.th</code> for Advance Aviation on local).</li>
+<li><strong>Prerequisites:</strong> at least one client linked to your partner organization.</li>
+<li><strong>Good to know:</strong> archiving is <strong>one-way</strong> — there is no un-archive in the UI. Archived clients are hidden by default but never deleted; you can always show them again with the toggle.</li>
+</ul>
+<h2>Step-by-step</h2>
+<h3>Step 1 — Open the Clients list</h3>
+<p>Navigate to <strong>Clients</strong> from the sidebar.</p>
+<p><img src="../../../screenshots/partners/archive-clients/01-clients-list.png" alt="Step 1 — Clients list"></p>
+<p><strong>What you should see:</strong> the <strong>Clients</strong> page with an <strong>+ Add Client</strong> button, a <strong>search</strong> box, a <strong>Show archived</strong> toggle, and your client cards. By default, archived clients are <strong>not</strong> shown.</p>
+<h3>Step 2 — Open the client&#39;s actions menu</h3>
+<p>On the client card you want to archive, click the <strong>⋮</strong> (more) button in the top-right corner.</p>
+<p><img src="../../../screenshots/partners/archive-clients/02-overflow-menu.png" alt="Step 2 — Client actions menu"></p>
+<p><strong>What you should see:</strong> a small menu with an <strong>Archive</strong> action. (The menu lives outside the card&#39;s main link, so clicking it doesn&#39;t navigate to the client.) The menu only appears on clients that aren&#39;t already archived.</p>
+<h3>Step 3 — Confirm the archive</h3>
+<p>Click <strong>Archive</strong>. A confirmation dialog appears.</p>
+<p><img src="../../../screenshots/partners/archive-clients/03-confirm-dialog.png" alt="Step 3 — Confirm archive"></p>
+<p><strong>What you should see:</strong> a danger-styled confirm dialog naming the client and asking you to confirm. Click the confirm button to archive, or cancel to back out. On success the list refreshes and the client drops out of the default view.</p>
+<h3>Step 4 — View archived clients</h3>
+<p>Turn on the <strong>Show archived</strong> toggle at the top of the list.</p>
+<p><img src="../../../screenshots/partners/archive-clients/04-archived-badge.png" alt="Step 4 — Show archived toggle on, archived badge"></p>
+<p><strong>What you should see:</strong> archived clients reappear, each rendered dimmed (reduced opacity) with an <strong>Archived</strong> badge. Archived cards no longer show the <strong>⋮</strong> actions menu (there are no further actions). Turn the toggle off to hide them again.</p>
+<h2>Tips &amp; common questions</h2>
+<ul>
+<li><strong>Can I un-archive a client?</strong> Not from the UI — archiving is one-way by design. The data is preserved (soft archive), so support can restore at the data layer if genuinely needed, but staff have no un-archive button.</li>
+<li><strong>I archived the same client twice.</strong> That&#39;s safe. The operation is idempotent — a second archive returns the original archived timestamp and reports <code>already_archived</code> rather than erroring.</li>
+<li><strong>The Archive action isn&#39;t on a card.</strong> That card is already archived (its actions menu is hidden), or your account lacks the partner-members privilege.</li>
+<li><strong>Archiving failed with an error.</strong> The action surfaces the error inline (alert + console) rather than failing silently — common causes are a lost session (sign in again) or the client not being linked to your organization (404). </li>
+<li><strong>Does archiving affect the client&#39;s bookings?</strong> No — it only hides the client profile from the default Clients list. Bookings and history are untouched.</li>
+</ul>
+<h2>Reference</h2>
+<ul>
+<li><strong>UI:</strong> <a href="https://github.com/">silkskyair-partner/app/members/page.tsx</a> (search + <strong>Show archived</strong> toggle, <code>data-action=&quot;toggle-show-archived&quot;</code>) · <a href="https://github.com/">components/members/member-card.tsx</a> (<code>⋮</code> menu → <strong>Archive</strong> → <code>ConfirmDialog</code> → <code>POST /api/members/[id]/archive</code>; <code>data-archived-badge</code> on archived cards).</li>
+<li><strong>API:</strong> <code>silkskyair-partner/app/api/members/[id]/archive/route.ts</code> — auth + org-ownership gated, calls the <code>api.archive_member</code> RPC. One-way, idempotent (<code>already_archived</code>). <code>GET /api/members</code> hides archived rows unless <code>?show_archived=true</code>.</li>
+<li><strong>Pairs with:</strong> silkskyair-api commit <code>e3813e5</code> (the <code>archive_member</code> RPC + <code>member_profiles.archived_at</code> migration).</li>
+<li><strong>Shipped:</strong> W23 — partner commit <code>db62864</code> (F1.17 / R22).</li>
+</ul>
+
+</article>
+</body>
+</html>

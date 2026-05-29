@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>28. Meta CAPI — FB Attribution Capture, Dispatch &amp; Recording</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>28. Meta CAPI — FB Attribution Capture, Dispatch &amp; Recording</h1>
+<blockquote>
+<p><strong>Apps:</strong> WebSite (capture), BackOffice / Manager (read the attribution), Workflows / n8n (dispatch + record).
+<strong>Who uses it:</strong> Marketing ops (verify FB conversions), support agents (diagnose unsent/failed dispatches), engineers (rotate the bearer token).
+<strong>What it does:</strong> Captures <code>fbclid</code> from the landing URL plus <code>_fbp</code> / <code>_fbc</code> cookies set by Meta Pixel, persists them on the booking&#39;s client_interactions row, and when the booking is confirmed fires a server-side Purchase event to Meta CAPI. Every dispatch outcome is recorded as a <code>MetaCapi*</code> booking_event.</p>
+</blockquote>
+<h2>Before you start</h2>
+<ul>
+<li><strong>WebSite staging:</strong> <code>https://staging.www.silkskyair.com</code></li>
+<li><strong>BackOffice staging:</strong> <code>https://staging.manager.silkskyair.com</code></li>
+<li><strong>Account:</strong> <code>peter@andaman.co.th</code> for the BackOffice half. No account needed for the WebSite half (guest checkout).</li>
+<li><strong>Test card:</strong> <code>4242 4242 4242 4242</code> (Omise&#39;s published Visa test card). Any future expiry, any 3-digit CVV.</li>
+<li><strong>Prerequisites:</strong> none — this walkthrough creates the booking. <strong>Heads-up:</strong> unless a valid Meta CAPI bearer is provisioned on the target n8n, the dispatcher&#39;s HTTP call to Meta will fail and the dispatcher records <code>MetaCapiFailed</code> instead of <code>MetaCapiSent</code>. Both outcomes prove the integration is wired correctly — the difference is whether Meta accepted the event.</li>
+</ul>
+<hr>
+<h2>Part A — Customer lands from a Facebook ad (WebSite)</h2>
+<h3>Step 1 — Open the homepage with <code>?fbclid=...</code></h3>
+<p>Append <code>?fbclid=test-w23-walkthrough</code> to the homepage URL (or click an actual ad). The query parameter triggers <code>session.ts</code> <code>initSession()</code> which writes the attribution to <code>sessionStorage</code> under key <code>ssa:analytics:session</code>.</p>
+<p><img src="../../../screenshots/meta-capi/01-homepage-with-fbclid.png" alt="Step 1 — Homepage with fbclid"></p>
+<p><strong>What you should see:</strong> Normal homepage. Open DevTools → Application → Session Storage → <code>ssa:analytics:session</code> should contain a JSON object with <code>fbclid: &quot;test-w23-walkthrough&quot;</code>, <code>landing_url</code> (full URL incl. query), and any <code>_fbp</code> / <code>_fbc</code> cookies Meta Pixel set.</p>
+<h3>Step 2 — Open the booking widget</h3>
+<p>Click any <strong>Book Now</strong> CTA on the homepage.</p>
+<p><img src="../../../screenshots/meta-capi/02-widget-open.png" alt="Step 2 — Booking widget open"></p>
+<p><strong>What you should see:</strong> The booking widget opens. The captured FB attribution survives subsequent navigations within the same tab (sessionStorage scope) — it doesn&#39;t matter how many pages the customer browses before booking.</p>
+<h3>Step 3 — Complete the booking flow</h3>
+<p>Run through the booking steps as normal (tour → date+slot → contact → submit → OTP → card). Use test card <code>4242 4242 4242 4242</code>.</p>
+<p><img src="../../../screenshots/meta-capi/03-payment.png" alt="Step 3 — Payment"></p>
+<p><strong>What you should see:</strong> Standard booking-payment flow (see manual page 2 for the full walkthrough). At the submit step the widget reads from <code>sessionStorage</code> via <code>getFbAttribution()</code> and forwards <code>fbclid</code> / <code>fbp</code> / <code>fbc</code> / <code>landing_url</code> in the POST body to <code>/api/bookings/submit</code>.</p>
+<h3>Step 4 — Confirmation</h3>
+<p>After 3DS (if any) the customer lands on the confirmed step.</p>
+<p><img src="../../../screenshots/meta-capi/04-confirmed.png" alt="Step 4 — Confirmed"></p>
+<p><strong>What you should see:</strong> Booking reference code displayed. Behind the scenes, <code>/api/bookings/submit</code> has written the FB attribution into <code>analytics.client_interactions.metadata</code> on the same row that carries <code>client_ip</code> / <code>user_agent</code> / <code>referrer</code>. Note the booking reference for Part B.</p>
+<hr>
+<h2>Part B — Operations see the attribution (BackOffice)</h2>
+<h3>Step 5 — Open the booking detail</h3>
+<p>Sign in to BackOffice → Bookings → open the booking made in Part A.</p>
+<p><img src="../../../screenshots/meta-capi/05-booking-detail.png" alt="Step 5 — Booking detail"></p>
+<p><strong>What you should see:</strong> The standard booking detail page with all existing sections (booking summary, flight, contact, etc.).</p>
+<h3>Step 6 — Find the &quot;Client Interaction&quot; section</h3>
+<p>Scroll to the Client Interaction section (Globe icon).</p>
+<p><img src="../../../screenshots/meta-capi/06-client-interaction.png" alt="Step 6 — Client Interaction section"></p>
+<p><strong>What you should see:</strong> The section now renders additional rows below the existing IP / Submitted / User Agent / Referrer:</p>
+<table>
+<thead>
+<tr>
+<th>Row</th>
+<th>Value</th>
+<th>When present</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Landing URL</td>
+<td>Full URL incl. <code>?fbclid=…</code></td>
+<td>Whenever any FB signal was captured</td>
+</tr>
+<tr>
+<td>Facebook Click ID</td>
+<td>The raw <code>fbclid</code> value</td>
+<td>When <code>?fbclid</code> was in the landing URL</td>
+</tr>
+<tr>
+<td><code>_fbc</code></td>
+<td>Cookie value or synthesized <code>fb.1.&lt;ts&gt;.&lt;fbclid&gt;</code></td>
+<td>Always when fbclid present</td>
+</tr>
+<tr>
+<td><code>_fbp</code></td>
+<td>Cookie value</td>
+<td>When Meta Pixel was loaded with consent at landing</td>
+</tr>
+</tbody></table>
+<p>A booking made without any FB signal renders only the original four rows — no FB rows are shown, so the section stays clean for non-attributed bookings.</p>
+<hr>
+<h2>Part C — Workflow dispatch outcome (Event History)</h2>
+<h3>Step 7 — Find the Event History section</h3>
+<p>On the same booking detail page, scroll to <strong>Event History</strong>.</p>
+<p><img src="../../../screenshots/meta-capi/07-event-history.png" alt="Step 7 — Event history with MetaCapi event"></p>
+<p><strong>What you should see:</strong> After the booking is confirmed, the bookings-event workflow&#39;s IF gate (<code>if-has-analytics-metadata</code>) sees the FB attribution, invokes the Meta CAPI dispatcher, and records the outcome:</p>
+<table>
+<thead>
+<tr>
+<th>Event type</th>
+<th>Meaning</th>
+<th>When emitted</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>MetaCapiSent</code></td>
+<td>Meta accepted the Purchase event</td>
+<td>HTTP 2xx from <code>graph.facebook.com/.../events</code></td>
+</tr>
+<tr>
+<td><code>MetaCapiSkipped</code></td>
+<td>Dispatcher invoked but bailed internally</td>
+<td>Booking has no successful payment, or no identity signals (<code>em</code>, <code>ph</code>, <code>external_id</code>, <code>fbc</code>, <code>fbp</code>)</td>
+</tr>
+<tr>
+<td><code>MetaCapiFailed</code></td>
+<td>Meta returned a non-2xx</td>
+<td>Bad/expired bearer, malformed payload, Meta API outage</td>
+</tr>
+</tbody></table>
+<p>A booking with <strong>no</strong> FB attribution at all has <strong>none</strong> of these events — the IF gate skips invocation entirely (no FB attribution is a normal case, not a &quot;skipped&quot; event worth recording).</p>
+<h3>Step 8 — Inspect a <code>MetaCapiFailed</code> row (when present)</h3>
+<p>If the dispatcher fired but Meta rejected, the event&#39;s metadata carries the error message — useful for diagnosing token rotation issues.</p>
+<p><img src="../../../screenshots/meta-capi/08-meta-capi-failed-detail.png" alt="Step 8 — MetaCapiFailed metadata"></p>
+<p><strong>What you should see:</strong> Expanded event row showing <code>metadata.error</code> with the rejection reason returned by Meta.</p>
+<hr>
+<h2>Tips &amp; common questions</h2>
+<ul>
+<li><p><strong>Why doesn&#39;t the booking I just made show <code>MetaCapiSent</code>?</strong> Three common reasons:</p>
+<ul>
+<li>The booking has no FB attribution (no <code>?fbclid</code>, no <code>_fbp</code> / <code>_fbc</code> cookies set by Meta Pixel) → IF gate dead-ends, no event recorded.</li>
+<li>The Meta CAPI bearer is missing or expired on the target n8n → expect <code>MetaCapiFailed</code> with <code>error</code> containing &quot;OAuthException&quot; or 401.</li>
+<li>The booking has no successful payment yet (e.g., payment is still pending) → dispatcher&#39;s internal <code>if-should-send</code> bails with <code>MetaCapiSkipped(skip_reason=&#39;no_successful_payment&#39;)</code>.</li>
+</ul>
+</li>
+<li><p><strong>The customer clicked an FB ad days ago and then came back to book — does it count?</strong> No. Attribution lives in <strong><code>sessionStorage</code></strong> which clears when the customer closes their browser tab. If you want cross-tab persistence, escalate to engineering — the storage tier was a deliberate choice during F3.1 (matches the existing <code>session.ts</code> UTM-capture pattern).</p>
+</li>
+<li><p><strong>Where do I rotate the Meta CAPI bearer token?</strong></p>
+<ul>
+<li>n8n local: credential <code>AAC | SAA | Auth | Meta CAPI</code> (id <code>gBlJLpOaFbGNrhFu</code>), referenced in <code>.env</code> as <code>N8N_CRED_META_CAPI</code>.</li>
+<li>n8n staging / production: same credential name, ids per <code>.env.staging</code> / <code>.env.production</code>.</li>
+<li>Regenerate the Meta System User token in Meta Business Settings → Users → System Users → SilkSky CAPI User.</li>
+</ul>
+</li>
+<li><p><strong>The <code>MetaCapiSent</code> event shows <code>meta_status_code: 200</code> but I don&#39;t see the conversion in Meta Events Manager.</strong> Check Events Manager → Test Events. If the dispatch carried a <code>test_event_code</code> (passed via workflow input), Meta routes the event to Test Events only and excludes it from production attribution.</p>
+</li>
+<li><p><strong>A booking has both a <code>MetaCapiSkipped</code> AND a <code>MetaCapiFailed</code> for the same booking.</strong> That means the dispatcher fired twice (e.g., the BC webhook was redelivered). Meta&#39;s own <code>event_id</code> dedup (using the booking reference code) prevents double-counting in Meta&#39;s stream, but our record-back faithfully logs both attempts.</p>
+</li>
+<li><p><strong>Where in the code does this live?</strong></p>
+<ul>
+<li>Capture: <code>silkskyair-www/src/lib/analytics/session.ts</code> (extended; reused for UTM)</li>
+<li>Forwarding: <code>silkskyair-www/src/components/bookings/booking-floating-widget.ts</code> (<code>buildSubmissionPayload</code>) + <code>silkskyair-www/src/pages/api/bookings/submit.ts</code></li>
+<li>IF gate: <code>silkskyair-workflows/workflows/bookings/bookings-event.json</code> (<code>if-has-analytics-metadata</code>)</li>
+<li>Dispatcher + recording: <code>silkskyair-workflows/workflows/marketing/meta-capi-purchase.json</code> (<code>record-sent</code> / <code>record-failed</code> / <code>record-skipped</code>)</li>
+<li>Manager UI extension: <code>silkskyair-manager/app/(workspace)/bookings/_components/booking-detail-view.tsx</code> (Client Interaction section)</li>
+<li>Event types migration: <code>silkskyair-api/supabase/migrations/20260527120000_meta_capi_event_types.sql</code></li>
+</ul>
+</li>
+</ul>
+
+</article>
+</body>
+</html>

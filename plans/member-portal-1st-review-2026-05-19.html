@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Member Portal — 1st Review Implementation Plan</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Member Portal — 1st Review Implementation Plan</h1>
+<h2>Context</h2>
+<p>On 2026-05-19, Micheline / Panpaporn / Nuchada delivered a 12-page review of the SilkSky Member Portal (&quot;Member Portal 1st Review&quot;). The page-by-page extraction surfaced <strong>33 actionable items</strong> across login, weight capture, payment, check-in, add-passenger flow, amendment change-request emails, approval emails, and a &quot;Payment Successful&quot; bug on amended-but-unpaid bookings.</p>
+<p>The user (Peter) gave per-item responses confirming, refining, or rejecting each. This plan implements only those decisions.</p>
+<p><strong>Code scheme:</strong></p>
+<ul>
+<li><strong>Per-item codes — <code>MP1-Pxx-NN</code></strong> — <code>MP1</code> = Member Portal 1st Review; <code>Pxx</code> = page in the review PDF; <code>NN</code> = item index on that page. These map 1:1 back to the review document for traceability.</li>
+<li><strong>Per-workstream codes — <code>MP1-W01..W11</code></strong> — implementation groupings. Each workstream lists which <code>MP1-Pxx-NN</code> items it satisfies.</li>
+</ul>
+<p>The repo is the monorepo at <code>/Users/pmoelgaard/Workspaces/andaman-aerodrome</code>. Packages involved: <code>silkskyair-member</code>, <code>silkskyair-manager</code>, <code>silkskyair-api</code>, <code>silkskyair-workflows</code>, plus a new <code>silkskyair-docs</code> repo to create.</p>
+<hr>
+<h2>Review item code map (33 items)</h2>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Page</th>
+<th>Item</th>
+<th>User decision</th>
+<th>Workstream</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>MP1-P02-01</td>
+<td>2</td>
+<td>Remove password input + Sign In button</td>
+<td>Confirmed (URL-differentiator)</td>
+<td>W02</td>
+</tr>
+<tr>
+<td>MP1-P02-02</td>
+<td>2</td>
+<td>Remove &quot;Forgot password / Reset here&quot; link</td>
+<td>Confirmed</td>
+<td>W02</td>
+</tr>
+<tr>
+<td>MP1-P02-03</td>
+<td>2</td>
+<td>Magic link is the only login path</td>
+<td>Confirmed</td>
+<td>W02</td>
+</tr>
+<tr>
+<td>MP1-P03-01</td>
+<td>3</td>
+<td>Replace bucketed weight dropdown with exact numeric (kg)</td>
+<td>Confirmed (positive number)</td>
+<td>W03</td>
+</tr>
+<tr>
+<td>MP1-P03-02</td>
+<td>3</td>
+<td>Keep weight required</td>
+<td>Confirmed</td>
+<td>W03</td>
+</tr>
+<tr>
+<td>MP1-P03-03</td>
+<td>3</td>
+<td>Capture Advance Aviation team rationale in docs</td>
+<td>Confirmed</td>
+<td>W03 + W11</td>
+</tr>
+<tr>
+<td>MP1-P04-01</td>
+<td>4</td>
+<td>Auto-notify back office on payment success</td>
+<td>Confirmed</td>
+<td>W10</td>
+</tr>
+<tr>
+<td>MP1-P04-02</td>
+<td>4</td>
+<td>Channel = email only; recipient = <code>booking_manager</code> role</td>
+<td>Confirmed (email only)</td>
+<td>W10</td>
+</tr>
+<tr>
+<td>MP1-P05-01</td>
+<td>5</td>
+<td>Add &quot;Skip&quot; on Safety Briefing</td>
+<td><strong>Phase 2</strong> (check-in disabled in Phase 1)</td>
+<td>— (deferred)</td>
+</tr>
+<tr>
+<td>MP1-P05-02</td>
+<td>5</td>
+<td>Multi-language safety video assets</td>
+<td><strong>Phase 2</strong></td>
+<td>— (deferred)</td>
+</tr>
+<tr>
+<td>MP1-P05-03</td>
+<td>5</td>
+<td>Marked as Phase 2 candidate</td>
+<td>Acknowledged</td>
+<td>—</td>
+</tr>
+<tr>
+<td>MP1-P06-01</td>
+<td>6</td>
+<td>Remove entire check-in flow for Phase 1</td>
+<td>Confirmed</td>
+<td>W01</td>
+</tr>
+<tr>
+<td>MP1-P08-01</td>
+<td>8</td>
+<td>Show <strong>Paid amount</strong> in pricing breakdown</td>
+<td>Confirmed</td>
+<td>W04</td>
+</tr>
+<tr>
+<td>MP1-P08-02</td>
+<td>8</td>
+<td>Also show balance <strong>Due / Amount Payable</strong></td>
+<td>Confirmed (user extension)</td>
+<td>W04</td>
+</tr>
+<tr>
+<td>MP1-P08-03</td>
+<td>8</td>
+<td>THB-only Phase 1</td>
+<td>Confirmed</td>
+<td>W04</td>
+</tr>
+<tr>
+<td>MP1-P08-04</td>
+<td>8</td>
+<td>New <code>processing</code> booking state when amendment → payment-request</td>
+<td><strong>New requirement (user)</strong></td>
+<td>W06</td>
+</tr>
+<tr>
+<td>MP1-P08-05</td>
+<td>8</td>
+<td><code>PaymentRequestSent</code> transient event; <code>PaymentSuccessful</code> → <code>BookingPaidInFull</code> → restore status</td>
+<td><strong>New requirement (user)</strong></td>
+<td>W06</td>
+</tr>
+<tr>
+<td>MP1-P09-01</td>
+<td>9</td>
+<td>Customer confirmation email — date/time change</td>
+<td>Confirmed</td>
+<td>W05</td>
+</tr>
+<tr>
+<td>MP1-P09-02</td>
+<td>9</td>
+<td>Customer confirmation email — additional passenger</td>
+<td>Confirmed</td>
+<td>W05</td>
+</tr>
+<tr>
+<td>MP1-P09-03</td>
+<td>9</td>
+<td>&quot;Booking under review&quot; portal state is intentional context</td>
+<td>Confirmed</td>
+<td>— (no code)</td>
+</tr>
+<tr>
+<td>MP1-P10-01</td>
+<td>10</td>
+<td>Include payment info in approval email</td>
+<td>Confirmed</td>
+<td>W08</td>
+</tr>
+<tr>
+<td>MP1-P10-02</td>
+<td>10</td>
+<td>Provide payment option in member portal for approved amendments</td>
+<td>Confirmed</td>
+<td>W07 + W08</td>
+</tr>
+<tr>
+<td>MP1-P10-03</td>
+<td>10</td>
+<td>Pricing values in review are illustrative (test data)</td>
+<td>Confirmed</td>
+<td>— (no code)</td>
+</tr>
+<tr>
+<td>MP1-P10-04</td>
+<td>10</td>
+<td>No invoices sent (clarification)</td>
+<td>Confirmed</td>
+<td>— (no code)</td>
+</tr>
+<tr>
+<td>MP1-P10-05</td>
+<td>10</td>
+<td>Per-payment rows in Manager — paid flagged, unpaid show <strong>Open + Copy</strong> CTAs</td>
+<td><strong>New requirement (user)</strong></td>
+<td>W09</td>
+</tr>
+<tr>
+<td>MP1-P11-01</td>
+<td>11</td>
+<td>Bug — member portal must not show &quot;Payment Successful&quot; with unpaid amendment</td>
+<td>Confirmed</td>
+<td>W07</td>
+</tr>
+<tr>
+<td>MP1-P11-02</td>
+<td>11</td>
+<td>Surface payment option for unpaid amendment on member side</td>
+<td>Confirmed</td>
+<td>W07</td>
+</tr>
+<tr>
+<td>MP1-P11-03</td>
+<td>11</td>
+<td>Use <strong>authenticated</strong> member-side amendment payment flow (Option B)</td>
+<td>Confirmed</td>
+<td>W08</td>
+</tr>
+<tr>
+<td>MP1-P11-04</td>
+<td>11</td>
+<td>Document Booking Status mechanism exhaustively</td>
+<td>Confirmed</td>
+<td>W11</td>
+</tr>
+<tr>
+<td>MP1-P12-01</td>
+<td>12</td>
+<td>Remove green &quot;Check In Now&quot; banner (top + bottom row)</td>
+<td>Confirmed</td>
+<td>W01</td>
+</tr>
+<tr>
+<td>MP1-P12-02</td>
+<td>12</td>
+<td>Remove yellow &quot;Complete Info / Check In Now&quot; warning banner</td>
+<td>Confirmed</td>
+<td>W01</td>
+</tr>
+<tr>
+<td>MP1-P12-03</td>
+<td>12</td>
+<td>Remove Confirm Check-In step + Complete Check-In button</td>
+<td>Confirmed</td>
+<td>W01</td>
+</tr>
+<tr>
+<td>MP1-P12-04</td>
+<td>12</td>
+<td>Reinforces MP1-P06-01 — check-in removal must cover every surface</td>
+<td>Confirmed</td>
+<td>W01</td>
+</tr>
+</tbody></table>
+<p>Items with no work: P05-01..03 (deferred), P09-03 (acknowledgment), P10-03 (acknowledgment), P10-04 (acknowledgment). All others are covered by a workstream.</p>
+<hr>
+<h2>Workstreams</h2>
+<p>Each workstream lists its review-item coverage in brackets.</p>
+<hr>
+<h3>MP1-W01 — Check-in disable</h3>
+<p><strong>Covers:</strong> MP1-P06-01, MP1-P12-01, MP1-P12-02, MP1-P12-03, MP1-P12-04</p>
+<p><strong>Decision:</strong> Comment out (don&#39;t delete) the entire check-in flow + preflight steps. Will be re-enabled later. Block-comment style marked <code>CHECKIN-DISABLED-2026-05</code>.</p>
+<p><strong>Approach:</strong> Files inside the check-in tree get a route/page/module stub at the top + line-commented (<code>// </code>) original body below a <code>BEGIN ORIGINAL</code> marker (block <code>/* */</code> wraps fail because the original code contains nested <code>*/</code>). Entry points outside the tree use surgical edits: <code>false &amp;&amp;</code> short-circuit on the JSX widget, comment out the <code>booking_checkin_state</code> query, comment out the two middleware bypasses.</p>
+<p><strong>Critical files (silkskyair-member):</strong></p>
+<ul>
+<li>Surgical edits: <code>app/(workspace)/bookings/_components/booking-detail-content.tsx</code>, <code>app/(workspace)/bookings/[bookingId]/page.tsx</code>, <code>middleware.ts</code>.</li>
+<li>Stub + line-comment: <code>app/bookings/[bookingId]/checkin/page.tsx</code>, <code>checkin-flow.tsx</code>, all 6 <code>steps/step-*.tsx</code>, <code>app/api/bookings/[bookingId]/checkin/route.ts</code>, <code>app/api/bookings/[bookingId]/checkin/complete/route.ts</code>, <code>app/checkin/[bookingId]/route.ts</code>, <code>lib/modules/bookings/checkin-links.ts</code>. (15 files.)</li>
+</ul>
+<p><strong>Verification:</strong> Booking detail page shows no &quot;Check In Now&quot; banner. <code>/bookings/{id}/checkin</code> returns 404. <code>grep -rln CHECKIN-DISABLED-2026-05 silkskyair-member</code> returns 15 hits. Build passes.</p>
+<hr>
+<h3>MP1-W02 — Magic-link-only auth for member portal</h3>
+<p><strong>Covers:</strong> MP1-P02-01, MP1-P02-02, MP1-P02-03</p>
+<p><strong>Decision:</strong> Differentiator based on return URI containing token <code>member</code> or hostname <code>my.silkskyair</code> → magic-link only. Otherwise both modes.</p>
+<p><strong>Approach:</strong> Member portal has its own sign-in form at <code>silkskyair-member/components/auth/sign-in-form.tsx</code> (separate from <code>silkskyair-account</code>). Add a <code>magicLinkOnly</code> prop + URL-detection helper. Hide password divider (lines 205–224), password section, and &quot;Forgot password&quot; link when true.</p>
+<p><strong>Critical files:</strong></p>
+<ul>
+<li>New: <code>silkskyair-member/lib/auth/url-context.ts</code> — <code>isMemberPortalContext(url: string | null): boolean</code>.</li>
+<li><code>silkskyair-member/components/auth/sign-in-form.tsx</code> — accept <code>magicLinkOnly</code>; gate the gated sections.</li>
+<li><code>silkskyair-member/app/(auth)/sign-in/page.tsx</code> — read <code>redirect_to</code>, run helper, pass prop. Default to <code>true</code> for this app; helper exists for forward-compatibility.</li>
+</ul>
+<p><strong>Verification:</strong> <code>/sign-in?redirect_to=/bookings/xyz</code> → magic-link-only form. Submit, receive email, complete sign-in via existing <code>/api/auth/verify</code> flow.</p>
+<hr>
+<h3>MP1-W03 — Positive-number weight constraint</h3>
+<p><strong>Covers:</strong> MP1-P03-01, MP1-P03-02, MP1-P03-03</p>
+<p><strong>Decision:</strong> Replace bucketed weight-range dropdown with a positive numeric input (kg). Field stays required. Capture Advance Aviation rationale in <code>silkskyair-docs</code>.</p>
+<p><strong>Approach:</strong> Current field uses <code>WeightRangeSelector</code> from <code>@ssa/ui</code>. Replace with <code>&lt;input type=&quot;number&quot;&gt;</code> plus validation: positive, ≤ sanity max (suggest 250 kg — <strong>open question</strong> below). DB column already <code>numeric</code>.</p>
+<p><strong>Critical files:</strong></p>
+<ul>
+<li><code>silkskyair-member/lib/modules/bookings/passenger-validation.ts</code> — change <code>validateWeight()</code> from bucket-id to positive-numeric.</li>
+<li><code>silkskyair-member/app/(workspace)/bookings/_components/passenger-edit-drawer.tsx</code> — replace selector with number input.</li>
+<li>(Doc-side, see MP1-W11) — note Advance Aviation rationale in <code>silkskyair-docs/docs/passenger-data.md</code> or similar.</li>
+</ul>
+<p><strong>Verification:</strong> Edit drawer accepts <code>72.5</code>, rejects 0 / negative / non-numeric. Saved value stored in <code>booking_passengers.weight_kg</code> as numeric.</p>
+<hr>
+<h3>MP1-W04 — Add-passenger pricing: Paid + Due + Total</h3>
+<p><strong>Covers:</strong> MP1-P08-01, MP1-P08-02, MP1-P08-03</p>
+<p><strong>Decision:</strong> In the Add Passengers modal, display Cost-per-passenger · Additional cost · <strong>Paid amount</strong> · <strong>Due amount / Amount Payable</strong> · Total.</p>
+<p><strong>Approach:</strong> Extend <code>/api/bookings/[bookingId]/add-passenger-pricing</code> to return <code>paidAmount</code> and <code>dueAmount</code>. Add a reusable balance helper. Add two rows in the modal JSX (currently lines 217–260).</p>
+<p><strong>Critical files:</strong></p>
+<ul>
+<li><code>silkskyair-member/app/api/bookings/[bookingId]/add-passenger-pricing/route.ts</code> — extend response.</li>
+<li>New helper: <code>silkskyair-member/lib/modules/bookings/balance.ts</code> — <code>computeBookingBalance(bookingId): { total, paid, due }</code>. Reused by MP1-W07 and MP1-W09.</li>
+<li><code>silkskyair-member/app/(workspace)/bookings/_components/add-passenger-modal.tsx</code> — add the two rows; format via existing THB formatter.</li>
+</ul>
+<p><strong>Verification:</strong> On a ฿17,000 paid booking, Add Passengers modal shows: Cost/pax ฿8,500 · Additional ฿8,500 · <strong>Paid ฿17,000</strong> · <strong>Due ฿8,500</strong> · New total ฿25,500.</p>
+<hr>
+<h3>MP1-W05 — Customer confirmation emails for change requests</h3>
+<p><strong>Covers:</strong> MP1-P09-01, MP1-P09-02</p>
+<p><strong>Decision:</strong> Customer receives a &quot;We have received your request&quot; email when submitting a date/time change OR an additional-passenger request.</p>
+<p><strong>Approach:</strong> Two new templates in the change-request migration pattern. Wire <code>bookings-event.json</code> to call the existing <code>booking-member-email</code> workflow on <code>AmendmentRequested</code> events (sub-typed by amendment kind from metadata).</p>
+<p><strong>Critical files:</strong></p>
+<ul>
+<li>New migration <code>silkskyair-api/supabase/migrations/&lt;TS&gt;_member_amendment_received_templates.sql</code> — two templates: <code>booking-change-request-received-member-date-time</code>, <code>booking-change-request-received-member-add-passenger</code>. Follow layout of existing <code>booking-change-request-approved-member</code> (<code>20260317100000_booking_change_request_types.sql</code>).</li>
+<li><code>silkskyair-workflows/workflows/bookings/bookings-event.json</code> — add Switch branches dispatching to <code>booking-member-email</code> with the new template slugs.</li>
+</ul>
+<p><strong>Verification:</strong> Submit date-change → email arrives within seconds. Submit add-passenger → email arrives.</p>
+<hr>
+<h3>MP1-W06 — Booking status state machine update</h3>
+<p><strong>Covers:</strong> MP1-P08-04, MP1-P08-05 (+ foundational for MP1-W07, MP1-W08, MP1-W09)</p>
+<p><strong>Decision (user-specified):</strong></p>
+<ul>
+<li>Booking is Amended → Payment Request sent → booking enters <strong><code>processing</code></strong> state.</li>
+<li><code>PaymentRequestSent</code> is a <strong>transient</strong> event — does NOT change deterministic state.</li>
+<li>On <code>PaymentSuccessful</code>, if the full balance is settled, emit <code>BookingPaidInFull</code> — advances booking back to its prior status (<code>confirmed</code> or <code>completed</code>).</li>
+</ul>
+<p><strong>Approach:</strong></p>
+<ol>
+<li>Add <code>processing</code> to <code>booking_statuses</code> table.</li>
+<li>Add <code>is_state_changing boolean DEFAULT true</code> to <code>booking_event_types</code>; mark transient events <code>false</code>.</li>
+<li>Add event types: <code>PaymentRequestSent</code> (transient), <code>PaymentSuccessful</code> (transient), <code>BookingAmended</code> (audit, used to derive transition into processing). <code>BookingPaidInFull</code> already exists — repurpose semantics so it always means &quot;fully paid, settle to prior pre-processing state&quot;.</li>
+<li>Update <code>booking_status_from_event_type()</code> to walk only <code>is_state_changing=true</code> events; map <code>BookingAmended</code> with surcharge → <code>processing</code>; <code>BookingPaidInFull</code> → restore-prior-status.</li>
+<li>Update <code>booking_amendment_approve()</code> RPC: when surcharge &gt; 0, insert a <code>payment_requests</code> row, insert <code>PaymentRequestSent</code>, transition booking to <code>processing</code>.</li>
+<li>Update <code>silkskyair-workflows/workflows/payments/omise.json</code> to insert <code>PaymentSuccessful</code> after the existing <code>supabase-rpc-success</code> node (line 260), then call a balance-check RPC that emits <code>BookingPaidInFull</code> when paid = due.</li>
+</ol>
+<p><strong>Critical files (all new migrations under <code>silkskyair-api/supabase/migrations/</code>):</strong></p>
+<ul>
+<li><code>&lt;TS&gt;_add_processing_status.sql</code></li>
+<li><code>&lt;TS&gt;_event_state_changing_flag.sql</code></li>
+<li><code>&lt;TS&gt;_payment_lifecycle_event_types.sql</code></li>
+<li><code>&lt;TS&gt;_processing_state_transitions.sql</code></li>
+<li><code>&lt;TS&gt;_amendment_approve_payment_request.sql</code></li>
+<li><code>silkskyair-workflows/workflows/payments/omise.json</code> — emit + balance check.</li>
+</ul>
+<p><strong>Verification:</strong> SQL trace: pending → approved → confirmed (after pay) → processing (after amendment with surcharge) → confirmed (after surcharge pay). Documented in MP1-W11 doc.</p>
+<hr>
+<h3>MP1-W07 — Member portal: &quot;Payment Successful&quot; bug + amendment-payment CTA</h3>
+<p><strong>Covers:</strong> MP1-P11-01, MP1-P11-02, MP1-P10-02 (member-side portion)</p>
+<p><strong>Decision:</strong> Don&#39;t show &quot;Payment Successful&quot; / &quot;Confirmed and paid&quot; when an amendment is unpaid. Show a Pay-now CTA for that amendment.</p>
+<p><strong>Approach:</strong> Depends on MP1-W06. Once the booking is in <code>processing</code>, the existing <code>statusConfig</code> map in <code>booking-detail-content.tsx</code> (lines 102–134) needs a <code>processing</code> entry. Add an amendment-payment widget block (mirroring the existing <code>approved</code> Payment widget at lines 139–157) linking to the screen built in MP1-W08.</p>
+<p><strong>Critical files:</strong></p>
+<ul>
+<li><code>silkskyair-member/app/(workspace)/bookings/_components/booking-detail-content.tsx</code> — add <code>processing</code> entry; add amendment-payment widget.</li>
+<li><code>silkskyair-member/lib/modules/bookings/normalizers.ts</code> (line 205) — fix <code>isPaidInFull</code> so it only returns true when no outstanding <code>payment_requests</code> exist.</li>
+<li>i18n string files (<code>silkskyair-member/lib/i18n/...</code>) — localized labels and description for <code>processing</code>.</li>
+</ul>
+<p><strong>Verification:</strong> Force a booking to <code>processing</code> via SQL → reload member portal → &quot;Payment Required&quot; badge + Pay-now CTA. Pay → status auto-reverts.</p>
+<hr>
+<h3>MP1-W08 — Authenticated amendment-payment screen + approval email link</h3>
+<p><strong>Covers:</strong> MP1-P10-01, MP1-P10-02 (email portion), MP1-P11-03</p>
+<p><strong>Decision (Option B):</strong> New authenticated member-side screen at <code>/bookings/[bookingId]/amendments/[paymentRequestId]/pay</code>. Approval email contains a deep link to it.</p>
+<p><strong>Approach:</strong></p>
+<ol>
+<li>Add FK columns <code>booking_id</code> + <code>amendment_event_id</code> to <code>payments.payment_requests</code>.</li>
+<li>New page renders the existing <code>PaymentCheckout</code> component with the amendment amount + <code>paymentRequestId</code>. Auth-checked.</li>
+<li>Update <code>booking-change-request-approved-member</code> template to include <code>{{amendment_payment_url}}</code>.</li>
+<li><code>bookings-event.json</code> constructs the URL when firing approval email.</li>
+</ol>
+<p><strong>Critical files:</strong></p>
+<ul>
+<li>New: <code>silkskyair-member/app/(workspace)/bookings/[bookingId]/amendments/[paymentRequestId]/pay/page.tsx</code>.</li>
+<li>New migration <code>&lt;TS&gt;_payment_requests_booking_link.sql</code> — FK columns.</li>
+<li>New migration <code>&lt;TS&gt;_approval_email_payment_link.sql</code> — UPSERT template body with <code>{{amendment_payment_url}}</code> placeholder.</li>
+<li><code>silkskyair-workflows/workflows/bookings/bookings-event.json</code> — pass URL to template context.</li>
+</ul>
+<p><strong>Verification:</strong> Approve amendment with surcharge → email arrives with Pay-now button → click → authenticated payment screen with correct amount → pay → booking returns to <code>confirmed</code>.</p>
+<hr>
+<h3>MP1-W09 — Per-payment rows in Manager UI</h3>
+<p><strong>Covers:</strong> MP1-P10-05</p>
+<p><strong>Decision:</strong> Each payment as a separate row. Paid ones flagged; unpaid ones show Open + Copy CTAs.</p>
+<p><strong>Approach:</strong> Reuse the list-iteration pattern from <code>silkskyair-manager/app/(workspace)/payments/_components/payments-manager.tsx</code> (lines 61–105). Query all <code>payment_requests</code> linked to the booking (FK from MP1-W08) plus the original booking <code>payment_intent</code>.</p>
+<p><strong>Critical files:</strong></p>
+<ul>
+<li><code>silkskyair-manager/app/(workspace)/bookings/_components/booking-payment-section.tsx</code> — replace single badge + single payment link with a list.</li>
+<li>Extend <code>silkskyair-manager/lib/modules/bookings/payment-links.ts</code> — <code>buildPaymentRequestLink(paymentRequestId)</code>; pattern <code>${MEMBER_PORTAL_URL}/pay/request/${id}</code> (already used by <code>payments-manager.tsx</code> line 105).</li>
+<li>New: <code>silkskyair-manager/app/api/bookings/[bookingId]/payments/route.ts</code> — returns aggregated list.</li>
+</ul>
+<p><strong>Verification:</strong> Manager opens a booking with paid original + unpaid amendment → two rows displayed. Copy → link on clipboard. Open → opens to amendment payment screen.</p>
+<hr>
+<h3>MP1-W10 — Back-office email on payment success</h3>
+<p><strong>Covers:</strong> MP1-P04-01, MP1-P04-02</p>
+<p><strong>Decision:</strong> Email only.</p>
+<p><strong>Approach:</strong> Mostly already wired. <code>bookings-event.json</code> (lines 295, 320) already routes <code>BookingPaidInFull</code> / <code>BookingConfirmed</code> to <code>booking-manager-email</code> (which sends to <code>booking_manager</code> role via <code>get_users_with_role</code> RPC). Verification + template confirmation only.</p>
+<p><strong>Critical files:</strong></p>
+<ul>
+<li>Verify <code>silkskyair-workflows/workflows/notifications/booking-manager-email.json</code> (lines 96–185) is operational.</li>
+<li>Confirm an email template suitable for payment-success exists; create one if missing.</li>
+<li>Ops: confirm <code>booking_manager</code> role membership in production.</li>
+</ul>
+<p><strong>Verification:</strong> Staging payment → back-office user receives email.</p>
+<hr>
+<h3>MP1-W11 — <code>silkskyair-docs</code> repo + Booking Status reference doc</h3>
+<p><strong>Covers:</strong> MP1-P11-04, MP1-P03-03 (Advance Aviation rationale capture)</p>
+<p><strong>Decision (user-specified):</strong> New sibling project <code>silkskyair-docs</code>, local <code>git init</code>. Canonical home for the Booking Status doc and any future cross-cutting docs.</p>
+<p><strong>Approach:</strong> Create <code>~/Workspaces/andaman-aerodrome/silkskyair-docs/</code>. <code>git init</code>. Write <code>docs/booking-status.md</code> capturing current + post-MP1-W06 state machine with code citations.</p>
+<p><strong>Critical files (new repo):</strong></p>
+<ul>
+<li><code>silkskyair-docs/README.md</code> — top-level guide.</li>
+<li><code>silkskyair-docs/docs/booking-status.md</code> — status enum, event-type registry, transition rules, transient vs deterministic events, amendment lifecycle, per-payment model, gaps closed by MP1-W06/W08, citations into the monorepo.</li>
+<li><code>silkskyair-docs/docs/passenger-data.md</code> (optional) — captures Advance Aviation weight rationale (MP1-P03-03).</li>
+<li><code>silkskyair-docs/.gitignore</code> — <code>.DS_Store</code>, <code>node_modules/</code>.</li>
+<li>Initial commit: <code>chore: initialise silkskyair-docs</code>.</li>
+</ul>
+<p><strong>Verification:</strong> <code>cd silkskyair-docs &amp;&amp; git log --oneline</code> shows initial commit. Doc renders in any Markdown viewer.</p>
+<hr>
+<h2>Recommended phasing</h2>
+<p><strong>Phase 1 — low-risk trim + setup (~1–2 days):</strong>
+MP1-W01 → MP1-W03 → MP1-W02 → MP1-W11.</p>
+<p><strong>Phase 2 — amendment-payment lifecycle (~5–10 days, dependency-ordered):</strong>
+MP1-W06 (state machine) → MP1-W08 (amendment payment screen + email) → MP1-W04 (paid/due/total) → MP1-W07 (member UI fix) → MP1-W09 (manager per-payment rows) → MP1-W05 (customer emails) → MP1-W10 (verify back-office email).</p>
+<p>MP1-W06 is the lynchpin — every later workstream assumes <code>processing</code> state exists and amendment payments are tracked as separate <code>payment_requests</code> rows.</p>
+<hr>
+<h2>End-to-end verification scenario</h2>
+<p>A single scripted scenario exercising every workstream, with item-code annotations:</p>
+<ol>
+<li><strong>Magic-link sign-in</strong> at <code>/sign-in?redirect_to=/bookings/xyz</code> → no password field. [MP1-W02 → MP1-P02-01/02/03]</li>
+<li><strong>No &quot;Check In Now&quot; banner</strong> anywhere on the booking detail page. [MP1-W01 → MP1-P06-01, MP1-P12-01/02/03/04]</li>
+<li><strong>Edit passenger</strong> → weight field is numeric input; saves <code>72.5</code>. [MP1-W03 → MP1-P03-01/02]</li>
+<li><strong>Open Add Passengers modal</strong> → see Cost · Additional · Paid · Due · New total. [MP1-W04 → MP1-P08-01/02/03]</li>
+<li><strong>Submit add-passenger request</strong> → customer receives confirmation email. [MP1-W05 → MP1-P09-02]</li>
+<li><strong>Manager approves</strong> amendment with surcharge → booking status flips to <code>processing</code>. [MP1-W06 → MP1-P08-04]</li>
+<li><strong>Customer receives approval email</strong> with Pay-now link → click → authenticated payment screen at <code>/bookings/[id]/amendments/[paymentRequestId]/pay</code>. [MP1-W08 → MP1-P10-01, MP1-P11-03]</li>
+<li><strong>Pay</strong> via Omise → <code>PaymentSuccessful</code> → balance-check → <code>BookingPaidInFull</code> → status returns to <code>confirmed</code>. [MP1-W06 → MP1-P08-05]</li>
+<li><strong>Manager booking-payment section</strong> shows two rows: original (Paid) + amendment (Paid). [MP1-W09 → MP1-P10-05]</li>
+<li><strong>Back-office user receives</strong> payment-success email for surcharge. [MP1-W10 → MP1-P04-01/02]</li>
+<li><strong>Booking Status doc</strong> in <code>silkskyair-docs</code> reflects the observed behaviour. [MP1-W11 → MP1-P11-04]</li>
+</ol>
+<hr>
+<h2>Open questions (small, won&#39;t block Phase 1 start)</h2>
+<ol>
+<li><strong>MP1-W03 weight upper bound</strong> — &quot;positive number&quot; agreed; what max (250 kg suggested for sanity)?</li>
+<li><strong>MP1-W06 <code>BookingPaidInFull</code> target</strong> — user said &quot;back to Completed&quot; verbatim. Does that mean literally <code>completed</code>, or restore-to-prior-status (which would be <code>confirmed</code> for a future flight and <code>completed</code> for a past one)? Affects <code>booking_status_from_event_type()</code> mapping.</li>
+<li><strong>MP1-W11 <code>silkskyair-docs</code> remote</strong> — local <code>git init</code> only, or also create <code>ANDAMAN-AERODROME/silkskyair-docs</code> on GitHub and push?</li>
+</ol>
+<p>These can be answered when the affected workstreams actually start; they don&#39;t block plan approval.</p>
+
+</article>
+</body>
+</html>

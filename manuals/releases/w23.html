@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>W23 Release Manual</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>W23 Release Manual</h1>
+<p>Features shipped in the W23 release across the BackOffice and Partner Portal. Each entry below links to the (release-agnostic) feature manual under <strong>Manuals by Domain</strong>.</p>
+<p>The matching W23 work plan and per-feature acceptance gates are tracked in <code>silkskyair-docs/plans/w23-work-plan.md</code>.</p>
+<h2>Member Portal</h2>
+<ul>
+<li><a href="../domains/members/no-checkin.html">Check-in is not part of Phase 1</a> — <strong>F2.1 MP1-W01</strong> disables online check-in in the Member Portal. The check-in page, public magic-link entry, and check-in API all return 404; the booking detail page no longer renders the Check In Now / Complete Info banners. Every touched file carries the <code>CHECKIN-DISABLED-2026-05</code> marker so Phase 2 can reactivate cleanly.</li>
+<li><a href="../domains/members/magic-link-auth.html">Sign In with Magic Link</a> — <strong>F2.2 MP1-W02</strong> makes Member Portal sign-in magic-link only. The <code>/sign-in</code> page renders an email field + Send Magic Link button only; password input, Forgot Password, and the &quot;or sign in with password&quot; toggle are hidden. Policy centralized in <code>lib/auth/url-context.ts</code>. Complex E2E walks the real n8n execution to extract the issued verify token and round-trip it through the verify endpoint.</li>
+</ul>
+<h2>Bookings</h2>
+<ul>
+<li><a href="../domains/bookings/cancellation-flow.html">Cancellation Flow (Partner-initiated)</a> — <strong>F1.15 R20</strong> wires partner-initiated cancellations end-to-end: a <code>BookingCancellationRequested</code> event fans out to a banner on the partner detail page, a realtime in-app notification + bell badge for every back-office <code>booking_manager</code>, a manager email, and (new in W23) a customer acknowledgement email.</li>
+<li><a href="../domains/bookings/email-verification.html">Booking Email Verification (Back-office)</a> — <strong>F1.16 R21</strong> adds per-booking lead-pax email verification: an amber/green badge on booking cards and the detail page, a 6-digit OTP drawer (auto-advance, paste-fill, &quot;Send new code&quot;), and a Manager API proxy to the <code>verify</code> edge function. Distinct from the member-account email badge; pairs with the api OTP-email migration (<code>3b0a3e8</code>) and the n8n booking-verification-email workflow (<code>81e51d4</code>).</li>
+</ul>
+<h2>Partners</h2>
+<ul>
+<li><a href="../domains/partners/create.html">Create a Partner (Back-office)</a> — <strong>F1.1 R1</strong> fixes the Manager partners-create drawer so it stays open in edit mode after Save, sets the URL <code>?partner=&lt;id&gt;</code>, and rehydrates the same record on refresh.</li>
+<li><a href="../domains/partners/pay-with-card.html">Pay with Card (Partner Portal)</a> — <strong>F1.13 R17 + R18</strong> wires Omise card payment end-to-end on the Partner Portal&#39;s booking detail page: drawer-based payment that survives the Omise 3-D Secure / <code>acs=false</code> bounce by auto-reopening into the same Direct or Net Payment view and resuming polling against the existing intent.</li>
+<li><a href="../domains/partners/edit-passenger.html">Edit Passenger (Partner Portal)</a> — <strong>F1.10 R12 + F2.3 MP1-W03</strong> wires the inline passenger edit form: nationality via <code>&lt;NationalitySelector&gt;</code> (ISO-2 codes the FK accepts), weight as a positive <code>numeric(5,2)</code> kg value (FK to <code>weight_ranges</code> dropped; CHECK constraints enforce positive + ≤ 250). Member Portal also swapped to the numeric input in the same change.</li>
+<li><a href="../domains/partners/dashboard-cleanup.html">Partner Home Dashboard</a> — <strong>F1.5 R5</strong> trims the portal home page to the two day-to-day widgets: <strong>Available Tours</strong> (left, replacing the Agreement widget) + <strong>Latest Bookings</strong> (right). The Commission Rate card and Performance Overview chart were removed (<code>R5-DISABLED-2026-05</code>), and the page no longer fetches performance metrics on load.</li>
+<li><a href="../domains/partners/commission-breakdown.html">Commission &amp; Payment Breakdown</a> — <strong>F1.12</strong> computes the full per-booking money split for both payment directions: VAT extracted from the inclusive total (× 7/107), commission on the service-excl-VAT amount, 3% withholding tax (Full Payment only), and VAT-on-commission (VAT-registered partners only), ending in net-to-partner / net-to-operator.</li>
+<li><a href="../domains/partners/indirect-payment-parity.html">Net Payment Amount &amp; PromptPay Parity</a> — <strong>F1.14 R19</strong> shows the <strong>TOTAL AMOUNT</strong> card and the <strong>PromptPay amount</strong> in <em>both</em> payment modes; previously both were Direct-only, leaving the Net Payment dialog without the figure.</li>
+<li><a href="../domains/partners/archive-clients.html">Archive a Client</a> — <strong>F1.17 R22</strong> adds a one-way, idempotent client archive: a <code>⋮</code> menu → <strong>Archive</strong> → confirm dialog → <code>POST /api/members/[id]/archive</code> (org-ownership gated, <code>api.archive_member</code> RPC), plus a <strong>Show archived</strong> toggle and an Archived badge. Pairs with silkskyair-api <code>e3813e5</code>.</li>
+<li><a href="../domains/partners/label-updates.html">Partner Portal Label &amp; Terminology Updates (W23)</a> — <strong>F1.3 / F1.4 / F1.7 / F1.9 / F1.11 (+ R8, R10)</strong> — the string-only relabels from the Round 3 review, grouped: Members → <strong>Clients</strong>, Invite Member → <strong>Invite Team</strong>, Direct/Indirect Payment → <strong>Full / Net Payment</strong>, Confirm → <strong>Submit Booking</strong>, a humanised role formatter (<code>organization_manager</code> → <strong>Organization Manager</strong>), and more. Landed via the api i18n migration (<code>202b619</code>) + the BackOffice rename (<code>042c7b2</code>).</li>
+</ul>
+<h2>Meta CAPI</h2>
+<ul>
+<li><a href="../domains/meta-capi/attribution-and-dispatcher.html">FB Attribution Capture, Dispatch &amp; Recording</a> — <strong>F3.1 + F3.2 + F3.3</strong> captures Facebook attribution at the WebSite, forwards it through the booking submission, and dispatches a server-side Purchase event to Meta CAPI for every confirmed booking, recording every dispatch outcome as a <code>MetaCapi*</code> booking event.</li>
+</ul>
+
+</article>
+</body>
+</html>

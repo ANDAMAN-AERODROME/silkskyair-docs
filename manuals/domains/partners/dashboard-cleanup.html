@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Partner Home Dashboard (Partner Portal)</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Partner Home Dashboard (Partner Portal)</h1>
+<blockquote>
+<p><strong>App:</strong> Partner Portal
+<strong>Who uses it:</strong> Partner staff who land on the portal home page after signing in.
+<strong>What it does:</strong> The home dashboard now leads with the two things partner staff act on every day — the tours they can sell and their latest bookings. The old Commission Rate card and Performance Overview chart have been removed, and the Agreement widget has been replaced by an Available Tours widget.</p>
+</blockquote>
+<h2>Before you start</h2>
+<ul>
+<li><strong>Local URL:</strong> <code>http://localhost:3050/home</code> (staging / production: the same path on <code>staging.partner.silkskyair.com</code> / <code>partner.silkskyair.com</code>).</li>
+<li><strong>Account:</strong> Sign in with a Partner Portal account associated with a partner organization (e.g. <code>peter@andaman.co.th</code> for Advance Aviation on local).</li>
+<li><strong>Optional:</strong> at least one published tour assigned to your partner org and one recent booking, so both widgets render with data instead of their empty states.</li>
+</ul>
+<h2>Step-by-step</h2>
+<h3>Step 1 — Open the home dashboard</h3>
+<p>Sign in. The portal lands on <code>/home</code> by default.</p>
+<p><img src="../../../screenshots/partners/dashboard-cleanup/01-dashboard.png" alt="Step 1 — Partner home dashboard"></p>
+<p><strong>What you should see:</strong> the page title and subtitle at the top, then a two-column layout: <strong>Available Tours</strong> on the left and <strong>Latest Bookings</strong> on the right. There is <strong>no</strong> Commission Rate card and <strong>no</strong> Performance Overview chart anywhere on the page.</p>
+<h3>Step 2 — Available Tours (left column)</h3>
+<p>The left widget lists the tours your organization can sell right now.</p>
+<p><img src="../../../screenshots/partners/dashboard-cleanup/02-available-tours-widget.png" alt="Step 2 — Available Tours widget"></p>
+<p><strong>What you should see:</strong> a card titled with the tours heading, listing each available tour with its key details. This replaces the old Agreement widget that used to sit here. If your org has no published tours assigned, the widget shows its empty state instead of rows.</p>
+<h3>Step 3 — Latest Bookings (right column)</h3>
+<p>The right widget surfaces your most recent bookings so staff can jump straight into one.</p>
+<p><img src="../../../screenshots/partners/dashboard-cleanup/03-latest-bookings-widget.png" alt="Step 3 — Latest Bookings widget"></p>
+<p><strong>What you should see:</strong> a card listing the most recent bookings for your organization, each row linking through to its booking detail page. With no bookings yet, the widget shows its empty state.</p>
+<h2>Tips &amp; common questions</h2>
+<ul>
+<li><strong>Where did the Commission Rate card go?</strong> It was removed in W23 (F1.5, marked <code>R5-DISABLED-2026-05</code> in the code). Commission is now shown where it&#39;s actionable — inside each booking&#39;s payment breakdown. See <a href="commission-breakdown.html">Commission &amp; Payment Breakdown</a>.</li>
+<li><strong>Where did the Performance Overview chart go?</strong> Also removed in F1.5. The dashboard no longer fetches performance metrics on load, which makes the home page faster and focuses it on day-to-day actions.</li>
+<li><strong>The Available Tours widget is empty.</strong> Your organization has no published tours assigned. Tours are assigned to partners in the BackOffice; once a tour is live and linked to your org it appears here.</li>
+<li><strong>Can I still see my commission rate?</strong> Yes — open any booking with commission and expand the payment breakdown. The rate is applied there per booking.</li>
+</ul>
+<h2>Reference</h2>
+<ul>
+<li><strong>Code:</strong> <a href="https://github.com/">silkskyair-partner/app/home/page.tsx</a> — two-column grid (<code>data-home-grid</code>), <code>&lt;AvailableToursWidget&gt;</code> (left) + <code>&lt;LatestBookingsWidget&gt;</code> (right). The <code>ReportingWidget</code> (Commission Rate + Performance Overview) and its <code>fetchPerformance</code> loader were removed; disabled blocks are tagged <code>R5-DISABLED-2026-05</code>.</li>
+<li><strong>Shipped:</strong> W23 — partner commit <code>1e30ee9</code> (F1.5).</li>
+</ul>
+
+</article>
+</body>
+</html>

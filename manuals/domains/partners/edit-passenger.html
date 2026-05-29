@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Edit Passenger (Partner Portal)</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Edit Passenger (Partner Portal)</h1>
+<blockquote>
+<p><strong>App:</strong> Partner Portal
+<strong>Who uses it:</strong> Partner staff updating a passenger&#39;s details on an existing booking — names, date of birth, nationality, exact weight.
+<strong>What it does:</strong> Inline-edit a passenger card on the booking detail page. Nationality is picked from a searchable selector bound to the <code>public.countries</code> catalogue (ISO-2 codes — the FK is always satisfiable). Weight is captured as an exact number in kg, validated server-side as a positive value at or under 250 kg.</p>
+</blockquote>
+<h2>Before you start</h2>
+<ul>
+<li><strong>Local URL:</strong> <code>http://localhost:3050</code> (staging / production: same paths on <code>staging.partner.silkskyair.com</code> / <code>partner.silkskyair.com</code>).</li>
+<li><strong>Account:</strong> Partner Portal user attached to the partner organization that owns the booking.</li>
+<li><strong>Prerequisites:</strong> a booking in a status that allows amendments (<code>is_amendable = true</code>). The edit pencil is only rendered for amendable bookings.</li>
+</ul>
+<h2>Background — what was broken before W23</h2>
+<ul>
+<li>The <strong>nationality</strong> field used to be a free-text <code>&lt;input&gt;</code>. Partners typed values like &quot;Thai&quot; or &quot;Thailand&quot; that the <code>public.countries(code)</code> FK couldn&#39;t resolve, blocking save with an opaque database error. <strong>F1.10 R12</strong> wired in a <code>&lt;NationalitySelector&gt;</code> whose options are loaded from <code>/api/countries</code> — every option resolves to an ISO-2 code the FK always accepts.</li>
+<li>The <strong>weight</strong> field was a categorical bucket FK to <code>weight_ranges</code> (<code>under_50</code>, <code>50_90</code>, <code>90_110</code>, <code>over_110</code>, <code>prefer_not_to_say</code>). The Partner Portal UI had already swapped to <code>&lt;input type=&quot;number&quot;&gt;</code> a few releases ago, but the DB schema was never aligned — typing a number produced a 500 from the FK constraint. <strong>F2.3 MP1-W03</strong> (landed alongside F1.10) migrated the column to <code>numeric(5,2)</code> with positive + 250 kg sanity checks. The Member Portal swapped to the same numeric input in the same release.</li>
+</ul>
+<h2>Step-by-step</h2>
+<h3>Step 1 — Open the passenger card</h3>
+<p>From the booking detail page, expand the <strong>Passengers</strong> section. Each passenger renders as a card with name, nationality (ISO-2 code badge), weight badge, date-of-birth badge, and a pencil icon (top right) for editing.</p>
+<p><img src="../../../screenshots/partners/edit-passenger/01-passenger-card-collapsed.png" alt="Step 1 — Passenger card collapsed"></p>
+<p><strong>What you should see:</strong> the lead passenger card (or the one you want to edit) with the existing values shown as small grey badges under the name, and a pencil icon at the top-right of the card.</p>
+<h3>Step 2 — Click the pencil to enter edit mode</h3>
+<p>The card expands into an inline form with five fields: first name, last name, date of birth, nationality (selector), weight (number, kg).</p>
+<p><img src="../../../screenshots/partners/edit-passenger/02-edit-mode-open.png" alt="Step 2 — Edit mode open"></p>
+<p><strong>What you should see:</strong> First / Last name as text inputs (pre-populated), DOB as a date picker, Nationality showing the selector trigger (&quot;Nat…&quot; placeholder if blank), Weight as a number input, and Save / Cancel buttons at the bottom.</p>
+<h3>Step 3 — Pick a nationality</h3>
+<p>Click the Nationality field to open the selector. Type into the search box at the top — the list filters live as you type. Click an option to select.</p>
+<p><img src="../../../screenshots/partners/edit-passenger/03-nationality-selector-open.png" alt="Step 3 — Nationality selector with search applied"></p>
+<p><strong>What you should see:</strong> A floating dropdown with a search input at the top and a scrollable list of options below. Each option shows the country flag emoji on the left and the nationality label (e.g. &quot;Thai&quot;, &quot;Thai&quot; matches Thailand) on the right.</p>
+<h3>Step 4 — Fill the rest and save</h3>
+<p>Type the remaining values. Weight accepts decimals down to 0.1 kg (e.g. <code>72.5</code>), rejects 0 / negatives / non-numeric input, and rejects values over 250 kg.</p>
+<p><img src="../../../screenshots/partners/edit-passenger/04-form-filled.png" alt="Step 4 — All fields filled"></p>
+<p><strong>What you should see:</strong> All five fields filled with the new values. Save is enabled (the form doesn&#39;t gate on field-level validation in the UI — server-side validation runs on click).</p>
+<p>Click <strong>Save</strong>. The form closes back to the display state, the booking refreshes, and the card shows the new values as badges.</p>
+<h3>Step 5 — Verify the save</h3>
+<p>The card collapses back to display mode showing the new values. Reload the page if you want to confirm the save was persisted; the same badges should render from the DB-backed booking detail.</p>
+<p><img src="../../../screenshots/partners/edit-passenger/05-after-save.png" alt="Step 5 — After save, card showing new values"></p>
+<p><strong>What you should see:</strong> The passenger&#39;s new name in the heading, and the three small grey badges under it showing the new nationality (ISO-2 code, e.g. <code>TH</code>), new weight (e.g. <code>62.5kg</code>), and new date of birth (e.g. <code>1992-03-14</code>).</p>
+<h2>Tips &amp; common questions</h2>
+<ul>
+<li><strong>The Edit pencil isn&#39;t showing on a passenger card.</strong> The booking&#39;s status doesn&#39;t allow amendments. Check <code>booking_statuses.is_amendable</code> for the current status — only amendable statuses show the pencil.</li>
+<li><strong>The nationality badge shows the ISO code, not the country name.</strong> That&#39;s deliberate. The display is intentionally compact; the selector resolves names → codes on save, the badge surfaces the persisted code. Future enhancement could swap to the localized country name.</li>
+<li><strong>What if I enter a weight of <code>0</code>?</strong> The Save API returns 400 with <strong>&quot;Weight must be positive&quot;</strong>. The inline error block appears red at the top of the form. Re-enter a valid value and click Save again.</li>
+<li><strong>What if I enter a weight greater than 250 kg?</strong> Same flow — server returns 400 with <strong>&quot;Weight must be 250 kg or less&quot;</strong>. The 250 kg cap is Advance Aviation&#39;s operational sanity check.</li>
+<li><strong>Non-numeric weight input?</strong> Browsers prevent letters in <code>&lt;input type=&quot;number&quot;&gt;</code>, but for safety the server also rejects non-finite values with <strong>&quot;Weight must be a number&quot;</strong>.</li>
+<li><strong>Where does the country list come from?</strong> <code>GET /api/countries</code> reads <code>public.countries</code> (anonymous SELECT is allowed by RLS). Cached in module scope by <code>use-countries.ts</code> — fetched once per page lifetime.</li>
+</ul>
+<h2>Reference</h2>
+<ul>
+<li><strong>Code:</strong> <code>silkskyair-partner/components/bookings/passenger-card.tsx</code> (card + inline form) · <code>silkskyair-partner/lib/hooks/use-countries.ts</code> (cached fetch) · <code>silkskyair-partner/app/api/countries/route.ts</code> (catalogue)</li>
+<li><strong>PATCH route + validation:</strong> <code>silkskyair-partner/app/api/bookings/[id]/passengers/[passengerId]/route.ts</code> — name/DOB/nationality pass-through, weight validated as positive ≤ 250.</li>
+<li><strong>Migration:</strong> <code>silkskyair-api/supabase/migrations/20260528120000_passenger_weight_numeric.sql</code> — drops the <code>weight_ranges</code> FK, changes <code>booking_passengers.weight_kg</code> from <code>text</code> to <code>numeric(5,2)</code>, adds CHECK constraints (positive + ≤ 250).</li>
+<li><strong>E2E:</strong><ul>
+<li><code>silkskyair-partner/e2e/partner-passenger-edit-nationality.spec.ts</code> — simple: pick Thai → save → reload → nationality persists.</li>
+<li><code>silkskyair-partner/e2e/partner-passenger-edit-full.spec.ts</code> — complex: all editable fields + weight=0 rejection.</li>
+</ul>
+</li>
+</ul>
+
+</article>
+</body>
+</html>

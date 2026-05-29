@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Add Passengers — Paid + Due Breakdown (Member Portal)</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Add Passengers — Paid + Due Breakdown (Member Portal)</h1>
+<blockquote>
+<p><strong>App:</strong> Member Portal
+<strong>Who uses it:</strong> Customers asking to add a companion to an existing booking. Support staff answering &quot;why does the modal say I owe more / less than I expected?&quot;
+<strong>What it does:</strong> When a customer opens the <strong>Add Passengers</strong> modal on a confirmed booking, the pricing breakdown now shows their balance in context — what they&#39;ve already paid and what&#39;s still due — alongside the per-pax cost and new estimated total. Previously the modal showed only the cost-per-pax and new total, leaving customers to do the &quot;but I already paid&quot; subtraction in their head.</p>
+</blockquote>
+<h2>What customers see</h2>
+<p>On a confirmed booking&#39;s detail page, the Passengers section ends with a dashed &quot;Add Passenger&quot; ghost card. Clicking it opens a modal that walks through how many adults / children to add, then shows a five-row pricing breakdown:</p>
+<table>
+<thead>
+<tr>
+<th>Row</th>
+<th>What it means</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Cost per passenger</strong></td>
+<td>The seat price for <em>one</em> additional pax on this flight, after the joiner / shared-discount / promotion rules apply.</td>
+</tr>
+<tr>
+<td><strong>Additional cost</strong></td>
+<td>Cost per passenger × number added.</td>
+</tr>
+<tr>
+<td><strong>Paid</strong></td>
+<td>What the customer has already paid against this booking, summed across all successful payment intents.</td>
+</tr>
+<tr>
+<td><strong>Due</strong></td>
+<td>The current outstanding balance on the booking <em>before</em> this amendment — i.e. <code>max(0, existingTotal − paid)</code>.</td>
+</tr>
+<tr>
+<td><strong>New estimated total</strong></td>
+<td><code>existingTotal + additionalCost</code>. After concierge accepts the amendment a fresh invoice covering the difference is generated; this row is the customer&#39;s preview of where they&#39;ll end up.</td>
+</tr>
+</tbody></table>
+<p>The Paid + Due rows are the new bit. Cost-per-pax, Additional, and New estimated total have always been there.</p>
+<h2>Why Paid + Due matter</h2>
+<p>A customer who paid in full for one seat and is now adding a companion sees this:</p>
+<ul>
+<li><strong>Paid</strong> ฿17,000</li>
+<li><strong>Due</strong> ฿0</li>
+<li><strong>New estimated total</strong> ฿26,500</li>
+</ul>
+<p>They immediately know: &quot;I&#39;ve already settled the first seat; the ฿9,500 in <code>Additional cost</code> is what I&#39;ll need to pay when the amendment is approved.&quot; Without the Paid + Due rows, the modal looked like it was asking them to settle ฿26,500 again.</p>
+<p>The Due row also surfaces partial-pay scenarios. If a customer paid a deposit (say ฿10,000 on a ฿17,000 booking) and tries to add a companion, the modal shows <strong>Paid ฿10,000</strong>, <strong>Due ฿7,000</strong>, <strong>New estimated total ฿26,500</strong> — communicating that the existing balance is still open and the amendment compounds it.</p>
+<h2>Where the numbers come from</h2>
+<p>The breakdown is computed server-side by <code>GET /api/bookings/&lt;id&gt;/add-passenger-pricing</code>. Two data sources:</p>
+<ul>
+<li><strong>Per-pax pricing</strong> comes from the <code>availability</code> schema RPCs (<code>_get_base_seat_price</code>, <code>_find_existing_flight</code>, <code>_is_joiner_booking</code>, <code>_find_best_promotion</code>) — same RPCs the public booking flow uses.</li>
+<li><strong>Paid + Due + currentTotal</strong> come from a single <code>computeBookingBalance(bookingId)</code> helper that sums <code>booking_price_components.amount</code> (already in major-unit THB) for the total and <code>payment_intents.amount</code> (satang → THB) for the paid figure, filtering payment intents to <code>status=&#39;successful&#39;</code>. Due is <code>max(0, total − paid)</code>.</li>
+</ul>
+<p>The helper lives at <code>silkskyair-member/lib/modules/bookings/balance.ts</code> and is the single source of truth for balance math in the member surfaces. New routes that need the same numbers should import it rather than re-summing inline.</p>
+<h2>Edge cases worth knowing</h2>
+<ul>
+<li><strong>Private charter (<code>shared = false</code>):</strong> The &quot;Cost per passenger&quot; row reads <code>฿0</code> with the explanatory text &quot;Private charter — no additional cost&quot;. Additional cost stays ฿0 regardless of how many adults / children the customer picks. Paid + Due still reflect the existing booking&#39;s balance.</li>
+<li><strong>Zero-paid bookings:</strong> If no successful <code>payment_intents</code> are attached, Paid renders as <code>฿0</code> and Due equals the existing total. Customer sees the full outstanding amount before the amendment.</li>
+<li><strong>Mixed-currency booking:</strong> Today every member booking is single-currency. If a booking ever ends up with <code>booking_price_components</code> rows in two different currencies the balance helper throws — the modal will fall through to its &quot;pricing unavailable&quot; branch rather than render misleading sums. (Not a path any production booking should hit; the throw is a guardrail.)</li>
+<li><strong>No flight assigned / tour missing:</strong> Same fall-through — the helper succeeds but the upstream RPC fails, the route returns 500, and the modal shows the amber &quot;Pricing is not available for this tour. You can still submit your request and our concierge team will provide a quote.&quot; banner. Customer can still submit the amendment.</li>
+</ul>
+<h2>Support staff playbook</h2>
+<blockquote>
+<p><strong>&quot;I already paid in full. Why is the modal asking me for more money?&quot;</strong>
+The &quot;New estimated total&quot; row is the booking&#39;s total <em>after</em> the amendment is approved — not what the customer owes today. The Paid row shows what they&#39;ve already settled (the original booking); the difference between the two is what concierge will invoice them for the new seat(s). Walk them through the five rows top to bottom: Cost per passenger → Additional cost → Paid → Due → New estimated total.</p>
+</blockquote>
+<blockquote>
+<p><strong>&quot;The Paid number is wrong — I only paid X but the modal says Y.&quot;</strong>
+The Paid row sums <em>every</em> successful payment intent on the booking. If a customer paid in two installments and only remembers one, Y will look high. Check the booking&#39;s payment history in Manager (Bookings → &lt;reference&gt; → Payments) — every row with status <code>successful</code> contributes to Paid here.</p>
+</blockquote>
+<blockquote>
+<p><strong>&quot;Due says ฿0 but I haven&#39;t paid anything.&quot;</strong>
+Usually means a manager / partner already settled the booking on the customer&#39;s behalf (back-office cash payment, a comp, or an off-platform transfer recorded as a payment intent). Same Manager screen as above will show who paid and when.</p>
+</blockquote>
+<h2>Reference</h2>
+<ul>
+<li><strong>Source:</strong> <code>silkskyair-member/lib/modules/bookings/balance.ts</code> (helper), <code>silkskyair-member/app/api/bookings/[bookingId]/add-passenger-pricing/route.ts</code> (route), <code>silkskyair-member/app/(workspace)/bookings/_components/add-passenger-modal.tsx</code> (modal rows + <code>formatCurrency</code>).</li>
+<li><strong>i18n:</strong> <code>bookings.addPassengers.paid</code> / <code>.due</code> in <code>lib/i18n/locales/{en,th,ru}.json</code>.</li>
+<li><strong>E2E:</strong><ul>
+<li><code>silkskyair-member/e2e/member-add-passenger-simple.spec.ts</code> — asserts the five rows render with numeric currency values.</li>
+<li><code>silkskyair-member/e2e/member-add-passenger-full.spec.ts</code> — asserts exact THB amounts at default (1 adult) and adults=2, with Paid + Due invariant under pax-count changes.</li>
+</ul>
+</li>
+</ul>
+
+</article>
+</body>
+</html>

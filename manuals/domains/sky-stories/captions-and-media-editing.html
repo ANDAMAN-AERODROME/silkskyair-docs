@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Captions &amp; Media Editing</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Captions &amp; Media Editing</h1>
+<blockquote>
+<p><strong>App:</strong> BackOffice
+<strong>Who uses it:</strong> Content editors and marketing staff who maintain Sky Stories.
+<strong>What it does:</strong> Captions and alt-text on Sky Story media tiles are edited inline in BackOffice. Changes save automatically when the field loses focus (auto-save on blur).</p>
+</blockquote>
+<h2>Before you start</h2>
+<ul>
+<li><strong>Staging URL:</strong> <code>https://staging.manager.silkskyair.com</code></li>
+<li><strong>Account:</strong> <code>peter@andaman.co.th</code></li>
+<li><strong>Prerequisites:</strong> at least one Sky Story exists with at least one media item attached.</li>
+</ul>
+<h2>Step-by-step</h2>
+<h3>Step 1 — Open SkyStories</h3>
+<p>Sign in and navigate to <strong>SkyStories</strong> (URL: <code>/sky-stories-next</code>).</p>
+<p><img src="../../../screenshots/sky-stories/captions-and-media-editing/01-stories-list.png" alt="Step 1 — SkyStories list"></p>
+<p><strong>What you should see:</strong> A list of Sky Stories with their status and last-modified time.</p>
+<h3>Step 2 — Open a story</h3>
+<p>Click into any story.</p>
+<p><img src="../../../screenshots/sky-stories/captions-and-media-editing/02-story-detail.png" alt="Step 2 — Story detail"></p>
+<p><strong>What you should see:</strong> The story editor. A <strong>Media</strong> section toggle is visible.</p>
+<h3>Step 3 — Open the Media panel</h3>
+<p>Click the <strong>Media</strong> button to expand the panel.</p>
+<p><img src="../../../screenshots/sky-stories/captions-and-media-editing/03-media-panel-open.png" alt="Step 3 — Media panel open"></p>
+<p><strong>What you should see:</strong> Thumbnails of the story&#39;s attached media. Each tile has two text inputs below it: <strong>Alt</strong> and <strong>Caption</strong>.</p>
+<h3>Step 4 — Edit the caption</h3>
+<p>Click into the caption input under any media tile and type a new caption.</p>
+<p><img src="../../../screenshots/sky-stories/captions-and-media-editing/04-caption-edit.png" alt="Step 4 — Caption being edited"></p>
+<p><strong>What you should see:</strong> The caption input is identified by <code>data-media-caption-for=&quot;&lt;mediaId&gt;&quot;</code>. The store updates optimistically while you type — no flicker.</p>
+<h3>Step 5 — Auto-save on blur</h3>
+<p>Click outside the field (or tab away). After a short debounce (~800 ms) the change is persisted to the API.</p>
+<p><img src="../../../screenshots/sky-stories/captions-and-media-editing/05-caption-saved.png" alt="Step 5 — Caption saved"></p>
+<p><strong>What you should see:</strong> The new caption remains in place. The page does not flicker. Refreshing the page confirms the caption was persisted. (There is no explicit Save button — blur is the save trigger.)</p>
+<h2>Tips &amp; common questions</h2>
+<ul>
+<li><strong>Why doesn&#39;t a Save button appear?</strong> Auto-save on blur. Walk away from the field and the API call fires after ~800 ms.</li>
+<li><strong>What if I navigate away too fast?</strong> Internally a <code>flushAll</code> runs on navigation, so unsaved edits flush before the page changes.</li>
+<li><strong>Are captions translated automatically?</strong> No. Captions are edited per locale — switch the editor locale and edit each one.</li>
+<li><strong>What&#39;s the difference between Alt and Caption?</strong> Alt is for accessibility / screen readers; Caption is the visible text shown on the public site under the image.</li>
+</ul>
+
+</article>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Net Payment Amount &amp; PromptPay Parity (Partner Portal)</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Net Payment Amount &amp; PromptPay Parity (Partner Portal)</h1>
+<blockquote>
+<p><strong>App:</strong> Partner Portal
+<strong>Who uses it:</strong> Partner staff collecting payment on a booking via the <strong>Net Payment</strong> option, and customers scanning the PromptPay QR.
+<strong>What it does:</strong> The <strong>TOTAL AMOUNT</strong> card and the <strong>PromptPay amount</strong> line are now shown in <em>both</em> payment modes. Previously they rendered only for <strong>Full Payment</strong> (Direct); the <strong>Net Payment</strong> (Indirect) dialog was missing the figure entirely, and the PromptPay amount didn&#39;t appear when a partner collected the net amount. Both surfaces now have full parity across Full and Net.</p>
+</blockquote>
+<h2>Before you start</h2>
+<ul>
+<li><strong>Local URL:</strong> <code>http://localhost:3050</code> (staging / production: the same paths on <code>staging.partner.silkskyair.com</code> / <code>partner.silkskyair.com</code>).</li>
+<li><strong>Account:</strong> Sign in with a Partner Portal account whose organization has a non-zero <strong>Commission %</strong> (so the Net Payment option is offered) — e.g. <code>peter@andaman.co.th</code> for Advance Aviation on local.</li>
+<li><strong>Prerequisites:</strong> an unpaid booking assigned to your partner org with at least one priced item.</li>
+<li><strong>Related:</strong> the underlying card-payment flow and the Omise bounce are documented in <a href="pay-with-card.html">Pay with Card</a>. This page is specifically about the figures being visible on the <strong>Net Payment</strong> side.</li>
+</ul>
+<h2>Step-by-step</h2>
+<h3>Step 1 — Choose Net Payment</h3>
+<p>On an unpaid booking, click <strong>Net Payment (after deducting commission)</strong>. The payment drawer opens.</p>
+<p><img src="../../../screenshots/partners/indirect-payment-parity/01-net-payment-button.png" alt="Step 1 — Net Payment selected"></p>
+<p><strong>What you should see:</strong> the drawer header reads <strong>Net Payment</strong> and the two method pills (<strong>Credit Card</strong> / <strong>PromptPay QR</strong>) are shown — the same controls Full Payment offers.</p>
+<h3>Step 2 — TOTAL AMOUNT is shown on Net Payment</h3>
+<p>Look at the top of the Net Payment drawer.</p>
+<p><img src="../../../screenshots/partners/indirect-payment-parity/02-total-amount-card.png" alt="Step 2 — TOTAL AMOUNT card on Net Payment"></p>
+<p><strong>What you should see:</strong> the <strong>TOTAL AMOUNT</strong> card displaying the figure in THB — present here just as it is on Full Payment. Before W23 this card was hidden whenever Net Payment was selected.</p>
+<h3>Step 3 — PromptPay amount is shown on Net Payment</h3>
+<p>Switch the method pill to <strong>PromptPay QR</strong>.</p>
+<p><img src="../../../screenshots/partners/indirect-payment-parity/03-promptpay-net.png" alt="Step 3 — PromptPay amount on Net Payment"></p>
+<p><strong>What you should see:</strong> the PromptPay QR with the amount line beneath it, so a customer scanning the code sees exactly what they&#39;re paying — regardless of whether the partner or the operator is collecting.</p>
+<h2>Tips &amp; common questions</h2>
+<ul>
+<li><strong>Wasn&#39;t the amount hidden on purpose?</strong> The original code hid net amounts &quot;for customer privacy.&quot; That rationale was dropped in W23 (F1.14 / R19): the <strong>Full Payment</strong> / <strong>Net Payment</strong> headings already make the mode explicit, so showing the figure underneath discloses nothing the partner shouldn&#39;t already see — and a customer scanning a PromptPay QR genuinely needs the amount.</li>
+<li><strong>Does the figure differ between Full and Net?</strong> The <strong>TOTAL AMOUNT</strong> is the booking total in both modes — it&#39;s the amount being charged through Omise / PromptPay. How that total splits into commission vs. net-to-operator is shown separately in the <a href="commission-breakdown.html">Commission &amp; Payment Breakdown</a>.</li>
+<li><strong>Net Payment isn&#39;t offered on this booking.</strong> It only appears when commission applies (Commission % &gt; 0).</li>
+<li><strong>The Pay button is greyed out for several seconds.</strong> That&#39;s the Omise script still loading. If it stays disabled past ~5 seconds, an amber banner explains the script failed to load — refresh and retry. (See <a href="pay-with-card.html">Pay with Card</a>.)</li>
+</ul>
+<h2>Reference</h2>
+<ul>
+<li><strong>Code:</strong> <a href="https://github.com/">silkskyair-partner/components/bookings/payment-checkout.tsx</a> — the <strong>TOTAL AMOUNT</strong> card (<code>data-payment-total</code>) and the PromptPay amount line (<code>data-promptpay-amount</code>) are no longer wrapped in <code>paymentCollectedBy === &quot;direct&quot;</code>; both render in Full and Net modes.</li>
+<li><strong>Shipped:</strong> W23 — partner commit <code>2c1c812</code> (F1.14 / R19).</li>
+</ul>
+
+</article>
+</body>
+</html>

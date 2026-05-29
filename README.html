@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>silkskyair-docs</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>silkskyair-docs</h1>
+<p>Documentation source, training manuals, and governance notes for the SilkSkyAir / Andaman Aerodrome platform.</p>
+<h2>Contents</h2>
+<pre><code>manuals/             # Markdown source of truth → Notion (see Layout below)
+screenshots/        # PNGs captured by the doc-shots Playwright suites
+scripts/            # Automation: publish to Notion
+plans/              # Project planning notes
+reviews/            # Code review artifacts
+weekly-reports/     # Weekly engineering reports
+weekly-statements/  # Weekly statements
+</code></pre>
+<h2><code>manuals/</code> layout — two axes</h2>
+<p>The manuals library is organized along two axes:</p>
+<pre><code>manuals/
+├── index.md                                ← &quot;Documentation&quot; (root)
+├── domains/                                ← AXIS 1: feature manuals by domain
+│   ├── index.md                            ← &quot;Manuals by Domain&quot;
+│   ├── sky-stories/
+│   │   ├── index.md                        ← &quot;SkyStories&quot; landing
+│   │   ├── related-tours.md
+│   │   ├── captions-and-media-editing.md
+│   │   └── keyword-multi-locale-sync.md
+│   └── bookings/
+│       ├── index.md                        ← &quot;Bookings&quot; landing
+│       ├── payment-before-confirmation.md
+│       ├── multi-tour-promos.md
+│       └── customer-notes.md
+└── releases/                               ← AXIS 2: release compilations
+    ├── index.md                            ← &quot;Releases&quot; landing
+    └── w22.md                              ← W22 Release Manual (links to feature pages)
+</code></pre>
+<p><strong>Conventions:</strong></p>
+<ul>
+<li><code>index.md</code> in each directory becomes a Notion parent page for that directory.</li>
+<li>Non-index <code>.md</code> files are leaf pages parented to their directory&#39;s <code>index.md</code>.</li>
+<li>Frontmatter <code>title</code> is the Notion page title (only field required today).</li>
+<li><code>&lt;!-- children --&gt;</code> marker in a markdown body is replaced by the publisher with an auto-generated bulleted list of all child page links. Use it in landing pages.</li>
+<li>Cross-links between pages use <strong>relative <code>.md</code> paths</strong>, e.g. <code>[Related Tours](../domains/sky-stories/related-tours.html)</code>. The publisher rewrites these to the corresponding Notion page URLs.</li>
+<li>Images use <strong>absolute repo-rooted paths</strong>, e.g. <code>![Alt](screenshots/sky-stories/related-tours/01-stories-index.png)</code>. The publisher rewrites the <code>/screenshots/</code> prefix to the GitHub raw URL.</li>
+</ul>
+<p><strong>Adding a new feature manual:</strong> create <code>domains/&lt;domain&gt;/&lt;feature&gt;.md</code> with a <code>title</code> frontmatter and the standard step-by-step body. Add it to whichever release compilation(s) it ships in (e.g. append a link in <code>releases/w22.md</code>).</p>
+<p><strong>Adding a new release manual:</strong> create <code>releases/&lt;release&gt;.md</code> with a <code>title</code> frontmatter and a curated list of links to the feature manuals it includes.</p>
+<p><strong>Adding a new domain:</strong> create <code>domains/&lt;domain&gt;/index.md</code> (with <code>title</code> + a short intro + <code>&lt;!-- children --&gt;</code>).</p>
+<h2><code>screenshots/</code> layout</h2>
+<p>Mirrors the <code>manuals/</code> domain hierarchy:</p>
+<pre><code>screenshots/
+├── sky-stories/
+│   ├── related-tours/                01-…png, 02-…png, …
+│   ├── captions-and-media-editing/
+│   └── keyword-multi-locale-sync/
+└── bookings/
+    ├── payment-before-confirmation/
+    ├── multi-tour-promos/
+    └── customer-notes/
+</code></pre>
+<p>PNGs are produced by the Playwright doc-shots specs in the app repos (<code>silkskyair-www/tests/docs/</code> and <code>silkskyair-manager/tests/docs/</code>) via the shared <code>takeDocShot(page, &quot;&lt;domain&gt;/&lt;feature&gt;/&lt;NN&gt;-&lt;name&gt;&quot;)</code> helper.</p>
+<h2>NPM scripts</h2>
+<pre><code class="language-bash">pnpm install --ignore-workspace   # one-time (silkskyair-docs is not in the pnpm workspace)
+pnpm publish:dry                  # dry-run — walk the tree + print the plan
+pnpm publish                      # real publish (requires NOTION_TOKEN)
+</code></pre>
+<h3>Publish to Notion</h3>
+<p>The publisher walks <code>manuals/</code> recursively, mirrors the tree as Notion page hierarchy, and writes each page&#39;s body with:</p>
+<ul>
+<li>Cross-links resolved to Notion page URLs</li>
+<li><code>&lt;!-- children --&gt;</code> markers replaced with auto-generated child lists</li>
+<li><code>/screenshots/...</code> image paths rewritten to the public GitHub raw URL</li>
+</ul>
+<pre><code class="language-bash">NOTION_TOKEN=secret_xxx pnpm publish
+
+# First-time only, when the root &quot;Documentation&quot; page doesn&#39;t yet exist
+# anywhere reachable by the integration:
+NOTION_TOKEN=secret_xxx DOCS_PARENT_PAGE_ID=&lt;parent-page-id&gt; pnpm publish
+</code></pre>
+<p>Two-pass design: the first pass upserts all pages with just titles (so Notion URLs exist for cross-link resolution); the second pass writes the full body of each page with everything resolved.</p>
+<p>For images to render in Notion, the <code>silkskyair-docs</code> repo must be public on GitHub (Notion fetches via <code>raw.githubusercontent.com/.../silkskyair-docs/main/screenshots/...</code>).</p>
+<h2>Capturing screenshots</h2>
+<p>The Playwright doc-shots suites live in the app repos. Each spec is a thin wrapper around an existing E2E fixture — it imports the canonical setup helpers, drives the same flow, and inserts <code>takeDocShot()</code> at customer-visible moments.</p>
+<pre><code class="language-bash">cd silkskyair-www      &amp;&amp; pnpm doc-shots     # specs 1–4
+cd silkskyair-manager  &amp;&amp; pnpm doc-shots     # specs 5–7
+</code></pre>
+<p>Both write PNGs to <code>silkskyair-docs/screenshots/&lt;domain&gt;/&lt;feature&gt;/</code>. After capture, commit and push — Notion picks up the new images on the next page view.</p>
+
+</article>
+</body>
+</html>

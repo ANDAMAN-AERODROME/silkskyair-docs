@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pay with Card (Partner Portal)</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Pay with Card (Partner Portal)</h1>
+<blockquote>
+<p><strong>App:</strong> Partner Portal
+<strong>Who uses it:</strong> Partner staff collecting payment on a booking — either the full amount (Direct) or only the commission portion (Net / Indirect).
+<strong>What it does:</strong> Walks through paying for an unpaid booking via the Omise hosted card form. After payment, the same drawer the staff member opened flips to a &quot;Payment Successful&quot; state. The flow handles the unavoidable Omise authorize-page bounce transparently: the customer journey lands back inside the same drawer with payment status confirmed.</p>
+</blockquote>
+<h2>Before you start</h2>
+<ul>
+<li><strong>Local URL:</strong> <code>http://localhost:3050</code> (staging / production: the same paths on <code>staging.partner.silkskyair.com</code> / <code>partner.silkskyair.com</code>).</li>
+<li><strong>Account:</strong> Sign in with a Partner Portal account associated with the relevant partner organization (e.g. <code>peter@andaman.co.th</code> for Advance Aviation on local).</li>
+<li><strong>Test card (local + staging only):</strong> <code>4242 4242 4242 4242</code>, any future expiry (e.g. <code>12/30</code>), any 3-digit CVV. Documented in <code>silkskyair-common/playwright/omise-card-form.ts</code> as <code>TEST_CARD_4242</code>. <strong>Never enter a real card on staging.</strong></li>
+<li><strong>3DS card:</strong> <code>4111 1111 1111 1140</code> — exercises the 3-D Secure challenge instead of <code>acs=false</code> auto-confirm. The post-bounce reopen behavior is identical; the only difference is the customer sees an Omise authorize page mid-flow.</li>
+<li><strong>Prerequisites:</strong> an unpaid booking in <code>Pending</code> or <code>PendingPayment</code> status, assigned to your partner organization. The booking needs at least one priced item so the Payment section&#39;s amount is non-zero.</li>
+<li><strong>Environment variable:</strong> <code>PARTNER_BASE_URL</code> must be set per deployment (see <code>.env.example</code>). The charge route uses it to construct Omise&#39;s <code>return_uri</code> — wrong value will send the customer back to the wrong deployment after 3-D Secure.</li>
+</ul>
+<h2>Step-by-step</h2>
+<h3>Step 1 — Open an unpaid booking</h3>
+<p>From the Bookings list, click into a booking with the <strong>Unpaid</strong> badge. The booking detail page renders with the Payment section expanded by default.</p>
+<p><img src="../../../screenshots/partners/pay-with-card/01-booking-unpaid.png" alt="Step 1 — Booking detail, Unpaid"></p>
+<p><strong>What you should see:</strong> The booking header (reference + Pending status), and a <strong>Payment</strong> section showing both <strong>Full Payment</strong> (always) and <strong>Net Payment (after deducting commission)</strong> (only when commission applies). An <strong>Unpaid</strong> pill is shown on the Payment row.</p>
+<h3>Step 2 — Open the Payment drawer</h3>
+<p>Click <strong>Full Payment</strong> (or <strong>Net Payment</strong>, depending on which side is collecting). A drawer slides in from the right with <strong>Credit Card</strong> pre-selected and the <strong>Pay with Card</strong> button enabled once the Omise script has loaded.</p>
+<p><img src="../../../screenshots/partners/pay-with-card/02-drawer-card-method.png" alt="Step 2 — Payment drawer, Credit Card method"></p>
+<p><strong>What you should see:</strong> Drawer header <strong>Full Payment</strong> (or <strong>Net Payment</strong>), the <strong>TOTAL AMOUNT</strong> prominently displayed in THB, two method pills (<strong>Credit Card</strong> / <strong>PromptPay QR</strong>) with Credit Card selected, and a primary <strong>Pay with Card</strong> button. If the button is greyed out for more than ~5 seconds, an inline error banner appears explaining that the Omise script failed to load — refresh and retry.</p>
+<h3>Step 3 — Enter card details in the Omise form</h3>
+<p>Click <strong>Pay with Card</strong>. Omise&#39;s hosted card form opens in a modal over the page (it&#39;s an iframe served from <code>https://cdn.omise.co/</code> — card numbers never touch SilkSky Air&#39;s servers).</p>
+<p><img src="../../../screenshots/partners/pay-with-card/03-omise-iframe.png" alt="Step 3 — Omise hosted card form"></p>
+<p><strong>What you should see:</strong> A modal showing &quot;SilkSky Air — Secured by Omise&quot; with inputs for Card number, Name on card, Expiry date, Security code, and Country / region. Enter the test card details and click <strong>Pay with Card 28,800.00 THB</strong> (label reflects the booking amount).</p>
+<h3>Step 4 — Payment processing after the Omise bounce</h3>
+<p>Omise always issues an <code>authorize_uri</code> for test charges (with <code>acs=false</code> for non-3DS cards, meaning it auto-confirms with no UI challenge). The browser navigates to Omise, Omise settles the charge, and the customer is bounced back to the booking detail page. The drawer <strong>auto-reopens</strong> in the same Direct / Indirect mode and begins polling.</p>
+<p><img src="../../../screenshots/partners/pay-with-card/04-processing-after-bounce.png" alt="Step 4 — Processing after Omise round-trip"></p>
+<p><strong>What you should see:</strong> Same drawer, same TOTAL AMOUNT, with a spinner and <strong>Processing your payment...</strong>. The URL has gained <code>?paymentIntent=&lt;uuid&gt;&amp;paymentMode=direct</code> (or <code>indirect</code>) — that&#39;s the signal the booking detail page used to auto-reopen the drawer in the right view.</p>
+<h3>Step 5 — Payment successful</h3>
+<p>Within a few poll ticks (typically under 5 seconds in test mode), the intent finalises and the drawer flips to the success state.</p>
+<p><img src="../../../screenshots/partners/pay-with-card/05-payment-successful.png" alt="Step 5 — Payment successful"></p>
+<p><strong>What you should see:</strong> A green check icon, <strong>Payment Successful</strong>, the message &quot;Your payment has been processed successfully.&quot;, and a <strong>Close</strong> button. Clicking <strong>Close</strong> dismisses the drawer and clears the <code>paymentIntent</code> / <code>paymentMode</code> URL params so refreshing the booking does not reopen the drawer.</p>
+<h2>Tips &amp; common questions</h2>
+<ul>
+<li><strong>What if the card is declined?</strong> The drawer flips to a failed state with the Omise rejection reason inline. The booking stays Unpaid; staff can retry with the same or a different card.</li>
+<li><strong>What if the Omise webhook is delayed?</strong> The polling route has a fallback that asks Omise directly for the charge state (<code>finaliseFromOmiseIfTerminal</code>). The flow completes even if the n8n webhook hasn&#39;t fired yet. This is what makes the local-dev flow work despite Omise being unable to reach <code>localhost:3050</code>.</li>
+<li><strong>What if the customer closes the browser mid-bounce?</strong> The intent stays in <code>processing</code>. The next time anyone loads <code>/bookings/&lt;id&gt;?paymentIntent=&lt;uuid&gt;&amp;paymentMode=&lt;mode&gt;</code> the drawer reopens and polling resumes. The Omise webhook (when it does fire) updates the DB independently.</li>
+<li><strong>What if the partner clicks Pay-direct on a booking that already has a successful intent?</strong> A fresh intent is minted — <code>start_booking_payment</code> is idempotent against past terminal intents.</li>
+<li><strong>Direct vs Net Payment — what does &quot;indirect&quot; mean for the charge?</strong> Indirect = the partner pays only their commission share back to SilkSky Air (the customer paid them the full amount externally). The charge route validates <code>paymentCollectedBy</code> and round-trips it through Omise&#39;s <code>return_uri</code> so the post-bounce reopen restores the correct view.</li>
+<li><strong>Why is the test card OK on staging?</strong> Staging uses Omise&#39;s <code>pkey_test_*</code> / <code>skey_test_*</code> credentials — these only work with documented test cards and never charge a real account. Production keys (<code>pkey_*</code> / <code>skey_*</code>) reject the test card numbers.</li>
+</ul>
+<h2>Reference</h2>
+<ul>
+<li><strong>Code:</strong> <a href="https://github.com/">silkskyair-partner/components/bookings/payment-checkout.tsx</a> (PaymentCheckout) · <a href="https://github.com/">silkskyair-partner/components/bookings/payment-drawer.tsx</a> (PaymentDrawer) · <a href="https://github.com/">silkskyair-partner/components/bookings/booking-detail-partner.tsx</a> (post-bounce auto-reopen)</li>
+<li><strong>API routes:</strong> <code>silkskyair-partner/app/api/bookings/[id]/payments/charge/route.ts</code> · <code>silkskyair-partner/app/api/bookings/[id]/payments/[intentId]/status/route.ts</code></li>
+<li><strong>Callback:</strong> <code>silkskyair-partner/app/bookings/[id]/payment/callback/page.tsx</code> — receives Omise&#39;s bounce and forwards <code>intentId</code> + <code>mode</code> to the booking detail page.</li>
+<li><strong>E2E specs:</strong><ul>
+<li><code>silkskyair-partner/e2e/partner-pay-with-card-sdk-failure.spec.ts</code> (R17/R18 — Omise CDN failure shows inline error banner)</li>
+<li><code>silkskyair-partner/e2e/partner-pay-with-card-direct.spec.ts</code> (R17/R18 — direct happy path, real Omise bounce)</li>
+<li><code>silkskyair-partner/e2e/partner-pay-with-card-indirect.spec.ts</code> (R17/R18 — net/commission happy path, real Omise bounce)</li>
+</ul>
+</li>
+</ul>
+
+</article>
+</body>
+</html>

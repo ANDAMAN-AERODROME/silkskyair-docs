@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Create a Partner (Back-office)</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Create a Partner (Back-office)</h1>
+<blockquote>
+<p><strong>App:</strong> BackOffice (Manager)
+<strong>Who uses it:</strong> Ops staff with the <code>module:partners:access</code> privilege.
+<strong>What it does:</strong> Walks you through creating a new partner organization end-to-end — opening the create drawer, filling every field, saving, verifying what landed, and re-opening the record later from the partners list.</p>
+</blockquote>
+<h2>Before you start</h2>
+<ul>
+<li><strong>Local URL:</strong> <code>http://localhost:3000/partners</code> (staging / production: the same path on the relevant Manager host).</li>
+<li><strong>Account:</strong> Sign in with a Manager account that has the partners module enabled (e.g. <code>peter@andaman.co.th</code> on local).</li>
+<li><strong>Optional:</strong> a small image file you&#39;d like to use as the partner&#39;s logo. Any common format (PNG, JPG, SVG) works.</li>
+</ul>
+<h2>Step-by-step</h2>
+<h3>Step 1 — Open the Partners page</h3>
+<p>Navigate to <code>/partners</code> from the sidebar.</p>
+<p><img src="../../../screenshots/partners/create/01-partners-list.png" alt="Step 1 — Partners list"></p>
+<p><strong>What you should see:</strong> the Partner Management page with the existing partners listed, headline counters (Active, Users, Bookings, Top Performer, Cap), and a <strong>+ New Partner</strong> button at the top right.</p>
+<h3>Step 2 — Open the create drawer</h3>
+<p>Click <strong>+ New Partner</strong>. The drawer slides in from the right.</p>
+<p><img src="../../../screenshots/partners/create/02-empty-form.png" alt="Step 2 — Empty New Partner drawer"></p>
+<p><strong>What you should see:</strong> an empty drawer titled &quot;New partner&quot; with a &quot;Create partner&quot; subtitle, an X close button on the right, and form sections for Details, Location, Commission &amp; Status, and (further down) Countries / Team. The Save Partner CTA sits in a footer pinned to the bottom of the drawer.</p>
+<h3>Step 3 — Fill the form</h3>
+<p>Fill in the partner&#39;s information:</p>
+<ul>
+<li><strong>Name</strong> — required. The Slug auto-fills from the Name as you type.</li>
+<li><strong>Logo</strong> — click the round avatar at the top of the Details card to pick a file.</li>
+<li><strong>Website</strong>, <strong>Email</strong>, <strong>Phone</strong> — contact info.</li>
+<li><strong>Address</strong>, <strong>Latitude</strong>, <strong>Longitude</strong> — physical location and map coordinates.</li>
+<li><strong>Commission %</strong> — share you award to this partner on each booking.</li>
+</ul>
+<p><img src="../../../screenshots/partners/create/03-filled-form.png" alt="Step 3 — Filled drawer"></p>
+<p><strong>What you should see:</strong> every field populated with the values you typed, the Logo avatar showing your uploaded image, and the status badge defaulting to Active.</p>
+<h3>Step 4 — Save</h3>
+<p>Click <strong>Save Partner</strong> in the bottom-right footer.</p>
+<p><img src="../../../screenshots/partners/create/04-after-save.png" alt="Step 4 — After Save"></p>
+<p><strong>What you should see:</strong> three things at once —</p>
+<ol>
+<li>The drawer <strong>stays open</strong> (it does NOT auto-close). The header now reads the partner&#39;s name with an &quot;Update partner&quot; subtitle — you&#39;re now in edit mode.</li>
+<li>Every field you just typed is still showing.</li>
+<li>The URL gains <code>?partner=&lt;id&gt;</code> (visible in the address bar). Refreshing the page from here will re-open the same record.</li>
+</ol>
+<p>The new partner also appears in the list behind the drawer.</p>
+<p>If you have unsaved changes and try to close the drawer (X / Escape / clicking the backdrop), you&#39;ll get a confirm dialog asking whether to discard. Right after a successful save there are no unsaved changes, so closing is silent.</p>
+<h3>Step 5 — Come back to the partner later</h3>
+<p>Close the drawer (X, Escape, or backdrop) — since the form is no longer dirty, it closes cleanly. Then click the partner&#39;s row in the list to reopen the record.</p>
+<p><img src="../../../screenshots/partners/create/05-reopened-via-row.png" alt="Step 5 — Reopened via row click"></p>
+<p><strong>What you should see:</strong> the drawer reopens in edit mode with every value you saved earlier. The round-trip is honest — close, navigate, reopen, and the record is intact.</p>
+<h2>Tips &amp; common questions</h2>
+<ul>
+<li><strong>The drawer didn&#39;t close after I clicked Save.</strong> That&#39;s intentional (W23 F1.1 R1) — it lets you verify what was saved without re-finding the row. Use the X / Escape / backdrop to close when you&#39;re done.</li>
+<li><strong>I clicked X but got an &quot;Unsaved Changes&quot; dialog.</strong> You have edits that haven&#39;t been saved yet. Click <strong>Discard</strong> to lose them and close, or <strong>Keep Editing</strong> to cancel the close.</li>
+<li><strong>I want to send an invitation to the partner&#39;s first manager at the same time.</strong> Scroll to the bottom of the drawer before saving — there&#39;s an &quot;Invite first manager&quot; toggle. Fill the title/name/email and the invitation is sent along with the save.</li>
+<li><strong>The Save button is disabled.</strong> Name is required; make sure it&#39;s filled. If it still won&#39;t save, check the toast / status message below the buttons.</li>
+<li><strong>Where do countries go?</strong> Countries can only be added <em>after</em> the partner exists. Save first, then the Countries section unlocks for adding country rows with VAT rates.</li>
+</ul>
+
+</article>
+</body>
+</html>

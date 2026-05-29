@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Payment-Before-Confirmation</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Payment-Before-Confirmation</h1>
+<blockquote>
+<p><strong>App:</strong> WebSite
+<strong>Who uses it:</strong> Support agents handling booking issues; anyone who needs to understand or demo the customer booking flow.
+<strong>What it does:</strong> The booking flow takes payment up-front, before the booking is confirmed. The customer pays with a card, completes 3-D Secure if their bank requires it, and lands on a confirmed step that shows the booking reference.</p>
+</blockquote>
+<h2>Before you start</h2>
+<ul>
+<li><strong>Staging URL:</strong> <code>https://staging.www.silkskyair.com</code></li>
+<li><strong>Account:</strong> Not required — guest checkout works.</li>
+<li><strong>Test card:</strong> <code>4242 4242 4242 4242</code> (Omise&#39;s published Visa test card — successful charge). Any future expiry, any 3-digit CVV. Documented in <code>silkskyair-www/tests/e2e/booking-flow-helpers.ts</code> as <code>TEST_CARD_4242</code>. <strong>Never enter a real card on staging.</strong></li>
+<li><strong>Prerequisites:</strong> at least one bookable tour with available dates.</li>
+</ul>
+<h2>Step-by-step</h2>
+<h3>Step 1 — Open the booking widget</h3>
+<p>From the homepage, click a Featured Tour card&#39;s <strong>Book Now</strong> button. The widget opens with that tour pre-selected.</p>
+<p><img src="../../../screenshots/bookings/payment-before-confirmation/01-widget-opened.png" alt="Step 1 — Widget opened"></p>
+<p><strong>What you should see:</strong> The booking widget overlay with the tour name at the top.</p>
+<h3>Step 2 — Choose passengers</h3>
+<p>Adjust the passenger stepper.</p>
+<p><img src="../../../screenshots/bookings/payment-before-confirmation/02-pax-stepper.png" alt="Step 2 — Passenger stepper"></p>
+<p><strong>What you should see:</strong> Plus/minus controls for each passenger type (adult, child, infant where applicable). Numbers update live.</p>
+<h3>Step 3 — Pick a date and slot</h3>
+<p>Pick an available date, then a slot.</p>
+<p><img src="../../../screenshots/bookings/payment-before-confirmation/03-date-picker.png" alt="Step 3 — Date picker"></p>
+<p><strong>What you should see:</strong> A date grid with available dates clickable; selecting a date reveals available time slots.</p>
+<h3>Step 4 — Contact info</h3>
+<p>Fill the contact form (firstname, lastname, email, phone). An optional <strong>Note</strong> field is here — covered in detail under <a href="./customer-notes.html">Customer Notes — End-to-End</a>.</p>
+<p><img src="../../../screenshots/bookings/payment-before-confirmation/04-contact-step.png" alt="Step 4 — Contact step"></p>
+<p><strong>What you should see:</strong> A form with the contact fields filled in.</p>
+<h3>Step 5 — Email-OTP verification</h3>
+<p>After submitting contact info, the widget switches to the OTP verifying step. The customer would normally receive an email with a one-time code.</p>
+<p><img src="../../../screenshots/bookings/payment-before-confirmation/05-otp-verifying.png" alt="Step 5 — OTP verifying"></p>
+<p><strong>What you should see:</strong> Six OTP digit inputs. In test mode, the OTP is fetched via the test endpoint and entered automatically.</p>
+<h3>Step 6 — Pay button</h3>
+<p>After OTP verification, the widget transitions to the paying step.</p>
+<p><img src="../../../screenshots/bookings/payment-before-confirmation/06-pay-button.png" alt="Step 6 — Pay button"></p>
+<p><strong>What you should see:</strong> A prominent <strong>Pay</strong> button. Clicking it opens the Omise hosted card form in an iframe.</p>
+<h3>Step 7 — Confirmed step</h3>
+<p>After successful payment (and 3-D Secure if the bank requires it), the widget switches to the confirmed step.</p>
+<p><img src="../../../screenshots/bookings/payment-before-confirmation/07-confirmed.png" alt="Step 7 — Confirmed"></p>
+<p><strong>What you should see:</strong> A success card with the booking <strong>reference code</strong> prominently displayed and a confirmation message: &quot;Payment received. You&#39;re booked.&quot; The widget includes a <strong>Book another</strong> button.</p>
+<h2>Tips &amp; common questions</h2>
+<ul>
+<li><strong>What happens if the card is declined?</strong> The widget surfaces the Omise rejection reason inline. Booking is not created. The customer can try a different card without losing the rest of their selections.</li>
+<li><strong>Can the customer refresh mid-flow?</strong> Yes — the widget persists progress to localStorage and restores it on refresh, up to (but not including) the payment step.</li>
+<li><strong>What if 3-D Secure times out?</strong> Same as a decline: inline error, no booking created.</li>
+<li><strong>Where does the booking go after confirmation?</strong> A confirmation email is sent. Internally the booking lands in BackOffice → Bookings.</li>
+</ul>
+
+</article>
+</body>
+</html>

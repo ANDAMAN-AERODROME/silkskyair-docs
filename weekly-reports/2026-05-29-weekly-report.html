@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weekly Report — Week of 2026-05-22 → 2026-05-29</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Weekly Report — Week of 2026-05-22 → 2026-05-29</h1>
+<p><strong>Scope:</strong> All commits across the <code>andaman-aerodrome</code> monorepo (16 sub-repos) for the week 2026-05-22 → 2026-05-29. Author: Peter A. Moelgaard (with Claude pair-programming). Source: git logs across all repos.</p>
+<p><strong>Headline totals:</strong> 116 commits across 11 active repositories. Two large product workstreams ran in parallel — the <strong>Partner Portal Round-3 client-review remediation</strong> (F1.x) and the <strong>Member Portal MP1 (1st-review) kickoff</strong> (F2.x) — alongside booking email verification, end-to-end cancellation notifications, Meta CAPI go-live, a full RU localization pass, and the complete W23 training-manual + screenshot set. All work landed on <code>develop</code> (mirrored to <code>staging</code>); the staging→production cutover runbook is prepared but not yet executed.</p>
+<hr>
+<h2>1. Partner Portal — Round-3 Client-Review Remediation</h2>
+<p>The week&#39;s largest product workstream. The Round-3 partner review produced a slate of line items (R1–R22), mapped to features F1.1–F1.17 and tracked in <code>plans/w23-work-plan.md</code>.</p>
+<ul>
+<li><strong>Create a Partner stays open after Save (F1.1 R1)</strong> — Manager <code>70b067f</code>: the partners-create drawer now stays open in edit mode after Save, sets the URL <code>?partner=&lt;id&gt;</code>, and rehydrates the same record on refresh; adds an <code>isDirty</code> exit gate.</li>
+<li><strong>Home dashboard cleanup (F1.5 R5)</strong> — Partner <code>1e30ee9</code>: ReportingWidget hidden pre-launch; the home page is trimmed to the two day-to-day widgets (Available Tours + Latest Bookings) and no longer fetches performance metrics on load (<code>R5-DISABLED-2026-05</code>).</li>
+<li><strong>Available Tours widget (F1.6 R6)</strong> — Partner <code>1f56d3b</code> (Book / Copy Link / Open Tour CTAs, replacing the Agreement widget) + API <code>df47dd7</code> (widget i18n).</li>
+<li><strong>Edit Passenger — nationality + numeric weight (F1.10 R12 / F2.3 MP1-W03)</strong> — Partner <code>9d281f5</code> (nationality picker, fixes an FK save bug) + <code>b3b857f</code> (<code>&lt;NationalitySelector&gt;</code> + numeric weight with validation); API <code>60720de</code> (<code>weight_kg numeric(5,2)</code> with positive + ≤ 250 kg CHECKs; FK to <code>weight_ranges</code> dropped). The Member Portal swapped to the same numeric input.</li>
+<li><strong>Commission &amp; payment breakdown (F1.12 R15+R16)</strong> — Partner <code>fca8681</code>: fixed the per-booking commission math and hides the withholding-tax row on indirect/Net payments.</li>
+<li><strong>Pay-with-Card (F1.13 R17+R18)</strong> — Partner <code>499770c</code>: Omise card payment end-to-end on the booking detail page, surviving the 3-D Secure / <code>acs=false</code> bounce by auto-reopening into the same Direct/Net view and resuming polling; <code>76534c3</code> added an Omise SDK load watchdog + <code>.env.example</code> placeholders. Shared Omise card-form driver in <code>silkskyair-common</code> <code>534b2cd</code>; <code>seedUnpaidBooking</code> test helper <code>2d283d5</code>.</li>
+<li><strong>Net Payment / PromptPay parity (F1.14 R19)</strong> — Partner <code>2c1c812</code>: the <strong>TOTAL AMOUNT</strong> card and <strong>PromptPay amount</strong> now render in <em>both</em> payment modes (previously Direct-only).</li>
+<li><strong>Archive a Client (F1.17 R22)</strong> — Partner <code>db62864</code> (one-way, idempotent archive UI + a shared Toggle primitive) + API <code>e3813e5</code> (<code>archived_at</code> + <code>api.archive_member</code> RPC, org-ownership gated).</li>
+<li><strong>Label &amp; terminology relabels (F1.3 / F1.4 / F1.7 / F1.9 / F1.11; R3/R7/R8/R10/R11)</strong> — Partner <code>1ea63f6</code> (<code>formatRoleLabel</code> helper + 3 call-site swaps, R3), <code>e3c00ee</code> (&quot;Invite Team&quot; fallback + drop a <code>finalPriceNote</code> leak, R7+R11); BackOffice <code>042c7b2</code> (Members → <strong>Clients</strong> in sidebar + page chrome, R4-T6); API <code>202b619</code> (batch-rename of partner-portal strings).</li>
+</ul>
+<hr>
+<h2>2. Booking Email Verification (F1.16 R21)</h2>
+<p>Per-booking lead-passenger email verification, spanning Manager UI, the API, and n8n.</p>
+<ul>
+<li><strong>Manager</strong> <code>c5f75d5</code>: verification UI + API — an amber/green badge on booking cards and the detail page, a 6-digit OTP drawer (auto-advance, paste-fill, &quot;Send new code&quot;), and a Manager API proxy to the <code>verify</code> edge function.</li>
+<li><strong>API</strong> <code>3b0a3e8</code>: new <code>booking-verification-otp</code> email template.</li>
+<li><strong>Workflows</strong> <code>81e51d4</code>: <code>booking-verification-email</code> workflow sends the OTP to the lead pax; <code>e2e2295</code> fixed the serial chain where <code>fetch-otp</code> was being skipped.</li>
+<li><strong>Status-read fix (M1)</strong> — Manager <code>de22ec2</code>: switched the verification status <code>GET</code> route from the user-scoped client to the service client — RLS was blocking the badge&#39;s status read, so the badge couldn&#39;t reflect a completed verification. <code>0e8a8ee</code> adds a regression guard for the service-client read. (Both pushed to <code>origin/develop</code>.)</li>
+</ul>
+<hr>
+<h2>3. Cancellation Flow &amp; In-App Notifications (F1.15 R20)</h2>
+<p>Partner-initiated cancellations now fan out end-to-end.</p>
+<ul>
+<li><strong>Manager</strong> <code>4f9917d</code>: NotificationBell + global toast host; <code>f3ac79c</code>: E2E for the bell + toast (R20-T4); <code>a3659b3</code>: bell + dropdown screenshots for the manual.</li>
+<li><strong>API</strong> <code>c43beb2</code>: in-app cancellation notifications for back-office <code>booking_manager</code>s; <code>4aa025e</code>: customer-side cancellation email template; <code>36d09b9</code>: added <code>account.notifications</code> to the <code>supabase_realtime</code> publication so the bell badge updates live.</li>
+<li><strong>Workflows</strong> <code>2ba5c42</code>: fan out the cancellation to the customer email; <code>1d9202b</code>: Switch node routes the canonical <code>BookingCancellationRequested</code> event.</li>
+</ul>
+<hr>
+<h2>4. Member Portal — MP1 (1st-Review) Kickoff</h2>
+<p>The first workstreams of the Member Portal 1st-review plan landed.</p>
+<ul>
+<li><strong>No check-in in Phase 1 (F2.1 MP1-W01)</strong> — Member <code>1e26abb</code>: the check-in page, public magic-link entry, and check-in API all return 404; the booking detail page drops the Check In / Complete Info banners. Every touched file carries a <code>CHECKIN-DISABLED-2026-05</code> marker for clean Phase-2 reactivation.</li>
+<li><strong>Magic-link-only sign-in (F2.2 MP1-W02)</strong> — Member <code>9188695</code>: <code>/sign-in</code> renders an email + Send Magic Link only; password input, Forgot Password, and the password toggle are hidden. Policy centralized in <code>lib/auth/url-context.ts</code>. <code>f48535b</code>: pass recipient locale to the n8n webhook.</li>
+<li><strong>Passenger weight numeric (F2.3 MP1-W03)</strong> — Member <code>96912f3</code> (swap <code>WeightRangeSelector</code> → numeric input + validation) + <code>c6d9634</code> (weight-edit + validation E2E).</li>
+<li><strong>Add-passenger pricing modal (F2.4 MP1-W04)</strong> — Member <code>044226e</code>: surface <strong>Paid</strong> + <strong>Due</strong> rows in the pricing modal.</li>
+<li><strong>Amendment metadata (F2.5 MP1-W05)</strong> — Member <code>ec20177</code>: stash <code>amendment_subtype</code> in <code>BookingAmendmentRequested</code> metadata, feeding the new customer amendment-received email (API <code>4ff367c</code>, Workflows <code>edf13e3</code>).</li>
+</ul>
+<hr>
+<h2>5. Meta Conversions API — Go-Live (F3.1 / F3.2 / F3.3)</h2>
+<p>Server-side Purchase events for every confirmed booking, with full outcome recording.</p>
+<ul>
+<li><strong>WWW</strong> <code>ef3549a</code>: capture Facebook attribution (<code>fbclid</code>/<code>fbp</code>/<code>fbc</code>) and forward it through booking submission into <code>client_interactions</code> (F3.1/F3.2) + UI E2E (F3.3); <code>e178a80</code>: flip the comprehensive spec to assert <code>MetaCapiSent</code> with a real token.</li>
+<li><strong>API</strong> <code>ebc54e2</code>: add <code>MetaCapiSent</code> / <code>MetaCapiSkipped</code> / <code>MetaCapiFailed</code> booking event types.</li>
+<li><strong>Workflows</strong> <code>3c70c68</code>: gate the Meta CAPI dispatcher on FB attribution + record outcomes; <code>71f6b76</code>: meta-capi workflow + credential rotation; <code>cc70a51</code>: <code>record-*</code> nodes accept empty Supabase responses; <code>8753614</code>: register <code>N8N_WF_MARKETING_META_CAPI_PURCHASE</code> in the env-mapping registry.</li>
+<li><strong>Manager</strong> <code>a77f6dd</code>: show FB attribution in the booking-detail Client Interaction panel.</li>
+</ul>
+<hr>
+<h2>6. i18n &amp; Localization</h2>
+<p>A full pass on partner-portal strings and localized email delivery.</p>
+<ul>
+<li><strong>API</strong> <code>15f0e01</code>: partner <strong>RU locale backfill — 404 rows across 8 sections</strong>; <code>63dccde</code>: finish Members → Clients + fill remaining RU gaps; <code>24d83bd</code>: localized <code>sender_name</code> column on <code>email_templates_i18n</code>; <code>8bd0de3</code>: inject recipient locale into the invitation webhook payload.</li>
+<li><strong>Workflows</strong> <code>cd16315</code>: localized SMTP sender display name across 6 email workflows; <code>e90c4d9</code>: drop in-workflow recipient-locale lookups (architecture revert — locale is now injected upstream by the API rather than re-resolved inside n8n).</li>
+<li><strong>Recipient locale plumbing</strong> — Partner <code>c2a7664</code> / Manager <code>a8334a6</code> / Member <code>f48535b</code>: pass the invitee/recipient locale to n8n on invitation-resend and magic-link.</li>
+</ul>
+<hr>
+<h2>7. Documentation &amp; Training Manuals</h2>
+<p>The release precondition: every W23 feature got a manual plus <strong>real captured screenshots</strong>, reorganized into the canonical W22 docs layout. 25 commits in <code>silkskyair-docs</code>.</p>
+<ul>
+<li><strong>New <code>members</code> domain + manuals:</strong> no-checkin (<code>3eeba4a</code>), magic-link auth (<code>b811b27</code>), passenger-weight (<code>b3d952c</code>), add-passenger pricing (<code>ab3e865</code>), amendment-received emails (<code>cbfbff9</code>), payment notifications (<code>259c2b9</code>, MP1-W10).</li>
+<li><strong>Bookings / Partners manuals:</strong> cancellation-flow (<code>57694f3</code>), Pay-with-Card (<code>114a9a0</code>), edit-passenger (<code>efa8109</code>), Available Tours widget (<code>3ae0e75</code>), Manager Partner Create (<code>5cb3549</code>), Meta CAPI attribution + dispatcher (<code>7e332a0</code>).</li>
+<li><strong>Structure &amp; indexes:</strong> reorganize W23 manuals into the canonical W22 layout (<code>8783612</code>), W23 release index (<code>bf0933d</code>), feature close-outs (<code>160e644</code>, <code>eab729a</code>), <code>render-bodies</code> script (<code>e476c51</code>).</li>
+</ul>
+<hr>
+<h2>8. E2E Coverage &amp; Doc-Shot Infrastructure</h2>
+<ul>
+<li><strong>Partner</strong> <code>56baedd</code>: doc-shot infrastructure + 5 partner specs; <code>296f737</code>: F1.3/F1.4/F1.5/F1.7/F1.11/F1.14 partner-side regression nets; <code>c12bb64</code>: F2.5 amendment-received email E2E; <code>b58b815</code>: F2.10 BookingConfirmed → manager payment-received email; <code>5ad4ede</code>: cancellation email fan-out E2E; <code>bbb1df4</code>: <code>bookings_snapshot</code> debug-snapshot helper.</li>
+<li><strong>Common</strong> <code>5c594d5</code>: <code>check-services</code> health helper; <code>534b2cd</code>: shared Omise card-form driver for E2E.</li>
+<li><strong>Manager</strong> <code>b279943</code>: e2e fixtures + Playwright docs config; verification regression guard (<code>0e8a8ee</code>).</li>
+<li><strong>UI</strong> <code>d62831f</code>: pax-counter <code>data-action</code> + aria-label for E2E testability.</li>
+<li><strong>WWW</strong> <code>79868ad</code>: e2e helper updates + docs e2e harness.</li>
+</ul>
+<hr>
+<h2>9. Platform, Release Engineering &amp; Build</h2>
+<ul>
+<li><strong>Bookings-create root-cause fix</strong> — API <code>87b808d</code> (RPC envelope replaces a raw PostgREST query) + Workflows <code>4a5343f</code> (call <code>api.get_booking_for_create_workflow</code> RPC). Paired fix removing a fragile direct-query path from the create flow.</li>
+<li><strong>Staging build unblock</strong> — Manager <code>5c2cb3d</code>: type cast + 6 missing deps so the staging build compiles.</li>
+<li><strong>Dependency hygiene</strong> — Partner <code>a6c0d34</code> / Member <code>19a5e61</code>: <code>silkskyair-ui</code> range → <code>&quot;*&quot;</code> to pick up suffixed prereleases.</li>
+<li><strong>Account</strong> <code>d5ae96f</code>: auth <code>Image</code> <code>sizes</code> prop + Turbopack workspace root + lockfile regen.</li>
+<li><strong>Version bumps:</strong> api <code>1.18.0</code>, manager <code>2.6.0</code>, partner <code>2.3.0</code>, workflows <code>1.3.0</code>, member <code>1.3.0</code>, www <code>1.3.0</code>, ui <code>0.4.0</code>, docs <code>0.2.0</code>.</li>
+<li><code>.nvmrc</code> added across api / www / manager / orchestrator.</li>
+</ul>
+<hr>
+<h2>10. Deploy Status (as of 2026-05-29)</h2>
+<p>Sourced from git branch state across all repos (staging live-health was not probed this week; staging state is inferred from branch sync + the recorded workflow sync).</p>
+<table>
+<thead>
+<tr>
+<th>Pillar</th>
+<th>Local (<code>develop</code>)</th>
+<th>Staging</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Git develop branches</td>
+<td>all 11 repos pushed</td>
+<td><code>develop</code> == <code>origin/develop</code> (0 ahead / 0 behind); local <code>staging</code> tracks <code>develop</code> (0/0)</td>
+<td>✅ in sync</td>
+</tr>
+<tr>
+<td>Supabase DB</td>
+<td>8 new W23 migrations (<code>20260527210000</code> → <code>20260529100000</code>)</td>
+<td>applied via branch-monitoring on <code>staging</code></td>
+<td>✅ on develop/staging</td>
+</tr>
+<tr>
+<td>n8n workflows</td>
+<td>W23 changes synced; activeVersionIds recorded (<code>4a8585b</code>)</td>
+<td><code>pnpm sync:staging</code> run; versions recorded</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Vercel (Manager/Partner/Member/WWW/Account)</td>
+<td>develop pushed</td>
+<td>auto-deploy from develop/staging</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Production (<code>main</code>)</td>
+<td><code>develop</code> ahead of <code>main</code> — api 62, www 46, manager 44, workflows 40, partner 23, member 12, ui 3, account 2</td>
+<td>not yet released</td>
+<td>⏳ staging→prod runbook prepared (<code>plans/production-release-2026-05-26.md</code>), not yet executed</td>
+</tr>
+</tbody></table>
+<p>The production cutover is the next gate: <code>develop</code> is in sync with <code>staging</code> across every repo, but <code>main</code> has not yet received this release. The full step-by-step runbook (deploy order, backups, rollback) lives in <code>plans/production-release-2026-05-26.md</code>.</p>
+<hr>
+<h2>11. Repo-by-Repo Commit Counts</h2>
+<table>
+<thead>
+<tr>
+<th>Repo</th>
+<th>Commits</th>
+<th>Theme</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>silkskyair-docs</code></td>
+<td>25</td>
+<td>W23 manuals + screenshots + canonical layout + release index</td>
+</tr>
+<tr>
+<td><code>silkskyair-partner</code></td>
+<td>21</td>
+<td>Round-3 remediation (pay-with-card, commission, parity, archive, dashboard, Available Tours), doc-shots + regression specs</td>
+</tr>
+<tr>
+<td><code>silkskyair-api</code></td>
+<td>17</td>
+<td>OTP / cancellation / amendment email templates, member-archive + weight migrations, RU backfill + label renames, Meta CAPI event types</td>
+</tr>
+<tr>
+<td><code>silkskyair-workflows</code></td>
+<td>16</td>
+<td>Verification + cancellation + amendment fan-out, Meta CAPI dispatcher, localized senders, staging sync</td>
+</tr>
+<tr>
+<td><code>silkskyair-manager</code></td>
+<td>14</td>
+<td>Email verification, NotificationBell + toast, partner-create UX, Members→Clients, FB attribution, staging build fix</td>
+</tr>
+<tr>
+<td><code>silkskyair-member</code></td>
+<td>10</td>
+<td>MP1 kickoff — no-checkin, magic-link, numeric weight, add-passenger pricing, amendment metadata</td>
+</tr>
+<tr>
+<td><code>silkskyair-www</code></td>
+<td>7</td>
+<td>Meta CAPI attribution capture + E2E, Toggle consolidation, e2e harness</td>
+</tr>
+<tr>
+<td><code>silkskyair-common</code></td>
+<td>2</td>
+<td>Omise card-form driver + check-services helper</td>
+</tr>
+<tr>
+<td><code>silkskyair-ui</code></td>
+<td>2</td>
+<td>pax-counter / Toggle testability + release bump</td>
+</tr>
+<tr>
+<td><code>silkskyair-account</code></td>
+<td>1</td>
+<td>auth Image / Turbopack config</td>
+</tr>
+<tr>
+<td><code>silkskyair-orchestrator</code></td>
+<td>1</td>
+<td><code>.nvmrc</code></td>
+</tr>
+</tbody></table>
+<p>Quiet repos (no commits in window): <code>silkskyair-cms</code>, <code>silkskyair-config</code>, <code>silkskyair-reporting</code>, <code>silkskyair-skystories</code>, <code>silkskyair-utils</code>.</p>
+<hr>
+<h2>Suggested Report Highlights</h2>
+<p>If you&#39;re presenting this to stakeholders:</p>
+<ol>
+<li><strong>Partner Portal Round-3 review fully remediated</strong> — Pay-with-Card (Omise 3-D Secure), corrected commission/withholding math, Net Payment + PromptPay parity, one-way client archive, and the Available Tours dashboard, plus the complete Members → <strong>Clients</strong> / Full–Net / Invite Team relabel.</li>
+<li><strong>Member Portal MP1 kicked off</strong> — Phase-1 scope locked (no online check-in), magic-link-only sign-in, numeric passenger weight, and add-passenger pricing transparency.</li>
+<li><strong>Booking email verification shipped</strong> — per-booking lead-pax OTP with a live status badge (including the RLS service-client read fix that made the badge accurate).</li>
+<li><strong>Cancellation flow is now end-to-end</strong> — partner banner → realtime back-office bell + manager email → customer acknowledgement email.</li>
+<li><strong>Meta CAPI is live on staging</strong> — server-side Purchase events for every confirmed booking, with per-dispatch outcome recording (<code>MetaCapiSent/Skipped/Failed</code>).</li>
+<li><strong>Full RU localization pass</strong> — 404 backfilled rows across 8 sections plus localized email sender names.</li>
+<li><strong>Complete W23 training-manual set with real screenshots</strong>, in the canonical docs layout — the documentation precondition for the production release is done.</li>
+<li><strong>The production release is staged and runbook-ready</strong> — <code>develop</code> is in sync with <code>staging</code> across all repos; executing <code>plans/production-release-2026-05-26.md</code> is the next step.</li>
+</ol>
+
+</article>
+</body>
+</html>

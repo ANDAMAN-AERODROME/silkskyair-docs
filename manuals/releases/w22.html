@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>W22 Release Manual</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>W22 Release Manual</h1>
+<p>Features shipped in the W22 release across the WebSite and BackOffice. Each entry below links to the (release-agnostic) feature manual under <strong>Manuals by Domain</strong>.</p>
+<p>The matching QA test plan is tracked separately as a Notion task: <a href="https://www.notion.so/36cbd1aae1c981cca636faa8a89b5227">Test pending features — Staging → Production (W22)</a>.</p>
+<h2>SkyStories</h2>
+<ul>
+<li><a href="../domains/sky-stories/related-tours.html">Related Tours</a> — Sky Story detail pages now end with a Related Tours rail, populated and rendered in every locale.</li>
+<li><a href="../domains/sky-stories/captions-and-media-editing.html">Captions &amp; Media Editing</a> — captions and alt text on media tiles are now editable inline in BackOffice; the previous optimistic-save flicker is fixed.</li>
+<li><a href="../domains/sky-stories/keyword-multi-locale-sync.html">Keyword Multi-Locale Sync</a> — keywords created in the Taxonomy view now auto-publish to every locale and propagate to Strapi without manual per-locale entry.</li>
+</ul>
+<h2>Bookings</h2>
+<ul>
+<li><a href="../domains/bookings/payment-before-confirmation.html">Payment-Before-Confirmation</a> — <strong>SSA-621</strong> reworked the booking flow so customers pay first, then the booking is confirmed.</li>
+<li><a href="../domains/bookings/multi-tour-promos.html">Multi-Tour Promos</a> — <strong>SSA-633</strong> and <strong>SSA-634</strong> added multi-tour scope on promotions and a pax-stepper clamp at the promotion&#39;s <code>min_pax</code>.</li>
+<li><a href="../domains/bookings/customer-notes.html">Customer Notes — End-to-End</a> — <strong>SSA-619</strong> captures customer notes at checkout. <strong>SSA-619 D5</strong> gates the edit affordance in BackOffice so staff cannot silently overwrite customer-typed notes.</li>
+</ul>
+
+</article>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Available Tours Dashboard Widget (Partner Portal)</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Available Tours Dashboard Widget (Partner Portal)</h1>
+<blockquote>
+<p><strong>App:</strong> Partner Portal
+<strong>Who uses it:</strong> Partner agents who land on the dashboard and want to start a new booking, share a tour link with a customer, or open the marketing page to read the tour details themselves.
+<strong>What it does:</strong> Surfaces every active SilkSky Air tour as a scrollable list on the dashboard, with three hover-revealed CTAs per row: <strong>Book Tour</strong>, <strong>Copy Link</strong>, <strong>Open Tour</strong>.</p>
+</blockquote>
+<h2>What partners see</h2>
+<p>On <code>/home</code>, the right-hand column of the dashboard grid now hosts the <strong>Available Tours</strong> widget (it replaced the AgreementWidget slot pre-launch — see &quot;Why this slot&quot; below). The list scrolls vertically inside a fixed-height card. Each row contains:</p>
+<ul>
+<li>A <strong>hero image</strong> (or a gradient placeholder when the tour has no <code>tour_media</code> row yet).</li>
+<li>The tour&#39;s <strong>localized title</strong> (falls back to the <code>tours.label</code> column, then the slug).</li>
+<li>A <strong>duration</strong> chip — e.g. <code>30 minutes</code> — when <code>tours.duration</code> is set.</li>
+<li>A <strong>price line</strong> — <code>from {price} {currency} / per person</code> — when the tour has a <code>tour_pricing</code> row.</li>
+</ul>
+<p>Hover (desktop) or tap (mobile) reveals the action overlay with three CTAs:</p>
+<table>
+<thead>
+<tr>
+<th>CTA</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Book Tour</strong></td>
+<td>Opens the Create Booking wizard with this tour pre-selected on step 1. URL becomes <code>/bookings?create=true&amp;tour=&lt;slug&gt;&amp;step=0</code>; the wizard&#39;s <code>useQueryState(&quot;tour&quot;)</code> picks the slug up and the new tour-hydration effect resolves the full TourSummary from <code>/api/tours</code> so step 4 (review) gets the data it needs.</td>
+</tr>
+<tr>
+<td><strong>Copy Link</strong></td>
+<td>Writes <code>${NEXT_PUBLIC_WWW_URL}/tour/&lt;slug&gt;</code> to the clipboard. A 1.5-second &quot;Link copied&quot; chip swaps in for the CTA label as confirmation. Partners use this to paste tour pages into customer chats / emails.</td>
+</tr>
+<tr>
+<td><strong>Open Tour</strong></td>
+<td>Opens the same <code>${NEXT_PUBLIC_WWW_URL}/tour/&lt;slug&gt;</code> URL in a new browser tab so the partner can read the marketing copy without losing their dashboard context.</td>
+</tr>
+</tbody></table>
+<h2>Why this slot</h2>
+<p>R5 (Round 3 of the partnership-portal review) gated <code>ReportingWidget</code> pre-launch — the commission rate copy was setting expectations before policy was finalised. <code>AgreementWidget</code> is the same kind of commission-rate surface, so rather than render an empty 3-column grid, R6 swaps the Agreement column for tour-discovery surface partners actively asked for. The <code>AgreementWidget</code> import is left in <code>app/home/page.tsx</code> (commented with <code>R6-AGREEMENT-MOVED-2026-05:</code>) so the swap can be reverted without rediscovering the file path.</p>
+<h2>Where the data comes from</h2>
+<ul>
+<li><strong>List:</strong> <code>GET /api/tours</code> (existing endpoint, since the wizard&#39;s <code>TourSelector</code> consumes it). Returns every row in <code>tours</code> with <code>status=&#39;active&#39;</code>, ordered by <code>slug</code>, with the partner&#39;s current locale applied through <code>tours_i18n</code>.</li>
+<li><strong>Hero image:</strong> F1.6 extended the same route to join <code>tour_media</code> filtered to <code>role=&#39;hero&#39;</code> and, for each tour with a hit, generate a 1-hour Supabase signed URL. Tours without a row in <code>tour_media</code> get <code>heroUrl: null</code> and the widget falls back to the gradient placeholder. Signed URLs are 1 h long; the dashboard refetches whenever the partner navigates back to <code>/home</code>, so expiry is never visible to users.</li>
+<li><strong>WWW URL:</strong> <code>process.env.NEXT_PUBLIC_WWW_URL</code>, with a fallback to <code>https://silkskyair.com</code>. Each environment points at its own marketing site (local dev: <code>http://localhost:4321</code>; staging: <code>https://staging.silkskyair.com</code> if used; prod: <code>https://silkskyair.com</code>).</li>
+</ul>
+<p>There is no tour-to-organization junction in the schema. &quot;The partner&#39;s purchasable tours&quot; today means &quot;every active tour&quot; — if SilkSky ever wants per-partner curation, the data model + this widget&#39;s query both need to change.</p>
+<h2>Empty + degraded states</h2>
+<ul>
+<li><strong>No active tours:</strong> the widget renders <code>i18n(&quot;availableTours.empty&quot;)</code> (&quot;No tours available right now.&quot;). Doesn&#39;t break the dashboard layout.</li>
+<li><strong><code>/api/tours</code> 401 or network error:</strong> the widget treats the response as <code>[]</code> and shows the empty state. The partner can refresh; the dashboard does not auto-retry.</li>
+<li><strong>Tour with no hero in <code>tour_media</code>:</strong> the gradient placeholder + <code>BookOpen</code> lucide icon render in the 80×80 slot. Same visual treatment for every tour without art so the widget doesn&#39;t look broken.</li>
+<li><strong>Tour with no <code>tour_pricing</code> row:</strong> the price line is omitted; the row still renders with just title + duration. Booking is still possible because the wizard fetches pricing independently from the availability RPC.</li>
+<li><strong><code>navigator.clipboard.writeText</code> unavailable (insecure origin, old browser):</strong> Copy Link silently no-ops. The Open Tour CTA continues to work as an escape hatch.</li>
+</ul>
+<h2>Support staff playbook</h2>
+<blockquote>
+<p><strong>&quot;The hero images don&#39;t show up — is something broken?&quot;</strong>
+Tours without a <code>tour_media</code> row of <code>role=&#39;hero&#39;</code> will always show the gradient placeholder. Ops can upload one through the Strapi tour admin (or directly into the Supabase <code>tour_media</code> bucket). After upload the signed URL is generated on the next dashboard reload; no app deploy needed.</p>
+</blockquote>
+<blockquote>
+<p><strong>&quot;Copy Link copied a URL to silkskyair.com but staging/local is different — bug?&quot;</strong>
+No — the widget reads <code>NEXT_PUBLIC_WWW_URL</code>. If it&#39;s not set in the current environment, the widget falls back to the production URL <code>https://silkskyair.com</code>. Set the env var in the deployment&#39;s environment variables (and add <code>NEXT_PUBLIC_WWW_URL=http://localhost:4321</code> to <code>silkskyair-partner/.env.local</code> for local dev) and restart the app.</p>
+</blockquote>
+<blockquote>
+<p><strong>&quot;Book Tour didn&#39;t pre-select the tour for me.&quot;</strong>
+Confirm the URL after the click — it should be <code>/bookings?create=true&amp;tour=&lt;slug&gt;&amp;step=0</code>. If the slug parameter is missing, the click hit the wrong target (the overlay sometimes loses focus mid-hover under some trackpads — re-hover and try again). If the URL is correct but step 0 still shows no selection, the <code>/api/tours</code> fetch inside the wizard&#39;s hydration effect probably 401&#39;d; check the network tab and partner session.</p>
+</blockquote>
+<h2>Reference</h2>
+<ul>
+<li><strong>Source:</strong><ul>
+<li>Widget: <code>silkskyair-partner/components/home/widgets/available-tours-widget.tsx</code> (component + <code>useAvailableTours</code> hook).</li>
+<li>Dashboard: <code>silkskyair-partner/app/home/page.tsx</code> (swap with <code>AgreementWidget</code> slot).</li>
+<li>Wizard pre-fill: <code>silkskyair-partner/components/bookings/create/create-booking-drawer.tsx</code> (the F1.6 hydration <code>useEffect</code>).</li>
+</ul>
+</li>
+<li><strong>API:</strong> <code>silkskyair-partner/app/api/tours/route.ts</code> (now joins <code>tour_media role=&#39;hero&#39;</code> + signs the URL).</li>
+<li><strong>Type:</strong> <code>silkskyair-partner/lib/bookings/types.ts:TourSummary</code> (new optional <code>heroUrl</code> field).</li>
+<li><strong>i18n:</strong> <code>silkskyair-api/supabase/migrations/20260528140000_partner_available_tours_i18n.sql</code> (6 keys × en/th/ru).</li>
+<li><strong>Env:</strong> <code>NEXT_PUBLIC_WWW_URL</code> (see <code>silkskyair-partner/.env.example</code>).</li>
+<li><strong>E2E:</strong><ul>
+<li><code>silkskyair-partner/e2e/partner-available-tours-simple.spec.ts</code> — widget mounts on <code>/home</code> with at least one tour row.</li>
+<li><code>silkskyair-partner/e2e/partner-available-tours-full.spec.ts</code> — hover exposes 3 CTAs; Copy Link writes the expected URL to clipboard + shows the &quot;Link copied&quot; chip; Open Tour spawns a new tab on the same URL; Book Tour navigates to <code>/bookings?create=true&amp;tour=&lt;slug&gt;</code>.</li>
+</ul>
+</li>
+</ul>
+
+</article>
+</body>
+</html>

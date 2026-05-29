@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Commission &amp; Payment Breakdown (Partner Portal)</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Commission &amp; Payment Breakdown (Partner Portal)</h1>
+<blockquote>
+<p><strong>App:</strong> Partner Portal
+<strong>Who uses it:</strong> Partner staff settling a booking — deciding whether the partner collects the full amount (Full Payment) or only their commission (Net Payment), and seeing exactly how VAT, commission, and withholding tax split the money.
+<strong>What it does:</strong> On an unpaid booking, the Payment section computes a full line-by-line breakdown for both payment directions. It extracts Thai VAT from the inclusive total, applies the partner&#39;s commission to the service amount excluding VAT, and — for Full Payment only — deducts 3% withholding tax. VAT-on-commission is added when the partner is VAT-registered. The breakdown shows the net to partner and net to operator for each direction.</p>
+</blockquote>
+<h2>Before you start</h2>
+<ul>
+<li><strong>Local URL:</strong> <code>http://localhost:3050</code> (staging / production: the same paths on <code>staging.partner.silkskyair.com</code> / <code>partner.silkskyair.com</code>).</li>
+<li><strong>Account:</strong> Sign in with a Partner Portal account whose organization has a non-zero <strong>Commission %</strong> (e.g. <code>peter@andaman.co.th</code> for Advance Aviation on local).</li>
+<li><strong>Prerequisites:</strong> an unpaid booking assigned to your partner org with at least one priced item, so the total is non-zero and commission applies.</li>
+<li><strong>Good to know — the four scenarios:</strong> the math has two axes — <em>who collects</em> (Full / Direct vs Net / Indirect) and <em>is the partner VAT-registered</em> (yes adds VAT-on-commission, no leaves it at zero). That&#39;s four combinations; the breakdown grid renders the correct rows for whichever applies.</li>
+</ul>
+<h2>Step-by-step</h2>
+<h3>Step 1 — Open an unpaid booking&#39;s Payment section</h3>
+<p>From the Bookings list, open an unpaid booking. The Payment section is shown with the two payment options.</p>
+<p><img src="../../../screenshots/partners/commission-breakdown/01-payment-section.png" alt="Step 1 — Payment options"></p>
+<p><strong>What you should see:</strong> a <strong>Full Payment</strong> button (always shown) and, when commission applies, a <strong>Net Payment (after deducting commission)</strong> button. Each has a <strong>View breakdown</strong> toggle next to it.</p>
+<h3>Step 2 — Expand the Full Payment breakdown</h3>
+<p>Click <strong>View breakdown</strong> beside Full Payment. The grid expands.</p>
+<p><img src="../../../screenshots/partners/commission-breakdown/02-full-breakdown.png" alt="Step 2 — Full Payment breakdown"></p>
+<p><strong>What you should see</strong> (Full / Direct — the operator collected the full amount and pays the partner their commission):</p>
+<ul>
+<li><strong>Total (incl. VAT)</strong> — the booking total.</li>
+<li><strong>VAT on service (7%)</strong> — extracted from the inclusive total (total × 7 / 107), shown as a deduction.</li>
+<li><strong>Service (excl. VAT)</strong> — total minus the VAT above.</li>
+<li><strong>Commission (X%)</strong> — the partner&#39;s percentage of the service-excl-VAT amount.</li>
+<li><strong>Withholding tax (3%)</strong> — deducted from the commission. <strong>This row appears on Full Payment only.</strong></li>
+<li><strong>VAT on commission (7%)</strong> — appears <strong>only if the partner is VAT-registered</strong>.</li>
+<li><strong>Net to partner</strong> — commission + VAT-on-commission − withholding tax.</li>
+<li><strong>Net to operator</strong> — total − net to partner.</li>
+</ul>
+<blockquote>
+<p><strong>Worked example (Full Payment, not VAT-registered):</strong> total <strong>57,000 THB</strong>, VAT 7%, commission 10%, WHT 3%.
+VAT on service = 57,000 × 7 / 107 = <strong>3,728.97</strong> · Service excl. VAT = <strong>53,271.03</strong> · Commission = 10% = <strong>5,327.10</strong> · Withholding tax = 3% = <strong>159.81</strong> · <strong>Net to partner = 5,167.29</strong> · <strong>Net to operator = 51,832.71</strong>.</p>
+</blockquote>
+<h3>Step 3 — Expand the Net Payment breakdown</h3>
+<p>Collapse Full Payment and click <strong>View breakdown</strong> beside <strong>Net Payment</strong>.</p>
+<p><img src="../../../screenshots/partners/commission-breakdown/03-net-breakdown.png" alt="Step 3 — Net Payment breakdown"></p>
+<p><strong>What you should see</strong> (Net / Indirect — the partner collected the full amount from the customer and transfers the remainder to the operator):</p>
+<ul>
+<li>The same Total / VAT / Service / Commission rows.</li>
+<li><strong>No withholding-tax row</strong> — on Net Payment the partner already holds their commission, so there&#39;s no operator-to-partner payment to withhold tax from.</li>
+<li><strong>Net to partner</strong> — commission (+ VAT-on-commission if registered), with <strong>no</strong> WHT deduction.</li>
+<li><strong>Net to operator</strong> — total − commission (− VAT-on-commission if registered).</li>
+</ul>
+<blockquote>
+<p><strong>Worked example (Net Payment, not VAT-registered):</strong> total <strong>28,000 THB</strong>, commission 10% → <strong>Net to partner = 2,616.82</strong>, <strong>Net to operator = 25,383.18</strong> (no WHT deducted).</p>
+</blockquote>
+<h2>Tips &amp; common questions</h2>
+<ul>
+<li><strong>Why does withholding tax only show on Full Payment?</strong> WHT is what the operator withholds when <em>paying the partner</em>. On Net Payment the partner already has their commission in hand (they collected from the customer), so there&#39;s no operator-to-partner payment to withhold from. The breakdown and the recorded settlement agree on this — WHT is recorded as 0 on Net.</li>
+<li><strong>When does &quot;VAT on commission&quot; appear?</strong> Only when the partner organization is flagged VAT-registered. A VAT-registered partner adds 7% VAT on top of their commission; a non-registered partner does not, so the row is hidden and the value is 0.</li>
+<li><strong>The numbers are off by a cent from my spreadsheet.</strong> Each intermediate step is rounded to 2 decimals to match the original Excel reference. Re-deriving from the rounded totals can differ by a rounding cent — trust the per-row values shown.</li>
+<li><strong>Net Payment isn&#39;t offered.</strong> It only appears when commission applies (Commission % &gt; 0). A zero-commission org sees Full Payment only.</li>
+<li><strong>Where do these percentages come from?</strong> VAT and commission are snapshotted onto the booking from the partner/org configuration at booking time, so historical bookings keep the rate that was in effect when they were made.</li>
+</ul>
+<h2>Reference</h2>
+<ul>
+<li><strong>Code:</strong> <a href="https://github.com/">silkskyair-partner/lib/bookings/commission.ts</a> — <code>calculateCommission(input)</code> returns the full <code>CommissionBreakdown</code>. WHT = <code>paymentCollectedBy === &quot;direct&quot; ? commission × wht% : 0</code>. VAT-on-commission = <code>vatRegistered ? commission × vat% : 0</code>.</li>
+<li><strong>UI:</strong> <a href="https://github.com/">silkskyair-partner/components/bookings/booking-payment-section.tsx</a> — the <code>BreakdownGrid</code> (<code>data-region=&quot;commission-breakdown&quot;</code>); the withholding-tax row renders only when <code>data.paymentCollectedBy === &quot;direct&quot;</code>.</li>
+<li><strong>Shipped:</strong> W23 — partner commit <code>fca8681</code> (F1.12).</li>
+</ul>
+
+</article>
+</body>
+</html>

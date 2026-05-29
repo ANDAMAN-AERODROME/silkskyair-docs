@@ -1,0 +1,1391 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Partnership Portal — Client Review (Round 3) Remediation Plan</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Partnership Portal — Client Review (Round 3) Remediation Plan</h1>
+<blockquote>
+<p><strong>Source review:</strong> <code>Partnership Portal Review (Third Review)</code> PDF, prepared 29/04/2026 by Micheline, Panpaporn, Nuchada; reviewed 08/05/2026 by Asaf.
+<strong>Plan authored:</strong> 2026-05-12 / 2026-05-13.
+<strong>Working branch (all repos):</strong> <code>claude/plan-client-review-YNHfY</code>.</p>
+<p><strong>How to use this document:</strong></p>
+<ul>
+<li>Treat the <strong>Access Prerequisites</strong> section as a hard gate. The non-blocked work (R1, R4, R5, R7-R16, R19, R20-in-app, R21 partner-side, R22) can proceed against the four already-reachable repos. The access-gated work (R3, R2, R17/R18 env, R20-email, R21-T5) requires repo / config grants before it can be planned to file:line precision.</li>
+<li>The <strong>Final Plan</strong> section gives the concrete file:line edits and the batch ordering. Use the <strong>Critical files</strong> consolidation as a checklist when implementing.</li>
+<li>The <strong>Discoveries</strong> and <strong>Decisions log</strong> sections are kept for traceability — every claim in the Final Plan ties back to a discovery or a decision recorded there.</li>
+<li>Repo names use the <code>andaman-aerodrome/</code> prefix; the four already-reachable repos are <code>silkskyair-orchestrator</code>, <code>silkskyair-api</code>, <code>silkskyair-manager</code>, <code>silkskyair-partner</code>. Three further repos (<code>silkskyair-account</code>, <code>silkskyair-member</code>, <code>silkskyair-workflows</code>) and the <code>silkskyair-partner</code> Vercel project are required to complete this plan — see Access Prerequisites.</li>
+</ul>
+</blockquote>
+<hr>
+<h2>Context</h2>
+<p>The client (Silk Sky Air) ran a third pre-launch review against the Partnership Portal (<code>https://partner.silkskyair.com</code>) and the Back Office that creates/manages partners. The review yields a mix of:</p>
+<ul>
+<li><strong>Bugs</strong> (data loss on partner create, FK violation on passenger nationality edit, broken commission math for indirect payment, payment-by-card disabled, missing back-office notification on cancellation, missing email-verification popup, missing untranslated i18n strings)</li>
+<li><strong>Terminology/UX changes</strong> (Members → Clients globally; Direct → Full / Indirect → Net; “Confirm Booking” → “Submit Booking”; “Invite Member” → “Invite Team”; “organization_manager” → “Manager”; stage label fix)</li>
+<li><strong>Layout / scope reductions</strong> (temporarily remove Commission Rate &amp; Performance Overview cards; reshape dashboard to Latest Bookings + Available Tours)</li>
+<li><strong>Small features</strong> (archive clients)</li>
+</ul>
+<p>All of this must be remediated on a single shared branch per repo (<code>claude/plan-client-review-YNHfY</code>) across four repositories:</p>
+<ul>
+<li><code>andaman-aerodrome/silkskyair-orchestrator</code></li>
+<li><code>andaman-aerodrome/silkskyair-api</code></li>
+<li><code>andaman-aerodrome/silkskyair-manager</code> (Back Office)</li>
+<li><code>andaman-aerodrome/silkskyair-partner</code> (Partner Portal)</li>
+</ul>
+<p><strong>Access check (corrected 2026-05-13):</strong> four of the repos involved in this remediation are reachable via the GitHub MCP server. <strong>Several review items target code that lives in repos / configs we do NOT have access to.</strong> Tasks owned by those code paths cannot be planned with file:line confidence and are blocked until access is granted. See <strong>Access Prerequisites</strong> below.</p>
+<hr>
+<h2>Access Prerequisites (BLOCKER — must be resolved before this plan can be finalized)</h2>
+<p>A plan without access to the code it changes is speculation, not a plan. The following access grants are prerequisites for promoting the affected tasks from 🔴 to 🟢:</p>
+<table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Type</th>
+<th>Tasks blocked</th>
+<th>Why we need it</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>andaman-aerodrome/silkskyair-account</code></td>
+<td>GitHub repo</td>
+<td><strong>R3</strong></td>
+<td>The &quot;organization_manager&quot; role chip the reviewer photographed is rendered on the Create-Account page hosted at <code>NEXT_PUBLIC_ACCOUNT_URL</code>. The four reachable repos contain only secondary copies of <code>getRoleLabel</code>; the reviewer-visible chip is in this repo. Without access we cannot identify the JSX or write a file:line fix.</td>
+</tr>
+<tr>
+<td><code>andaman-aerodrome/silkskyair-workflows</code></td>
+<td>GitHub repo</td>
+<td><strong>R2</strong>, <strong>R20 email</strong></td>
+<td>Supabase Auth email is disabled (<code>silkskyair-api/supabase/config.toml</code>). R2&#39;s invitation &quot;From&quot; identity lives in the n8n <code>/invitations/send-email</code> workflow. R20&#39;s email fan-out requires a new <code>/notifications/cancellation-email</code> workflow. Without access to the workflow JSON we cannot specify which node to edit, what the current From string is, or how recipient queries are constructed.</td>
+</tr>
+<tr>
+<td><code>andaman-aerodrome/silkskyair-member</code></td>
+<td>GitHub repo</td>
+<td><strong>R21 (verification page)</strong>, possibly <strong>R12</strong></td>
+<td>Referenced in <code>silkskyair-orchestrator/CLAUDE.md</code>. The customer-facing <code>/verify?token=...&amp;bookingId=...</code> page (per <code>N8N_WORKFLOW_DEPENDENCY_MATRIX.md:102</code>) lives in this repo. We may need to extend or read it to design R21&#39;s partner-side popup correctly (token format, response shape).</td>
+</tr>
+<tr>
+<td>Vercel project for <code>silkskyair-partner</code> (and <code>silkskyair-manager</code>)</td>
+<td>Deployment config</td>
+<td><strong>R17</strong>, <strong>R18</strong></td>
+<td><code>OMISE_PUBLIC_KEY</code> / <code>OMISE_SECRET_KEY</code> must be provisioned at runtime in Vercel. Code path is verified (<code>silkskyair-partner/lib/integrations/omise.ts:7-10</code>, <code>app/api/bookings/[id]/payments/intent/route.ts:228-233</code>) but we cannot set or verify the env values themselves without dashboard access.</td>
+</tr>
+<tr>
+<td>n8n cloud workspace</td>
+<td>Runtime config</td>
+<td><strong>R2</strong>, <strong>R20 email</strong></td>
+<td>Even after workflow-repo access, the running instance must be re-imported / re-deployed.</td>
+</tr>
+</tbody></table>
+<p><strong>Pre-flight tasks (must complete before code work begins):</strong></p>
+<ul>
+<li><strong>X0-T1</strong> — Request and confirm read access to <code>silkskyair-account</code>. Acceptance: <code>mcp__github__get_file_contents</code> returns at least one file from <code>silkskyair-account</code> (e.g. <code>package.json</code>).</li>
+<li><strong>X0-T2</strong> — Request and confirm read access to <code>andaman-aerodrome/silkskyair-workflows</code> (confirmed name 2026-05-13). Acceptance: at least one workflow JSON file is readable via GitHub MCP.</li>
+<li><strong>X0-T3</strong> — Request and confirm read access to <code>silkskyair-member</code>. Acceptance: <code>app/verify/page.tsx</code> (or equivalent) is readable.</li>
+<li><strong>X0-T4</strong> — Confirm whether <code>OMISE_PUBLIC_KEY</code> / <code>OMISE_SECRET_KEY</code> are already set in the partner-portal Vercel project (staging + production). Acceptance: client confirms presence, or grants access so we can verify directly.</li>
+<li><strong>X0-T5</strong> — After X0-T1/T2/T3 land, re-run Phase 2 Explore agents scoped to the newly-reachable repos. Acceptance: file:line evidence for R3 chip, R2 From-identity workflow node, R20 cancellation-email workflow target, R21 verification page contract.</li>
+</ul>
+<p>Until X0 completes, the affected tasks below are marked 🔴 <strong>blocked-on-access</strong> and only carry intent-level descriptions, not implementation steps. The implementable surface of this plan is <strong>R1, R4, R5, R7, R8, R9, R10, R11, R12, R13, R14, R15, R16, R19, R20 (in-app half), R21 (partner-side popup only — pending X0-T3 for the verify page contract), R22.</strong></p>
+<hr>
+<h2>How this plan is structured</h2>
+<p>Each item in the review is decomposed into <strong>atomic tasks</strong>. Every task obeys these rules so it maps 1:1 to a Notion ticket:</p>
+<ol>
+<li><strong>One touchpoint</strong> — exactly one user-visible behavior or one code surface (a single page, a single button, a single calculation, a single migration, etc.). Bundled review items are split.</li>
+<li><strong>Independently verifiable</strong> — has a single, concrete acceptance test the reviewer can run.</li>
+<li><strong>Single impact statement</strong> — the user-visible change is describable in one sentence.</li>
+<li><strong>Repository-scoped</strong> — each task is owned by exactly one repo. Cross-repo work is split into separate paired tasks (e.g. <code>…-api</code> + <code>…-partner</code>).</li>
+<li><strong>Confidence-gated</strong> — tasks marked <code>🟡 needs investigation</code> cannot leave planning. We resolve uncertainty in Phase 2 before promoting them to <code>🟢 ready</code>.</li>
+</ol>
+<p>For each task we record:</p>
+<ul>
+<li><strong>ID</strong> (Rxx-T# = review item Rxx, sub-task #)</li>
+<li><strong>Title</strong></li>
+<li><strong>Repo / touchpoint</strong> (one place)</li>
+<li><strong>What changes</strong> (one sentence)</li>
+<li><strong>Why</strong> (the review quote)</li>
+<li><strong>Acceptance test</strong> (one verifiable check)</li>
+<li><strong>Confidence</strong> (🟢 ready / 🟡 needs investigation / 🔴 blocked-on-decision)</li>
+<li><strong>Open questions</strong> (if any)</li>
+</ul>
+<hr>
+<h2>Review items as extracted from PDF (verbatim mapping)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Page</th>
+<th>Section</th>
+<th>Review quote / observation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>R1</td>
+<td>2</td>
+<td>Creating a Partner (Back Office &gt; Partners)</td>
+<td>“After entering partner details and clicking save, the fields show up empty and data must be re-entered.”</td>
+</tr>
+<tr>
+<td>R2</td>
+<td>3</td>
+<td>Adding a User (Partner Portal)</td>
+<td>“Is it possible to change the sender name from ‘system’ to ‘Silk Sky Partner Portal’ or just show the full email address (<a href="mailto:system@silkskyair.com">system@silkskyair.com</a>)?”</td>
+</tr>
+<tr>
+<td>R3</td>
+<td>3</td>
+<td>Adding a User (Partner Portal)</td>
+<td>“‘organization_manager’ to be replaced with ‘Manager’.” (on CREATE YOUR ACCOUNT page)</td>
+</tr>
+<tr>
+<td>R4</td>
+<td>4</td>
+<td>Dashboard (terminology)</td>
+<td>“TERMINOLOGY CHANGE THROUGHOUT ALL SYSTEMS: Change ‘Members’ to ‘Clients’.”</td>
+</tr>
+<tr>
+<td>R5</td>
+<td>4</td>
+<td>Dashboard</td>
+<td>“IMPORTANT: Temporarily remove ‘Performance Overview + Commission Rate’ to avoid confusion about commission expectation.”</td>
+</tr>
+<tr>
+<td>R6</td>
+<td>5</td>
+<td>Dashboard</td>
+<td>Preferred layout: Latest Bookings + Available Tours. (Implies an <code>Available Tours</code> widget.)</td>
+</tr>
+<tr>
+<td>R7</td>
+<td>6</td>
+<td>Team Management</td>
+<td>“Request to change to ‘+ Invite Team’.” (currently <code>+ Invite Member</code>)</td>
+</tr>
+<tr>
+<td>R8</td>
+<td>6</td>
+<td>Team member edit drawer</td>
+<td>Untranslated i18n keys visible on screen: <code>team.status.archived</code> and <code>actions.save</code>.</td>
+</tr>
+<tr>
+<td>R9</td>
+<td>7</td>
+<td>Bookings: Creating a Booking</td>
+<td>“Duplicate stage title — 4) Shared/Private Flight, 5) Review &amp; Confirm.” (stage 4 currently mislabeled as ‘Review &amp; Confirm’.)</td>
+</tr>
+<tr>
+<td>R10</td>
+<td>7</td>
+<td>Bookings: Creating a Booking</td>
+<td>“Request to change to ‘Submit Booking’.” (currently <code>Confirm Booking</code>)</td>
+</tr>
+<tr>
+<td>R11</td>
+<td>7</td>
+<td>Bookings: Creating a Booking</td>
+<td>Untranslated i18n key visible on Sharing Settings step: <code>create.finalPriceNote</code>.</td>
+</tr>
+<tr>
+<td>R12</td>
+<td>8</td>
+<td>Bookings: Editing Passenger Data</td>
+<td>“The passenger’s nationality and weight cannot be edit/save.” — FK violation: <code>member_profile_nationality_fkey</code>.</td>
+</tr>
+<tr>
+<td>R13</td>
+<td>9</td>
+<td>Bookings: Commission</td>
+<td>Rename: Direct → <strong>Full Payment</strong>.</td>
+</tr>
+<tr>
+<td>R14</td>
+<td>9</td>
+<td>Bookings: Commission</td>
+<td>Rename: Indirect → <strong>Net Payment (after deducting commission)</strong>.</td>
+</tr>
+<tr>
+<td>R15</td>
+<td>9</td>
+<td>Bookings: Commission</td>
+<td>“REMOVE row” — Withholding Tax (3%) row in <em>Indirect/Net Payment</em> breakdown.</td>
+</tr>
+<tr>
+<td>R16</td>
+<td>9</td>
+<td>Bookings: Commission</td>
+<td>“Error in calculation for Indirect Payment. Net to partner does not need to have 3% WHT deducted.” Expected: Net to Partner = 2,616.82 (commission, no WHT); Net to Operator = 28,000 − 2,616.82 = 25,383.18.</td>
+</tr>
+<tr>
+<td>R17</td>
+<td>10-11</td>
+<td>Bookings: Payment</td>
+<td>“DIRECT PAYMENT — Cannot pay with card.” (Pay with Card button disabled.)</td>
+</tr>
+<tr>
+<td>R18</td>
+<td>10-11</td>
+<td>Bookings: Payment</td>
+<td>“INDIRECT PAYMENT — Cannot pay with card.” (Pay with Card button disabled.)</td>
+</tr>
+<tr>
+<td>R19</td>
+<td>10</td>
+<td>Bookings: Payment</td>
+<td>(Implicit, <strong>needs clarification</strong>) Indirect Payment dialog appears to lack the TOTAL AMOUNT box shown on Direct Payment.</td>
+</tr>
+<tr>
+<td>R20</td>
+<td>12</td>
+<td>Bookings: Cancellation</td>
+<td>“When Partner requests cancellation, no notification/email is given in the back office. Event is registered in the booking though.”</td>
+</tr>
+<tr>
+<td>R21</td>
+<td>13</td>
+<td>Minor Issues</td>
+<td>“No verified email symbol — encountered an issue at that moment because there was no pop-up page appearing to allow me to enter and add the verify code.”</td>
+</tr>
+<tr>
+<td>R22</td>
+<td>13</td>
+<td>Minor Issues</td>
+<td>“Add possibility to archive clients.” (currently no remove/archive control on Members list)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Atomic task breakdown</h2>
+<p>Confidence legend: 🟢 ready · 🟡 needs investigation · 🔴 blocked on decision</p>
+<h3>R1 — Back Office partner-create form clears fields after save</h3>
+<ul>
+<li><strong>R1-T1</strong> — Fix partner create form so fields persist after successful save<ul>
+<li>Repo / touchpoint: <code>silkskyair-manager</code> → Back Office &gt; Partners &gt; Create form (single page)</li>
+<li>What changes: After clicking Save, the saved partner data must remain in the form (or the form is replaced by the partner detail view), instead of resetting to empty fields with the new partner gone.</li>
+<li>Acceptance test: Create a partner with Name, Slug, Website, Email, Phone, Address, Latitude, Longitude, Commission %, Status; click Save; the form/detail view shows the same values without re-entry, and a re-fetch of the partner via the API returns those values.</li>
+<li>Confidence: 🟡 — need to locate the create form and confirm whether the bug is (a) form reset on success, (b) success handler ignoring server response, or (c) server returning empty payload.</li>
+<li>Open questions: Is the “empty fields after save” a UI reset or a failed save that looks successful?</li>
+</ul>
+</li>
+</ul>
+<h3>R2 — Invitation email sender identity</h3>
+<ul>
+<li><strong>R2-T1</strong> — Change invitation email sender display name to “Silk Sky Partner Portal”<ul>
+<li>Repo / touchpoint: <code>silkskyair-orchestrator</code> (or <code>silkskyair-api</code>, TBD) → invitation email send call (single send site)</li>
+<li>What changes: The “From” header on the partner-user invitation email displays as <code>Silk Sky Partner Portal &lt;system@silkskyair.com&gt;</code> instead of just <code>system</code>.</li>
+<li>Acceptance test: Trigger a new invitation; the received email in Gmail shows the sender as “Silk Sky Partner Portal”, not “system”.</li>
+<li>Confidence: 🟡 — must locate the email-sending site (orchestrator vs api vs an edge function) and the transport (SMTP/Postmark/Resend/etc.) to know whether this is a <code>from</code> field change or DNS/identity config.</li>
+<li>Open questions: Which transport and which env var/config owns the From identity?</li>
+</ul>
+</li>
+</ul>
+<h3>R3 — Replace “organization_manager” with “Manager” on Create Account page</h3>
+<ul>
+<li><strong>R3-T1</strong> — Map raw role string to a human-readable label on the signup page<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → Create Your Account page (single component, single label)</li>
+<li>What changes: The role chip on the Create Account screen renders “Manager” instead of <code>organization_manager</code>.</li>
+<li>Acceptance test: Open an invitation link for a manager role; the role chip on <code>/auth/...</code> (create-account) reads “Manager”.</li>
+<li>Confidence: 🟡 — confirm the page lives in <code>silkskyair-partner</code> (vs <code>silkskyair-api</code> if that page is auth-server-rendered) and whether other role values (<code>member</code>, <code>support</code>) also need a mapping for consistency.</li>
+<li>Open questions: Should we map all roles (Member / Support / Manager) via one helper, or only this one?</li>
+</ul>
+</li>
+</ul>
+<h3>R4 — Global terminology change: Members → Clients</h3>
+<p>This is split into one task <strong>per touchpoint</strong> so each is independently testable.</p>
+<ul>
+<li><p><strong>R4-T1</strong> — Rename “Members” to “Clients” in Partner Portal sidebar nav</p>
+<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → sidebar navigation item</li>
+<li>Acceptance test: Sidebar shows “Clients” where it used to show “Members”.</li>
+<li>Confidence: 🟢 (string change, low risk)</li>
+</ul>
+</li>
+<li><p><strong>R4-T2</strong> — Rename “Members” page heading &amp; subheading in Partner Portal</p>
+<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → <code>/members</code> page header (single page)</li>
+<li>Acceptance test: Page heading reads “Clients”; subtitle reads “Manage your registered passengers/users” → revise as “Manage your registered clients”. (See open question on subtitle.)</li>
+<li>Confidence: 🟡 — subtitle wording needs client sign-off.</li>
+<li>Open questions: Exact wording for the subtitle.</li>
+</ul>
+</li>
+<li><p><strong>R4-T3</strong> — Rename “Add Member” button to “Add Client”</p>
+<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → top-right button on <code>/members</code></li>
+<li>Confidence: 🟢</li>
+</ul>
+</li>
+<li><p><strong>R4-T4</strong> — Update i18n strings + route segment for Members → Clients (Partner Portal)</p>
+<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → i18n dictionaries (single file or set of locale files)</li>
+<li>What changes: Replace user-visible strings. (Code-level identifiers like <code>members</code> table/route remain unchanged unless explicitly approved — see R4-T5.)</li>
+<li>Acceptance test: All EN/TH (and other) locale files use “Clients/ลูกค้า”.</li>
+<li>Confidence: 🟡 — need to confirm locale list and whether translations are needed in non-EN locales.</li>
+</ul>
+</li>
+<li><p><strong>R4-T5</strong> — (Optional / decision) Rename <code>/members</code> route to <code>/clients</code> with redirect</p>
+<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → app router segment</li>
+<li>Confidence: 🔴 — blocked: client must confirm whether the URL itself should change. Default: do <strong>not</strong> rename URL/route in Phase 1.</li>
+</ul>
+</li>
+<li><p><strong>R4-T6</strong> — Rename “Members” section in Back Office, if any</p>
+<ul>
+<li>Repo / touchpoint: <code>silkskyair-manager</code> → wherever “Members” appears</li>
+<li>Confidence: 🟡 — need to confirm whether the Back Office surfaces a “Members” concept at all.</li>
+</ul>
+</li>
+</ul>
+<h3>R5 — Temporarily remove Commission Rate + Performance Overview cards</h3>
+<ul>
+<li><p><strong>R5-T1</strong> — Hide Commission Rate card on Partner Portal dashboard</p>
+<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → <code>/dashboard</code> page (single component)</li>
+<li>What changes: Card is no longer rendered. Implementation should be a guard (e.g. behind a feature flag or simply removed JSX) so it can be brought back later.</li>
+<li>Acceptance test: Dashboard does not render the Commission Rate card.</li>
+<li>Confidence: 🟡 — confirm whether to feature-flag or hard-remove. Default: hard-remove with code comment referencing the review.</li>
+</ul>
+</li>
+<li><p><strong>R5-T2</strong> — Hide Performance Overview card on Partner Portal dashboard</p>
+<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → <code>/dashboard</code> page</li>
+<li>Acceptance test: Dashboard does not render the Performance Overview card.</li>
+<li>Confidence: 🟡 — same as R5-T1.</li>
+</ul>
+</li>
+</ul>
+<h3>R6 — Add Available Tours widget to dashboard (preferred layout)</h3>
+<ul>
+<li><strong>R6-T1</strong> — Add “Available Tours” widget on Partner Portal dashboard<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → <code>/dashboard</code> page (one new widget)</li>
+<li>What changes: Renders a new “Available Tours” section next to Latest Bookings, listing the partner’s purchasable tours.</li>
+<li>Acceptance test: Dashboard shows Latest Bookings on the left and Available Tours on the right; clicking a tour starts a new booking.</li>
+<li>Confidence: 🔴 — blocked on spec: data source (which tours? all active / partner-allowed / featured?), card content (image, price, CTA), pagination/limit, empty state.</li>
+<li>Open questions: see above; also is <code>/tours</code> already an endpoint in <code>silkskyair-api</code>?</li>
+</ul>
+</li>
+</ul>
+<h3>R7 — “+ Invite Member” → “+ Invite Team” on Team Management</h3>
+<ul>
+<li><strong>R7-T1</strong> — Rename Team Management invite button<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → Team page (single button label)</li>
+<li>Acceptance test: On the Team page, the top-right button reads “+ Invite Team”.</li>
+<li>Confidence: 🟢</li>
+</ul>
+</li>
+</ul>
+<h3>R8 — Visible untranslated i18n keys</h3>
+<ul>
+<li><p><strong>R8-T1</strong> — Add missing translation for <code>team.status.archived</code></p>
+<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → i18n locale file (single key)</li>
+<li>Acceptance test: The status badge in the Team member edit drawer renders “Archived” instead of <code>team.status.archived</code>.</li>
+<li>Confidence: 🟢 (after exact key path is confirmed)</li>
+</ul>
+</li>
+<li><p><strong>R8-T2</strong> — Add missing translation for <code>actions.save</code></p>
+<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → i18n locale file (single key)</li>
+<li>Acceptance test: The Save button in the Team member edit drawer reads “Save”.</li>
+<li>Confidence: 🟢</li>
+</ul>
+</li>
+<li><p><strong>R8-T3</strong> — Add missing translation for <code>create.finalPriceNote</code></p>
+<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → i18n locale file (single key)</li>
+<li>Acceptance test: Sharing Settings step in Create Booking shows the actual sentence rather than the raw key.</li>
+<li>Confidence: 🟡 — need to know the <em>intended copy</em> for this note.</li>
+<li>Open questions: What should the final-price note say?</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p><strong>Audit task (cross-cutting):</strong></p>
+<ul>
+<li><strong>R8-T4</strong> — Sweep i18n dictionaries for any other missing keys referenced from JSX<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → i18n keys vs source code (single audit pass)</li>
+<li>Acceptance test: No raw <code>*.*.*</code> style string ever renders in the UI for the full happy-path walkthrough (sign-in → dashboard → bookings → create booking → team).</li>
+<li>Confidence: 🟡 — scope of audit needs framing.</li>
+</ul>
+</li>
+</ul>
+</blockquote>
+<h3>R9 — Fix duplicate stage title in Create Booking stepper</h3>
+<ul>
+<li><strong>R9-T1</strong> — Stage 4 label should read “Shared/Private Flight”<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → Create Booking stepper component (single label)</li>
+<li>Acceptance test: Stepper reads <code>1) Select Tour · 2) Select Date &amp; Time · 3) Contact &amp; Passengers · 4) Shared/Private Flight · 5) Review &amp; Confirm</code>.</li>
+<li>Confidence: 🟢</li>
+</ul>
+</li>
+</ul>
+<h3>R10 — “Confirm Booking” → “Submit Booking”</h3>
+<ul>
+<li><strong>R10-T1</strong> — Rename the final-step CTA on Create Booking<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → final step button (single CTA)</li>
+<li>Acceptance test: Step 5 CTA reads “Submit Booking”.</li>
+<li>Confidence: 🟢</li>
+</ul>
+</li>
+</ul>
+<h3>R12 — Passenger nationality &amp; weight save fails with FK violation</h3>
+<ul>
+<li><p><strong>R12-T1</strong> — Investigate FK constraint <code>member_profile_nationality_fkey</code> and confirm the nationality lookup table contents</p>
+<ul>
+<li>Repo / touchpoint: <code>silkskyair-api</code> → DB schema (single migration)</li>
+<li>Goal: confirm whether the UI sends an FK key that does not exist in the lookup table, or whether the FK should be relaxed/<code>null</code>-able.</li>
+<li>Confidence: 🟡 — strictly investigation; not yet a code change.</li>
+</ul>
+</li>
+<li><p><strong>R12-T2</strong> — Make passenger nationality field send a valid FK value (or null) from the Partner Portal passenger edit form</p>
+<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → passenger edit drawer (single field control)</li>
+<li>Acceptance test: Editing Pondering Winkk’s nationality to Thai (THA) saves successfully and persists after refresh; saving with no nationality also succeeds.</li>
+<li>Confidence: 🟡 — depends on R12-T1.</li>
+</ul>
+</li>
+<li><p><strong>R12-T3</strong> — Validate that passenger weight saves correctly</p>
+<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → passenger edit drawer weight field</li>
+<li>Acceptance test: Editing weight to 50 kg saves successfully.</li>
+<li>Confidence: 🟡 — confirm whether weight error is the same FK issue or a separate validation problem.</li>
+<li>Open questions: Is weight in kg, lb, or a numeric type with a server-side check?</li>
+</ul>
+</li>
+</ul>
+<h3>R13 — Rename “Direct Payment” → “Full Payment”</h3>
+<ul>
+<li><strong>R13-T1</strong> — Rename Direct payment label across the Bookings payment surfaces<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → payment headings, payment button, breakdown header (single string surface — bundle as one label change because they all reference one i18n key)</li>
+<li>Acceptance test: Bookings detail page shows “Full Payment” everywhere it previously said “Direct Payment”.</li>
+<li>Confidence: 🟡 — confirm there is a single i18n key (so this stays one touchpoint). If multiple ad-hoc strings exist, split into separate tasks.</li>
+</ul>
+</li>
+</ul>
+<h3>R14 — Rename “Indirect Payment” → “Net Payment”</h3>
+<ul>
+<li><strong>R14-T1</strong> — Rename Indirect payment label across the Bookings payment surfaces<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → same component family as R13</li>
+<li>Acceptance test: Bookings detail shows “Net Payment” everywhere it previously said “Indirect Payment”.</li>
+<li>Confidence: 🟡 — same shape as R13.</li>
+</ul>
+</li>
+</ul>
+<h3>R15 — Remove WHT (3%) row from Indirect/Net Payment breakdown</h3>
+<ul>
+<li><strong>R15-T1</strong> — Hide the Withholding Tax (3%) row when payment type = Indirect/Net<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → commission breakdown panel (single conditional row)</li>
+<li>Acceptance test: Indirect/Net payment breakdown lists: Total Amount, VAT on Service (7%), Service excl. VAT, Commission (10%), Net to Partner, Net to Operator. No Withholding Tax row.</li>
+<li>Confidence: 🟡 — confirm where the breakdown is computed (UI vs API) and that WHT must still appear for the Direct/Full case.</li>
+</ul>
+</li>
+</ul>
+<h3>R16 — Fix Indirect/Net Payment math</h3>
+<ul>
+<li><strong>R16-T1</strong> — Fix <code>Net to Partner</code> for Indirect/Net to equal the commission with no WHT deduction<ul>
+<li>Repo / touchpoint: ⚠️ <strong>one of</strong>: <code>silkskyair-api</code> (commission calculator) <strong>or</strong> <code>silkskyair-partner</code> (UI-side computation). To be confirmed in Phase 2.</li>
+<li>Acceptance test: For a 28,000 THB booking at 10% commission, indirect breakdown shows Net to Partner = 2,616.82 THB; Net to Operator = 25,383.18 THB.</li>
+<li>Confidence: 🟡 — where the math lives is the open question.</li>
+</ul>
+</li>
+</ul>
+<h3>R17 — Direct/Full payment: enable “Pay with Card”</h3>
+<ul>
+<li><strong>R17-T1</strong> — Make the Pay with Card button functional for Direct/Full payment<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → Direct payment dialog (single CTA) and its handler</li>
+<li>Acceptance test: With a valid Stripe (or active PSP) test card, the user can complete a card payment for Direct/Full type and the booking moves to Paid.</li>
+<li>Confidence: 🔴 — blocked: need to confirm which PSP is integrated, whether keys are present in env, and whether the button is disabled because of missing handler vs missing keys vs intentional.</li>
+<li>Open questions: Which PSP? Are keys configured?</li>
+</ul>
+</li>
+</ul>
+<h3>R18 — Indirect/Net payment: enable “Pay with Card”</h3>
+<ul>
+<li><strong>R18-T1</strong> — Make the Pay with Card button functional for Indirect/Net payment<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → Indirect payment dialog</li>
+<li>Acceptance test: Card payment for Indirect/Net type completes successfully.</li>
+<li>Confidence: 🔴 — same PSP question as R17. Also raises a business question: is card payment <strong>supposed</strong> to be allowed in indirect mode (partner pays operator commission only)? May be intentionally disabled.</li>
+<li>Open questions: Is card payment in indirect mode a real product requirement, or should the button be removed instead?</li>
+</ul>
+</li>
+</ul>
+<h3>R19 — Indirect Payment dialog missing TOTAL AMOUNT box (assumed)</h3>
+<ul>
+<li><strong>R19-T1</strong> — Confirm with client whether the Indirect Payment dialog should show the TOTAL AMOUNT box<ul>
+<li>Repo / touchpoint: n/a (decision)</li>
+<li>Confidence: 🔴 — blocked on client clarification; if confirmed, this becomes a single UI change in <code>silkskyair-partner</code>.</li>
+</ul>
+</li>
+</ul>
+<h3>R20 — Notify back office when partner requests cancellation</h3>
+<ul>
+<li><strong>R20-T1</strong> — Send an in-app/email notification to back office on partner-initiated cancellation request<ul>
+<li>Repo / touchpoint: ⚠️ likely <code>silkskyair-orchestrator</code> (event listener / cron / webhook) or <code>silkskyair-api</code> (DB trigger / edge function). To be confirmed.</li>
+<li>Acceptance test: Partner clicks “Request cancellation” on a booking; within ~1 min, back-office users receive an email and/or in-app notification with the booking reference and cancellation reason. The existing event-history record continues to be written.</li>
+<li>Confidence: 🔴 — blocked on: notification channel (email / in-app / both?), recipients (which back-office role? all managers?), template content.</li>
+<li>Open questions: channel, recipients, template.</li>
+</ul>
+</li>
+</ul>
+<h3>R21 — Email verification popup missing during booking flow</h3>
+<ul>
+<li><strong>R21-T1</strong> — Show the email-verification code entry popup after the partner requests booking-time verification<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → booking flow (Contact &amp; Passengers step or Submit) — single dialog component</li>
+<li>What changes: When the system sends the verification code, a modal/inline input must appear so the user can paste the code.</li>
+<li>Acceptance test: Booking a tour using a personal email triggers a code email; a popup appears on the booking page where the code can be entered and verified; flow continues only after correct code.</li>
+<li>Confidence: 🔴 — blocked on understanding the existing verification flow (where the code is sent, who validates it, whether the popup component was scoped but not wired, or never built at all).</li>
+<li>Open questions: Is the verification code logic already on the API side? Is there a half-wired component?</li>
+</ul>
+</li>
+</ul>
+<h3>R22 — Archive clients (members) feature</h3>
+<ul>
+<li><p><strong>R22-T1</strong> — Add a server-side “archive client” mutation</p>
+<ul>
+<li>Repo / touchpoint: <code>silkskyair-api</code> → members endpoint (single new mutation / column flip)</li>
+<li>Acceptance test: Calling the archive mutation on a member sets a soft-delete/archived state and the member is excluded from default lists but recoverable.</li>
+<li>Confidence: 🟡 — need to confirm whether a column exists (<code>archived_at</code> / <code>status</code> enum) or a new migration is required.</li>
+</ul>
+</li>
+<li><p><strong>R22-T2</strong> — Add an “Archive” action on the Partner Portal Clients (Members) list / detail</p>
+<ul>
+<li>Repo / touchpoint: <code>silkskyair-partner</code> → Clients list row action (single new menu item / button)</li>
+<li>Acceptance test: From the Clients list, the user can archive a client; the client disappears from the default list; a filter toggle reveals archived clients.</li>
+<li>Confidence: 🟡 — depends on R22-T1 and on UX for showing/unarchiving.</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2>Open questions to resolve before leaving planning</h2>
+<p>These are the items that MUST be answered (by code investigation in Phase 2 or by asking the client) before any task is promoted to 🟢:</p>
+<ol>
+<li><strong>R1</strong> — Is partner-create form clearing because of (a) a UI reset, (b) a silent server-side failure, (c) the create succeeds but the redirect/refresh loses state? → Phase 2 code dive.</li>
+<li><strong>R2</strong> — Which email transport is used and where is the From identity configured? → Phase 2 code dive in orchestrator + api.</li>
+<li><strong>R3</strong> — Should we map all role labels (Member/Support/Manager) at once or only <code>organization_manager</code>? → Client.</li>
+<li><strong>R4</strong> — Does “throughout all systems” include the Back Office? → Client.</li>
+<li><strong>R4-T5</strong> — Should the URL/route also rename to <code>/clients</code>? → Client (default: no).</li>
+<li><strong>R5</strong> — Hard-remove or hide-behind-flag? → Client (default: hard-remove with comment).</li>
+<li><strong>R6</strong> — Available Tours widget data source and content. → Client + Phase 2 dive on tours endpoint.</li>
+<li><strong>R8-T3</strong> — Copy for <code>create.finalPriceNote</code>. → Client.</li>
+<li><strong>R12</strong> — Cause of FK violation: missing rows in the nationality table vs wrong shape of value sent. → Phase 2 DB inspection via Supabase MCP.</li>
+<li><strong>R13/R14/R15/R16</strong> — Is commission math computed in <code>silkskyair-api</code> or <code>silkskyair-partner</code>? Is there a single canonical “payment kind” enum? → Phase 2 code dive.</li>
+<li><strong>R17/R18</strong> — Which PSP is integrated, what keys are needed, and is indirect-card-payment actually a product requirement? → Client + Phase 2 dive.</li>
+<li><strong>R19</strong> — Should the indirect dialog also show the TOTAL AMOUNT box? → Client.</li>
+<li><strong>R20</strong> — Notification channel, recipients, and template for back-office cancellation alert. → Client + Phase 2 dive on existing notification infra.</li>
+<li><strong>R21</strong> — Existing state of the booking-time email-verification flow. → Phase 2 code dive.</li>
+<li><strong>R22</strong> — Schema for soft-archive (existing column vs new migration) and unarchive UX. → Phase 2 DB dive + Client.</li>
+</ol>
+<hr>
+<h2>Discoveries (running log)</h2>
+<blockquote>
+<p>Every concrete observation goes here, even small ones, with the file or evidence that supports it.</p>
+</blockquote>
+<h3>Setup</h3>
+<ul>
+<li>2026-05-12 — PDF rendered locally to <code>/tmp/review_pages/p-01.png … p-13.png</code> (13 pages). Text extracted to <code>/tmp/review.txt</code>.</li>
+<li>2026-05-12 — Verified read access on all four repos via GitHub MCP (<code>andaman-aerodrome/silkskyair-{orchestrator,api,manager,partner}</code>).</li>
+<li>2026-05-12 — Repo shape:<ul>
+<li><code>silkskyair-orchestrator</code>: top-level <code>tests</code>, <code>scripts</code>, <code>prototypes</code>, <code>docs</code>, <code>plans</code>, <code>package.json</code>, <code>tsconfig.json</code>, <code>vitest.config.ts</code> — no app/components, looks like an n8n-style workflow / integration hub (presence of <code>N8N_WORKFLOW_DEPENDENCY_MATRIX.md</code>).</li>
+<li><code>silkskyair-api</code>: <code>supabase/</code>, <code>scripts/</code>, <code>profiles.toml</code>, <code>docs/</code>, <code>backups/</code> — Supabase-backed API. The FK violation in R12 lives here.</li>
+<li><code>silkskyair-manager</code>: Next.js 15 app (<code>app/</code>, <code>components/</code>, <code>lib/</code>, <code>services/</code>, <code>src/</code>, <code>middleware.ts</code>, <code>next.config.ts</code>). Hosts the Back Office (R1 lives here).</li>
+<li><code>silkskyair-partner</code>: Next.js 15 app (same shape as manager). Hosts the Partner Portal (most tasks live here).</li>
+</ul>
+</li>
+</ul>
+<h3>Partner Portal (<code>silkskyair-partner</code>) — Explore agent A findings (2026-05-12)</h3>
+<ul>
+<li>The Partner Portal dashboard route is <strong><code>/home</code></strong> (not <code>/dashboard</code>). Composed of three widgets in <code>app/home/page.tsx</code>:<ul>
+<li><code>components/home/widgets/agreement-widget.tsx</code> (kept)</li>
+<li><code>components/home/widgets/reporting-widget.tsx</code> — this is the <strong>PerformanceOverview</strong> card called out in R5.</li>
+<li><code>components/home/widgets/latest-bookings-widget.tsx</code> (kept)</li>
+</ul>
+</li>
+<li><strong>There is no separate <code>CommissionRate</code> card</strong> as a discrete component. The &quot;10% Calculated on net price including 7% VAT&quot; panel in the screenshot is either part of <code>reporting-widget.tsx</code> or <code>agreement-widget.tsx</code> (needs one more byte-level confirmation). <strong>→ R5 may collapse to a single task that removes whichever sub-card holds Commission Rate + Performance Overview.</strong></li>
+<li><strong>No <code>AvailableTours</code> component and no <code>/api/tours</code> hook exist</strong> in the partner repo today. R6 is a brand-new widget and must include its data source.</li>
+<li>Sidebar is <code>components/home/sidebar.tsx</code>. Labels come from i18n keys like <code>sidebar.${mod.id}</code> (modules in <code>lib/modules/registry</code>). The &quot;Members&quot; label is therefore <code>sidebar.members</code> — renaming is a <strong>dictionary-level edit</strong>, not a JSX edit.</li>
+<li>Members page: <code>app/members/page.tsx</code> uses <code>members:page.title</code>, <code>members:page.subtitle</code>, <code>members:actions.create</code>. No archive affordance currently exists on a member card.</li>
+<li>Team page: <code>app/team/page.tsx:185</code> — <code>i18n(&quot;team.invite&quot;) || &quot;Invite Member&quot;</code>. The fallback &quot;Invite Member&quot; is hardcoded in JSX; key is <code>settings:team.invite</code>.</li>
+<li>Team-member drawer: <code>components/team/team-member-drawer.tsx</code> references <code>i18n(&quot;team.status.archived&quot;)</code> and <code>i18n(&quot;actions.save&quot;)</code> — both <strong>leak as raw keys</strong> because the i18n dictionary is missing these entries.</li>
+<li>Create Booking stepper: <code>components/bookings/create/create-booking-drawer.tsx:40-44</code>:<pre><code class="language-ts">const STEPS = [&quot;create.step1&quot;, &quot;create.step2&quot;, &quot;create.step3&quot;, &quot;create.step4&quot;, &quot;create.step5&quot;] as const;
+</code></pre>
+Final CTA at line 341 uses <code>i18n(&quot;create.confirm&quot;)</code>. The duplicate &quot;Review &amp; Confirm&quot; label seen in R9 is because the dictionary&#39;s <code>create.step4</code> is <strong>missing or wrong</strong> (falls back to render the key or to <code>create.step5</code> text — to be confirmed).</li>
+<li>The <code>create.finalPriceNote</code> (R11) is referenced at <code>components/bookings/create/extras-step.tsx:213</code>.</li>
+<li>Passenger edit: <code>components/bookings/passenger-card.tsx:64-75</code> — PATCH to <code>/api/bookings/{id}/passengers/{id}</code>. Sends <code>nationality: form.nationality || null</code> and <code>weight_kg: form.weight_kg ? Number(form.weight_kg) : null</code>. So R12 is <strong>either</strong>: the nationality input is a free-text string that doesn&#39;t match any FK value, OR the API layer maps it to a column that has a strict FK to a country/nationality table.</li>
+<li>Bookings payment surfaces: <code>components/bookings/booking-payment-section.tsx</code><ul>
+<li>Direct/Indirect heading labels at lines 189 / 207 use keys <code>payment.directPayment</code>, <code>payment.indirectPayment</code> — <strong>single touchpoint per rename</strong>, so R13 and R14 collapse to one i18n-key edit each.</li>
+<li>Breakdown rows (lines 121-149): Total / VAT (<code>payment.vatOnService</code>) / Service excl. VAT / Commission / <strong>WHT (<code>payment.withholdingTax</code>)</strong> / NetToPartner / NetToOperator. WHT is rendered <strong>unconditionally</strong> when <code>data.commission &gt; 0</code>. The conditional logic for R15 needs to be added.</li>
+<li>Commission math is <strong>client-side</strong> — <code>lib/bookings/commission.ts:calculateCommission()</code> (lines 62-70 of booking-payment-section.tsx). <strong>→ R15/R16 fix is local to the partner repo, no API change needed</strong> (unless we want server-side consistency — flag for discussion).</li>
+</ul>
+</li>
+<li>Payment dialog: <code>components/bookings/payment-checkout.tsx:258-286</code>. The &quot;Pay with Card&quot; button is disabled when <code>paymentMethod === &quot;card&quot; &amp;&amp; !omiseLoaded</code>. <strong>→ The PSP is Omise</strong>, and the button being grey suggests the Omise SDK isn&#39;t initialising (env var? script load? region?).</li>
+<li>No OTP / email-verification popup component exists. R21 is greenfield.</li>
+<li><strong>i18n is API/DB-backed</strong>, not file-based — <code>lib/i18n/api.ts</code>. There are <strong>no <code>locales/en.json</code> files</strong> to edit; missing keys must be added via the DB / Supabase. <strong>→ This is a critical discovery that reshapes every i18n task (R3, R4, R7, R8, R9, R10, R11, R13, R14).</strong></li>
+</ul>
+<h3>Back Office (<code>silkskyair-manager</code>) — Explore agent C findings (2026-05-12)</h3>
+<ul>
+<li><strong>No i18n for back-office UI</strong> — all user-visible strings are hardcoded JSX (<code>lib/i18n/types.ts</code> is only used for product content like Tours / Coupons / Promotions). So R4 in the Back Office is a JSX-level rename.</li>
+<li>R1 (Create Partner form clearing): Located. Path: <code>app/(workspace)/partners/_components/partners-manager.tsx</code>. Sections at lines 1093 (Details), 1204 (Location), 1240 (Commission &amp; Status). Submit handler at line 555. The bug: <code>setTimeout(closeDrawer, 700)</code> runs <code>closeDrawer()</code> which calls <code>setForm({})</code> (line 475). When the user re-opens the drawer it shows empty fields. <strong>In <em>edit</em> mode the form populates from row data (lines 433-437); in <em>create</em> mode the form is wiped without persisting the new partner into the drawer&#39;s edit state.</strong></li>
+<li>Back-office &quot;Members&quot; module:<ul>
+<li>Sidebar entry: <code>components/home/sidebar.tsx:61</code> — <code>members: Contact</code>.</li>
+<li>Pages: <code>app/(workspace)/members/page.tsx</code>, <code>components/members/MemberPicker.tsx</code>, <code>services/member-search.ts</code>. <strong>So R4 does touch the Back Office</strong> if the client wants the rename throughout all systems.</li>
+</ul>
+</li>
+<li>Cancellation handling in back office: <code>app/(workspace)/bookings/_components/change-request-review-drawer.tsx:27</code> recognises cancellation type. <code>booking-detail-view.tsx:43</code> holds <code>cancelApprovalState</code>. <strong>No notification bell, inbox, or toast exists today</strong> — cancellation requests only surface inside a specific booking&#39;s detail view. R20 in back office means <strong>adding a notification surface from scratch</strong> (or wiring the existing event into an email).</li>
+</ul>
+<h3>Orchestrator (<code>silkskyair-orchestrator</code>) — Explore agent C findings (2026-05-12)</h3>
+<ul>
+<li><code>N8N_WORKFLOW_DEPENDENCY_MATRIX.md</code> documents the n8n workflows. <strong>No invitation-email-send workflow is documented here</strong> — partner-user invitations appear to be handled inside <code>silkskyair-manager</code> via <code>/api/invitations</code>, and the actual send probably goes through Supabase Auth (to be confirmed by Agent B).</li>
+<li>A <code>Bookings Event</code> workflow is active (line 236 of the matrix) which forwards booking status changes to Zoho — but <strong>no cancellation-to-back-office notification workflow</strong> exists. R20 likely needs either (a) a new n8n workflow or (b) a Supabase trigger / edge function.</li>
+<li><code>CLAUDE.md</code> references siblings <code>silkskyair-api</code>, <code>silkskyair-manager</code>, <code>silkskyair-member</code>, <code>silkskyair-www</code>. Note: <strong><code>silkskyair-member</code> is a fifth repo</strong> not in our access list. Member-facing flows (R12 nationality FK, R21 email verification popup) may live partly in <code>silkskyair-member</code> — <strong>flag for explicit confirmation</strong>.</li>
+</ul>
+<h3>Open caveat — possible fifth repo</h3>
+<ul>
+<li><code>silkskyair-orchestrator/CLAUDE.md</code> mentions <code>silkskyair-member</code> and <code>silkskyair-www</code>. Neither is in our session&#39;s access list. If any review item turns out to live in <code>silkskyair-member</code> (the consumer-side flow) the task cannot land. Most review items target the <strong>partner</strong> portal so this should be rare, but R21 (email verification popup during a booking made via the partner portal) and R12 (member_profiles FK) deserve a second check.</li>
+</ul>
+<hr>
+<h2>Decisions log</h2>
+<ul>
+<li>2026-05-12 — Each review item is broken into one task per touchpoint (rule above). A single review bullet can produce multiple tasks; that is intentional and required by the Notion-import constraint.</li>
+<li>2026-05-12 — All tasks land on the shared branch <code>claude/plan-client-review-YNHfY</code> per the session instructions.</li>
+<li>2026-05-12 — <strong>R4 scope:</strong> Partner Portal user-visible strings only. URL stays <code>/members</code>. No DB/table renames. No Back Office changes for this task. → R4-T5 and R4-T6 <strong>dropped</strong> from this remediation pass.</li>
+<li>2026-05-12 — <strong>R5 scope:</strong> Hard-remove the entire <code>components/home/widgets/reporting-widget.tsx</code> from <code>app/home/page.tsx</code>. → R5 collapses to a single task. Code stays in the repo (commented unmount) so it can be brought back in Phase 2 of the product.</li>
+<li>2026-05-12 — <strong>R17/R18 intent:</strong> Both Direct/Full and Indirect/Net should accept card. Root cause hypothesis: Omise SDK isn&#39;t loading (env keys, script tag, region). Both tasks become <strong>bug-fix</strong> tasks on <code>components/bookings/payment-checkout.tsx</code> and its Omise loader, not feature removals.</li>
+<li>2026-05-12 — <strong>R20 implementation:</strong> Both an email to back-office managers and an in-app notification (toast / bell / inbox) are required. This means at least three sub-tasks: server event source (api/orchestrator), email send, in-app notification surface (silkskyair-manager). See updated breakdown below.</li>
+<li>2026-05-13 — <strong>R3 scope:</strong> Introduce ONE helper (<code>formatRoleLabel(role)</code>) in <code>silkskyair-partner</code> that maps every role string (<code>organization_manager</code>, <code>member</code>, <code>support</code>, …) to a human-readable label, and use it everywhere a raw role appears. This prevents the same class of bug from re-surfacing on other roles.</li>
+<li>2026-05-13 — <strong>R8-T3 / R11 (final-price note):</strong> Drop the note entirely — delete the <code>i18n(&quot;create.finalPriceNote&quot;)</code> reference at <code>components/bookings/create/extras-step.tsx:213</code>. No DB translation row needs to be added.</li>
+<li>2026-05-13 — <strong>R19 (Indirect Payment dialog):</strong> Add the same TOTAL AMOUNT card to the Indirect Payment dialog that exists on Direct, so both flows are visually consistent.</li>
+<li>2026-05-13 — <strong>R15 / R16 (commission math):</strong> Fix client-side first (<code>lib/bookings/commission.ts</code> in <code>silkskyair-partner</code>); also mirror the change on the server side iff Agent B&#39;s investigation surfaces a server-side commission calculator. If no server calc exists, this collapses to the client-side change only — no API work is invented for parity&#39;s sake.</li>
+<li>2026-05-13 — <strong>Phase 2 Explore agents resolved 4 unknowns:</strong><ul>
+<li>R3 broken chip lives in the <strong>Account Portal repo</strong> (<code>NEXT_PUBLIC_ACCOUNT_URL</code>) — NOT in our access list. In-scope work shrinks to consolidating the two duplicated <code>getRoleLabel</code> helpers in <code>silkskyair-partner</code> (<code>components/team/team-table.tsx:74-75</code>, <code>components/team/pending-invitations.tsx:49-50</code>, and the inline copy at <code>components/team/team-member-drawer.tsx:235</code>).</li>
+<li>R16 server calc <strong>does</strong> exist (<code>silkskyair-api/supabase/migrations/20260216110000_commission_calculation_fields.sql</code> — <code>booking_commission_settlements</code>, <code>trg_booking_partner_attribution</code>, <code>partner_performance</code>). Per the earlier decision, server-side mirror is required.</li>
+<li>R17/R18 root cause is missing <code>OMISE_PUBLIC_KEY</code> + a <code>Script onLoad</code> that silently fails. Code fix is small; env-var provisioning needs the client.</li>
+<li>R12 FK target is <code>countries(code)</code> (ISO-3166 alpha-2). Partner needs a <code>&lt;select&gt;</code>; no FK relaxation.</li>
+<li>R22 archive column <strong>does not exist</strong> — new migration required.</li>
+<li>R2 invitation From identity lives inside the n8n cloud workflow <code>/invitations/send-email</code> — Supabase Auth email is disabled. So R2 belongs to <code>silkskyair-orchestrator</code> (or n8n cloud, depending on whether workflow JSON is committed in-repo).</li>
+</ul>
+</li>
+<li>2026-05-13 — <strong>R20 channel split:</strong> In-app notification fans out to all <code>module:bookings:access</code> users; email goes only to manager-level roles. Lets ops staff see everything without flooding everyone&#39;s inbox.</li>
+<li>2026-05-13 — <strong>R22 archive UX:</strong> Archived clients hidden from the default list; a &quot;Show archived&quot; toggle reveals them for reference. <strong>Archive is one-way</strong> — no unarchive UI in this phase. Server still allows reactivation via DB if needed.</li>
+<li>2026-05-13 — <strong>R4-T2 subtitle:</strong> &quot;Manage your registered clients&quot;.</li>
+<li>2026-05-13 — <strong>Phase 2 verification pass</strong> confirmed file:line for every previously-hedged item:<ul>
+<li><code>silkskyair-manager/app/(workspace)/partners/_components/partners-manager.tsx</code> — <code>setTimeout(closeDrawer, 700)</code> at <strong>line 626</strong>; <code>closeDrawer</code> declared at <strong>line 469</strong>; <code>setForm({})</code> at <strong>line 475</strong>; create-success branch at <strong>lines 598-625</strong>; edit-mode populate pattern at <strong>lines 503-507</strong> (<code>setForm({ ...match, location_lat: coords?.[1], location_lng: coords?.[0] })</code>).</li>
+<li><code>silkskyair-partner/components/team/team-table.tsx</code> — <code>getRoleLabel</code> at <strong>lines 74-75</strong>; call site at <strong>line 170</strong>.</li>
+<li><code>silkskyair-partner/components/team/pending-invitations.tsx</code> — <code>getRoleLabel</code> at <strong>lines 49-50</strong>; call site at <strong>line 119</strong>.</li>
+<li><code>silkskyair-partner/components/team/team-member-drawer.tsx:235</code> — <code>{i18n(\</code>team.role.${member.role}`) || member.role}` (inline; replace with helper).</li>
+<li><code>silkskyair-partner/components/bookings/passenger-card.tsx:263-268</code> — nationality is a <code>&lt;input type=&quot;text&quot;&gt;</code> bound to <code>form.nationality</code>.</li>
+<li><code>silkskyair-partner/lib/bookings/commission.ts:142</code> — <code>netToOperator = round2(totalInclVat - commission - vatOnCommission + withholdingTax)</code> (the broken formula). <code>paymentCollectedBy</code> type already at line 60.</li>
+<li><code>silkskyair-partner/components/bookings/booking-payment-section.tsx:130-135</code> — WHT <code>BreakdownRow</code> currently gated only by <code>data.commission &gt; 0</code> (line 122). Add direct-only gate.</li>
+<li><code>silkskyair-partner/components/bookings/payment-checkout.tsx:338-342</code> — <code>&lt;Script&gt;</code> tag has both <code>onLoad</code> and <code>onError</code>. <strong>Button disabled at line 426</strong> (<code>disabled={loading || (paymentMethod === &quot;card&quot; &amp;&amp; !omiseLoaded)}</code>). <strong>TOTAL AMOUNT gated by <code>paymentCollectedBy === &quot;direct&quot;</code> at lines 345-354.</strong></li>
+<li><code>silkskyair-partner/components/bookings/create/extras-step.tsx:214-216</code> — exact <code>&lt;p&gt;</code> block to delete.</li>
+<li><code>silkskyair-partner/components/members/member-card.tsx</code> — <strong>exists</strong> (so R22 UI extends an existing component).</li>
+<li><code>silkskyair-manager/components/home/header.tsx</code> — <strong>exists</strong> (imported in <code>layout.tsx:2</code>); notification bell mounts here.</li>
+<li><code>silkskyair-manager/lib/toast-emitter.ts</code> — <strong>exists</strong>; reuse for inbound notifications.</li>
+<li><code>silkskyair-partner/components/ui/combobox.tsx</code> — <strong>does not exist</strong>. R12 will use a plain <code>&lt;select&gt;</code> ordered by country name.</li>
+<li><strong>Settlement INSERT</strong> for R15/R16 server mirror lives at <strong><code>silkskyair-partner/app/api/bookings/[id]/payments/intent/route.ts:218-239</code></strong> (note: this is partner-repo server code, not silkskyair-api). The breakdown values are computed <em>client-side</em> in the partner repo and INSERTed via <code>serviceSupabase.from(&quot;booking_commission_settlements&quot;).insert({...})</code>. So the &quot;server mirror&quot; is actually a partner-repo route fix — it picks up the fixed <code>commission.ts</code> formulas automatically. <strong>No silkskyair-api migration needed for R16 math.</strong> A migration is still useful to add a DB-level check constraint as defense-in-depth (optional).</li>
+</ul>
+</li>
+<li>2026-05-13 — <strong>R3 disposition:</strong> access to <code>andaman-aerodrome/silkskyair-account</code> is being granted. Plan adds an explicit &quot;request + use access to silkskyair-account&quot; task; R3 stays in scope.</li>
+<li>2026-05-13 — <strong>R6 disposition:</strong> spec creation is a plan-finalization step, not a code task. Plan tracks &quot;produce R6 spec&quot; as a blocker step before any code; no code changes for R6 in this branch until spec is signed off.</li>
+<li>2026-05-13 — <strong>R21 disposition:</strong> post-submit verification. <strong>Server OTP infrastructure is fully built and live</strong> (verified by code dive):<ul>
+<li>DB trigger generates a 6-digit OTP on booking INSERT, SHA-256 hashes it, stores hash in <code>booking_verifications</code> and <code>booking.metadata.verification.otp</code> (evidence: <code>silkskyair-api/supabase/migrations/20260213100000_fix_otp_no_leading_zero.sql:15-17</code>, <code>20260210120000_booking_verifications_table.sql:1-68</code>).</li>
+<li>Unified <code>api.verify_email(entity_type=&#39;booking&#39;, entity_id, method=&#39;otp&#39;, otp)</code> RPC validates the hash and emits a <code>BookingEmailVerified</code> event (evidence: <code>20260210100000_unified_verify_email.sql:9-178</code>, hash check at line 125, event at lines 143-145).</li>
+<li>Edge function <code>silkskyair-api/supabase/functions/verify/index.ts:1-12, :89-110</code> is the unified verification endpoint (OTP + HMAC token).</li>
+<li>n8n &quot;Bookings Create&quot; workflow emails the OTP to the client, then calls <code>rpc/booking_strip_otp</code> to remove plaintext (evidence: <code>silkskyair-orchestrator/N8N_WORKFLOW_DEPENDENCY_MATRIX.md:147-150, :215</code>).</li>
+<li>Verification page already exists at <code>/verify?token={HMAC}&amp;bookingId={id}</code> in the member portal (evidence: <code>N8N_WORKFLOW_DEPENDENCY_MATRIX.md:102</code>).</li>
+<li><strong>What&#39;s missing:</strong> the partner portal has zero OTP / verification code. <code>POST /api/bookings</code> at <code>silkskyair-partner/app/api/bookings/route.ts:202-225</code> returns the booking with no verification-required signal; <code>create-booking-drawer.tsx:195-259</code> has no post-success modal; no <code>useEmailVerification</code> hook is half-wired. → <strong>R21 is fully in scope</strong> as a greenfield popup in <code>silkskyair-partner</code> that calls a new <code>/api/bookings/[id]/verify</code> proxy hitting the existing edge function.</li>
+</ul>
+</li>
+<li>2026-05-13 — <strong>R17/R18 env var verification:</strong> Directly inspected <code>silkskyair-partner/lib/integrations/omise.ts:7-10</code> — uses <code>process.env.OMISE_PUBLIC_KEY</code> and <code>process.env.OMISE_SECRET_KEY</code> (server-side only). Directly inspected <code>silkskyair-partner/app/api/bookings/[id]/payments/intent/route.ts:228-233</code> — returns <code>publicKey: process.env.OMISE_PUBLIC_KEY</code> to the client in the JSON response. <strong>There is no <code>NEXT_PUBLIC_OMISE_*</code> variant</strong> — the client receives the public key via the intent API response, not via a build-time <code>NEXT_PUBLIC_*</code> env. Earlier plan note was wrong; corrected below.</li>
+<li>2026-05-13 — <strong>Out-of-repo work — access requests required:</strong><ul>
+<li><code>silkskyair-account</code> (Account Portal) — owns the role-chip rendered on the Create-Account page (R3 reviewer-visible bug). Requested.</li>
+<li><code>*-workflows</code> (or equivalent n8n cloud workspace) — owns the <code>/invitations/send-email</code> workflow (R2 From identity) and will own a new <code>/notifications/cancellation-email</code> workflow (R20 email). Requested.</li>
+<li>Vercel project for <code>silkskyair-partner</code> — owns runtime env vars (R17/R18 Omise keys). Requested.</li>
+<li>Plan adds explicit access-request tasks (Batch X0) to the execution order.</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2>Verification (when we eventually implement)</h2>
+<blockquote>
+<p>Filled in at end of Phase 4. Every task must specify its end-to-end test before leaving planning.</p>
+</blockquote>
+<p>For each task we will run (where applicable):</p>
+<ul>
+<li><code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test</code> in the affected repo.</li>
+<li>Targeted Playwright e2e (both <code>silkskyair-manager</code> and <code>silkskyair-partner</code> have <code>playwright.config.ts</code> and an <code>e2e/</code> folder — these are the canonical surfaces for acceptance tests).</li>
+<li>Supabase MCP for DB-shape verifications (R12, R22).</li>
+<li>Manual walkthrough that mirrors the review screenshot for each item.</li>
+</ul>
+<hr>
+<h2>Confidence snapshot after Phase 2 code dive (2026-05-12)</h2>
+<p>Status after Explore agents A (partner) + C (manager/orchestrator). Agent B (silkskyair-api) is still running and will refine R12, R13-R16 server math, R20, R22 once it returns.</p>
+<p>🟢 <strong>Ready (low uncertainty, only need final wording or one-line decision)</strong></p>
+<ul>
+<li>R7-T1 (rename Invite button — <code>app/team/page.tsx:185</code>)</li>
+<li>R8-T1 (add <code>team.status.archived</code> translation)</li>
+<li>R8-T2 (add <code>actions.save</code> translation)</li>
+<li>R9-T1 (fix stepper step 4 label via i18n key <code>create.step4</code> → &quot;Shared/Private Flight&quot;)</li>
+<li>R10-T1 (rename <code>create.confirm</code> → &quot;Submit Booking&quot;)</li>
+<li>R13-T1 (rename <code>payment.directPayment</code> → &quot;Full Payment&quot;)</li>
+<li>R14-T1 (rename <code>payment.indirectPayment</code> → &quot;Net Payment&quot;)</li>
+<li>R15-T1 (conditional hide of WHT row in <code>booking-payment-section.tsx:135</code> when <code>payment_kind === indirect</code>)</li>
+<li>R16-T1 (client-side fix in <code>lib/bookings/commission.ts</code> — see open Q on whether to mirror on server)</li>
+<li>R4-T1 (sidebar <code>sidebar.members</code> → &quot;Clients&quot; in DB translations)</li>
+<li>R4-T3 (Add Member button → Add Client, key <code>members:actions.create</code>)</li>
+</ul>
+<p>🟡 <strong>Needs one more confirmation (mostly client wording or API check from Agent B)</strong></p>
+<ul>
+<li>R1-T1 — Now firmly scoped to the create branch of <code>partners-manager.tsx:555</code> submit handler. Fix is: on create-success, either keep the drawer open with the saved values (re-fetch) or navigate to the partner detail page. <strong>Question for client:</strong> which UX is preferred?</li>
+<li>R2-T1 — Likely sits inside <code>silkskyair-api</code> Supabase Auth email templates (Agent B will confirm).</li>
+<li>R3-T1 — Role chip on signup page; still need to find the exact JSX (was not found by Agent A — likely in <code>app/(auth)/...</code>; one more targeted search will resolve).</li>
+<li>R4-T2 (Members page subtitle copy) — copy decision.</li>
+<li>R4-T4 (i18n update — DB-backed; one row per locale).</li>
+<li>R4-T6 (Back Office &quot;Members&quot;: JSX rename in <code>sidebar.tsx:61</code>, <code>app/(workspace)/members/page.tsx</code>, <code>MemberPicker.tsx</code>, <code>member-search.ts</code>).</li>
+<li>R8-T3 — wait for client copy for <code>create.finalPriceNote</code>.</li>
+<li>R11 — same as R8-T3 (it IS R8-T3 effectively — duplicate; will be folded into one task).</li>
+<li>R12-T1 / R12-T2 / R12-T3 — waiting on Agent B&#39;s DB schema check, but Agent A confirmed the input is a free-text <code>&lt;input&gt;</code> for nationality and a numeric for weight. Likely fix: make nationality a <code>&lt;select&gt;</code> of ISO codes that matches the FK lookup table.</li>
+</ul>
+<p>🔴 <strong>Blocked — need client decision (cannot leave planning)</strong></p>
+<ul>
+<li>R5 — Agent A could NOT find a discrete <code>CommissionRate</code> card; both metrics are likely sub-sections of one widget. <strong>Question for client:</strong> remove the <em>whole</em> reporting widget, or only the Commission Rate &amp; Performance Overview rows inside it?</li>
+<li>R6 — Brand-new &quot;Available Tours&quot; widget. <strong>Need spec:</strong> what tours appear (all active / partner-allowed / featured), what each card shows (image, name, price, CTA), pagination/limit, empty state, data endpoint.</li>
+<li>R17-T1 — Pay-with-Card disabled because Omise SDK doesn&#39;t load. <strong>Need from client:</strong> are Omise keys configured for staging? Was card payment intentionally gated? (May resolve to &quot;Yes, just fix the SDK script load&quot; which would re-classify to 🟡.)</li>
+<li>R18-T1 — Same as R17 + a product question: <strong>should indirect/net payment even support card payment?</strong> It may make more sense to just remove the card option for indirect mode.</li>
+<li>R19-T1 — Should the Indirect Payment dialog also show the TOTAL AMOUNT box?</li>
+<li>R20-T1 — Notification channel (email / in-app bell / both)? Recipients (which back-office role)? Template? Greenfield work in either orchestrator (n8n) or api (edge function).</li>
+<li>R21-T1 — Greenfield popup component. <strong>Need from client:</strong> is this a popup, an inline step, or a full screen? Should it block booking submission until verified, or just confirm post-booking? Or is the existing flow assuming Supabase Auth will handle the popup itself (in which case the bug is that the page doesn&#39;t surface the right state)?</li>
+<li>R22-T1 / R22-T2 — Soft-archive UX. <strong>Need:</strong> column name / migration vs existing column (Agent B will confirm the DB side); also: archived clients shown by default or behind a filter toggle? Can they be unarchived?</li>
+</ul>
+<blockquote>
+<p><strong>Possible scope leak — fifth repo.</strong> <code>silkskyair-orchestrator/CLAUDE.md</code> references a <code>silkskyair-member</code> repo we do <strong>not</strong> have access to. If R12 (member_profiles) or R21 (booking-time email verification) require changes there, those tasks cannot be implemented in this session and must be raised as out-of-scope tickets.</p>
+</blockquote>
+<hr>
+<h2>Final Plan (Phase 4 — revised after Phase 2 design pass)</h2>
+<h3>Context</h3>
+<p>The client&#39;s third pre-launch review of the Partnership Portal surfaces 22 items: real bugs (R1 partner-create form clearing; R12 passenger nationality FK violation; R16 broken indirect commission math; R17/R18 disabled Pay-with-Card; R20 missing back-office cancellation notification; R21 missing email-verification popup; R8/R11 untranslated i18n keys), terminology renames (R4 Members→Clients globally; R13/R14 Direct→Full / Indirect→Net; R10 &quot;Confirm Booking&quot;→&quot;Submit Booking&quot;; R7 &quot;Invite Member&quot;→&quot;Invite Team&quot;; R3 <code>organization_manager</code>→Manager; R9 stage label fix), a layout reduction (R5 hide reporting widget), the new R6 Available Tours widget, R19 TOTAL AMOUNT parity on indirect, and R22 archive clients. All work lands on shared branch <code>claude/plan-client-review-YNHfY</code> across the four reachable repos (<code>silkskyair-orchestrator</code>, <code>silkskyair-api</code>, <code>silkskyair-manager</code>, <code>silkskyair-partner</code>). A 5th repo (Account Portal at <code>NEXT_PUBLIC_ACCOUNT_URL</code>) hosts the Create Account page and is <strong>not</strong> in our access list — R3&#39;s actual broken chip is out of scope here.</p>
+<p>The Partner Portal i18n is <strong>DB-backed via <code>i18n.entries</code></strong> (not JSON files), so most rename tasks are Supabase migrations rather than code edits.</p>
+<p><strong>What lands in this branch (no further access needed):</strong> R1, R4, R5, R7, R8, R9, R10, R11, R12, R13, R14, R15, R16 (client + server-side mirror inside partner-repo settlement route), R19, R20 in-app half, R22.
+<strong>Blocked on access (see Access Prerequisites — Batch X0):</strong></p>
+<ul>
+<li>R3 reviewer-visible chip — needs <code>silkskyair-account</code> access</li>
+<li>R2 invitation From identity — needs <code>silkskyair-workflows</code> access</li>
+<li>R17/R18 actual fix — code in partner repo is small (verified), but provisioning needs Vercel access</li>
+<li>R20 email half — needs <code>silkskyair-workflows</code> access</li>
+<li>R21 partner-side popup — partner-repo greenfield is plannable, but the cross-repo contract with <code>silkskyair-member</code>&#39;s <code>/verify</code> page should be confirmed before implementation
+<strong>Blocked on spec (not access):</strong> R6 Available Tours widget.</li>
+</ul>
+<h3>Execution order (batches with dependencies)</h3>
+<pre><code>Batch X0 — Access prerequisites (silkskyair-account, silkskyair-workflows,
+            silkskyair-member, Vercel, n8n cloud) — see Access Prerequisites section
+   ↓ (X0 unblocks R3 / R2 / R17 / R18 / R20-email / R21-contract; everything below is unblocked already)
+Batch A1 — silkskyair-api migrations (no dependencies)
+   ↓
+Batch P1 — silkskyair-partner uses A1&#39;s i18n rows
+   ↓
+Batch P2 — silkskyair-partner JSX / behavior (depends on P1 keys)
+Batch M1 — silkskyair-manager JSX (independent of P1/P2)
+   ↓
+Batch M2 — silkskyair-manager notification bell consumer (depends on A1 trigger)
+   ↓ (the below batches all require X0 to have completed)
+Batch ACC1 — silkskyair-account — R3 chip fix (post-X0-T1)
+Batch WF1  — silkskyair-workflows — R2 From identity + R20 cancellation email workflow (post-X0-T2)
+Batch ENV1 — Vercel — R17/R18 OMISE keys (post-X0-T4)
+Batch P3   — silkskyair-partner — R21 popup + /api/bookings/[id]/verify proxy (post-X0-T3)
+   ↓
+Batch P4 — DEFERRED: R6 Available Tours (needs spec, not access)
+</code></pre>
+<h3>Batch A1 — <code>silkskyair-api</code> — new migrations</h3>
+<p>All new files under <code>silkskyair-api/supabase/migrations/</code>. Latest existing migration is <code>20260427130000_*</code>; new files use prefix <code>2026051312xxxx_*</code> (or later).</p>
+<p><strong><code>20260513120000_review_rename_keys.sql</code> (NEW) — covers R4 (partner), R7, R8-T1, R9, R10, R13, R14.</strong>
+Pattern: copy the UPSERT shape from <code>20260310120200_i18n_missing_partner_keys.sql</code>. All entries <code>context = &#39;partner&#39;</code>. EN / TH / RU values:</p>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Key</th>
+<th>EN</th>
+<th>TH</th>
+<th>RU</th>
+<th>Review</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>common</td>
+<td>sidebar.members</td>
+<td>Clients</td>
+<td>ลูกค้า</td>
+<td>Клиенты</td>
+<td>R4-T1</td>
+</tr>
+<tr>
+<td>members</td>
+<td>page.title</td>
+<td>Clients</td>
+<td>ลูกค้า</td>
+<td>Клиенты</td>
+<td>R4-T2</td>
+</tr>
+<tr>
+<td>members</td>
+<td>page.subtitle</td>
+<td>Manage your registered clients</td>
+<td>จัดการลูกค้าที่ลงทะเบียนของคุณ</td>
+<td>Управление зарегистрированными клиентами</td>
+<td>R4-T2</td>
+</tr>
+<tr>
+<td>members</td>
+<td>actions.create</td>
+<td>Add Client</td>
+<td>เพิ่มลูกค้า</td>
+<td>Добавить клиента</td>
+<td>R4-T3</td>
+</tr>
+<tr>
+<td>settings</td>
+<td>team.invite</td>
+<td>Invite Team</td>
+<td>เชิญทีม</td>
+<td>Пригласить команду</td>
+<td>R7-T1</td>
+</tr>
+<tr>
+<td>settings</td>
+<td>team.status.archived</td>
+<td>Archived</td>
+<td>เก็บถาวรแล้ว</td>
+<td>В архиве</td>
+<td>R8-T1</td>
+</tr>
+<tr>
+<td>bookings</td>
+<td>create.step4</td>
+<td>Shared/Private Flight</td>
+<td>เที่ยวบินแบบใช้ร่วม/ส่วนตัว</td>
+<td>Совместный/Частный рейс</td>
+<td>R9-T1</td>
+</tr>
+<tr>
+<td>bookings</td>
+<td>create.confirm</td>
+<td>Submit Booking</td>
+<td>ส่งการจอง</td>
+<td>Отправить заявку</td>
+<td>R10-T1</td>
+</tr>
+<tr>
+<td>bookings</td>
+<td>payment.directPayment</td>
+<td>Full Payment</td>
+<td>ชำระเต็มจำนวน</td>
+<td>Полная оплата</td>
+<td>R13-T1</td>
+</tr>
+<tr>
+<td>bookings</td>
+<td>payment.indirectPayment</td>
+<td>Net Payment (after deducting commission)</td>
+<td>ชำระสุทธิ (หักค่าคอมมิชชั่นแล้ว)</td>
+<td>Чистая оплата (после вычета комиссии)</td>
+<td>R14-T1</td>
+</tr>
+</tbody></table>
+<p><code>actions.save</code> (R8-T2) is <strong>already present</strong> at <code>20260217100000_member_module.sql:247</code> — no action needed.</p>
+<p><strong><code>20260513120100_member_profiles_archived_at.sql</code> (NEW) — R22-T1.</strong></p>
+<pre><code class="language-sql">ALTER TABLE public.member_profiles
+  ADD COLUMN IF NOT EXISTS archived_at timestamptz;
+CREATE INDEX IF NOT EXISTS idx_member_profiles_archived_at
+  ON public.member_profiles (archived_at) WHERE archived_at IS NULL;
+</code></pre>
+<p>Plus <code>RPC api.archive_member(p_member_id uuid)</code> that sets <code>archived_at = now()</code> (one-way, no <code>unarchive_member</code>), gated by <code>rls_has_privilege(&#39;module:partner-members:access&#39;)</code>. Update partner-portal members list query to filter <code>WHERE archived_at IS NULL</code> unless the &quot;Show archived&quot; toggle is on.</p>
+<p><strong><code>20260513120200_commission_indirect_no_wht.sql</code> (NEW) — R15/R16 server mirror.</strong>
+Server-side commission lives in <code>20260216110000_commission_calculation_fields.sql</code> plus the settlement INSERT path called from <code>silkskyair-partner/app/api/bookings/[id]/payments/intent/route.ts</code> (~line 240; verify in implementation). Mirror the client-side fix:</p>
+<ul>
+<li>For <code>payment_collected_by = &#39;indirect&#39;</code>: write <code>net_to_partner = commission + vat_on_commission</code> (no WHT deduction); <code>net_to_operator = total - commission - vat_on_commission</code>. Keep direct path unchanged.</li>
+<li><strong>Recommended approach (additive, safer):</strong> Add a new function <code>compute_settlement_v2(p_total, p_commission_pct, p_vat_pct, p_wht_pct, p_collected_by)</code> returning the breakdown, and switch the settlement INSERT to call it. Drop on revert.</li>
+</ul>
+<p><strong><code>20260513120300_notification_on_cancellation.sql</code> (NEW) — R20-T1 in-app fan-out.</strong>
+Trigger on <code>public.booking_events</code> AFTER INSERT WHERE <code>event_type = &#39;BookingCancellationRequested&#39;</code>. Insert one row into <code>account.notifications</code> per recipient (<code>user_id</code>, <code>app_id</code> for manager, <code>type = &#39;booking.cancellation_requested&#39;</code>, title/body, metadata JSON with <code>booking_id</code>).
+<strong>Recipients (per decision):</strong> all active <code>organization_users</code> whose role has <code>module:bookings:access</code> privilege. Email path (manager-only) is handled in Batch O1.
+Register a new event type in <code>account.event_types</code> mirroring <code>20260308100000_*</code> pattern.</p>
+<h3>Batch P1 — Partner Portal i18n (via A1 migration)</h3>
+<p>No file-level changes in <code>silkskyair-partner</code> for renames — i18n is DB-backed.</p>
+<h3>Batch P2 — <code>silkskyair-partner</code> — JSX / behavior</h3>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>File:line</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>R3 partial</strong></td>
+<td>NEW <code>lib/auth/roles.ts</code></td>
+<td>Export <code>formatRoleLabel(role, i18n)</code> returning <code>i18n(\</code>team.role.${role}`)</td>
+</tr>
+<tr>
+<td>R3 partial</td>
+<td><code>components/team/team-table.tsx:74-75</code></td>
+<td>Replace inline <code>getRoleLabel</code> with import of <code>formatRoleLabel</code></td>
+</tr>
+<tr>
+<td>R3 partial</td>
+<td><code>components/team/pending-invitations.tsx:49-50</code></td>
+<td>Same — replace local helper with the shared import</td>
+</tr>
+<tr>
+<td>R3 partial</td>
+<td><code>components/team/team-member-drawer.tsx:235</code></td>
+<td>Replace inline <code>i18n(\</code>team.role.${member.role}`)</td>
+</tr>
+<tr>
+<td><strong>R5</strong></td>
+<td><code>app/home/page.tsx:6, :75, :76</code></td>
+<td>Comment out the <code>ReportingWidget</code> import (line 6) and the JSX (line 76); change <code>lg:grid-cols-3</code> → <code>lg:grid-cols-2</code> (line 75) so the remaining two widgets reflow. Comment out the matching <code>fetchPerformance</code> callback + <code>useEffect</code> (lines 36-47) to avoid a dead-state fetch. <strong>Do not delete</strong> <code>components/home/widgets/reporting-widget.tsx</code>.</td>
+</tr>
+<tr>
+<td><strong>R7</strong></td>
+<td><code>app/team/page.tsx:170</code></td>
+<td>Change <code>{i18n(&quot;team.invite&quot;) || &quot;Invite Member&quot;}</code> → <code>{i18n(&quot;team.invite&quot;) || &quot;Invite Team&quot;}</code> so the fallback matches the new wording.</td>
+</tr>
+<tr>
+<td><strong>R8-T3 / R11</strong></td>
+<td><code>components/bookings/create/extras-step.tsx:213-216</code></td>
+<td>Delete the entire <code>&lt;p&gt;</code> block referencing <code>create.finalPriceNote</code>.</td>
+</tr>
+<tr>
+<td><strong>R12-T2</strong></td>
+<td><code>components/bookings/passenger-card.tsx:262-269</code></td>
+<td>Replace free-text <code>&lt;input&gt;</code> for <code>nationality</code> with <code>&lt;select&gt;</code> populated from a new <code>useCountries()</code> hook returning <code>{ code, name }[]</code> ordered by name.</td>
+</tr>
+<tr>
+<td>R12-T2</td>
+<td>NEW <code>app/api/countries/route.ts</code> (~20 lines)</td>
+<td>GET returns rows from <code>public.countries</code>. RLS already permits public SELECT per <code>20260211120000:15-17</code>.</td>
+</tr>
+<tr>
+<td><strong>R12-T3</strong></td>
+<td>n/a</td>
+<td>No change — once R12-T2 lands, weight saves work. Verification-only.</td>
+</tr>
+<tr>
+<td><strong>R15-T1</strong></td>
+<td><code>components/bookings/booking-payment-section.tsx:130-135</code></td>
+<td>Wrap the WHT <code>&lt;BreakdownRow&gt;</code> in <code>{data.paymentCollectedBy === &quot;direct&quot; &amp;&amp; (...)}</code>. The <code>paymentCollectedBy</code> field is on <code>CommissionBreakdown</code> per <code>commission.ts:78</code>.</td>
+</tr>
+<tr>
+<td><strong>R16-T1</strong></td>
+<td><code>lib/bookings/commission.ts:142</code></td>
+<td>Change <code>netToOperator = round2(totalInclVat - commission - vatOnCommission + withholdingTax)</code> → <code>netToOperator = round2(totalInclVat - commission - vatOnCommission)</code>. Yields 28000/10% indirect: <code>netToPartner = 2616.82</code>, <code>netToOperator = 25383.18</code>. Update the vitest spec in <code>lib/bookings/__tests__/commission.test.ts</code>.</td>
+</tr>
+<tr>
+<td><strong>R17 / R18</strong></td>
+<td><code>components/bookings/payment-checkout.tsx:337-342, :426</code></td>
+<td>The <code>&lt;Script&gt;</code> already has <code>onError</code> (line 341). Add a 5s timeout + visible inline error when <code>!omiseLoaded</code> so the silent-fail case is debuggable. <strong>Real fix: provision <code>OMISE_PUBLIC_KEY</code> (server) and <code>NEXT_PUBLIC_OMISE_PUBLIC_KEY</code> (client) in staging/prod env.</strong> Add placeholders to <code>.env.example</code>.</td>
+</tr>
+<tr>
+<td><strong>R19</strong></td>
+<td><code>components/bookings/payment-checkout.tsx:345-353, :460-464</code></td>
+<td>Remove the <code>paymentCollectedBy === &quot;direct&quot;</code> wrapper around the TOTAL AMOUNT card and the QR amount display so both render for indirect too.</td>
+</tr>
+<tr>
+<td><strong>R22-T2</strong></td>
+<td><code>app/members/page.tsx</code> + <code>components/members/member-card.tsx</code></td>
+<td>Add an &quot;Archive&quot; action on each <code>&lt;MemberCard&gt;</code> calling new <code>POST /api/members/[id]/archive</code>. Add a &quot;Show archived&quot; toggle in the page state (default off). Hide archived rows from the default list. <strong>One-way:</strong> no unarchive UI.</td>
+</tr>
+<tr>
+<td>R22-T2</td>
+<td>NEW <code>app/api/members/[id]/archive/route.ts</code></td>
+<td>POST calls the RPC from A1.</td>
+</tr>
+</tbody></table>
+<h3>Batch M1 — <code>silkskyair-manager</code> (Back Office)</h3>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>File:line</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>R1-T1</strong></td>
+<td><code>app/(workspace)/partners/_components/partners-manager.tsx:469-484, :616-626</code></td>
+<td>In the create-success branch (lines 616-623), replace <code>setTimeout(closeDrawer, 700)</code> with <code>setDrawer({ mode: &quot;edit&quot;, partner: saved })</code> and populate the form from <code>saved</code> (mirroring the edit-mode populate at lines 433-437). Also <code>router.push(\</code>?partner=${saved.id}`)`. Keep the existing edit-branch close behavior.</td>
+</tr>
+<tr>
+<td><strong>R4-T6</strong></td>
+<td><code>lib/modules/registry.ts:116</code></td>
+<td><code>label: &quot;Members&quot;</code> → <code>label: &quot;Clients&quot;</code> (sidebar reads <code>module.label</code> directly).</td>
+</tr>
+<tr>
+<td>R4-T6</td>
+<td><code>app/(workspace)/members/_components/members-manager.tsx:70</code></td>
+<td><code>all: { label: &quot;All Members&quot;, ... }</code> → <code>label: &quot;All Clients&quot;</code>.</td>
+</tr>
+<tr>
+<td>R4-T6</td>
+<td><code>app/(workspace)/members/_components/members-manager.tsx:338</code></td>
+<td><code>&lt;p&gt;Members&lt;/p&gt;</code> → <code>&lt;p&gt;Clients&lt;/p&gt;</code>.</td>
+</tr>
+</tbody></table>
+<p>URL <code>/members</code> is <strong>not</strong> renamed (per decision log).</p>
+<h3>Batch M2 — <code>silkskyair-manager</code> — notification bell consumer (R20 in-app)</h3>
+<p>Greenfield in back office; no existing notification surface.</p>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>File:line</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>R20-T2</td>
+<td>NEW <code>components/home/notification-bell.tsx</code></td>
+<td>Fetches <code>account.notifications WHERE user_id = current AND read_at IS NULL</code>. Realtime subscribe (REPLICA IDENTITY FULL is already set per <code>20260308100000:91</code>). Renders a bell + unread count + dropdown.</td>
+</tr>
+<tr>
+<td>R20-T2</td>
+<td><code>components/home/header.tsx</code> (verify exists; else <code>app/(workspace)/layout.tsx</code>)</td>
+<td>Mount <code>&lt;NotificationBell /&gt;</code> in the header.</td>
+</tr>
+<tr>
+<td>R20-T2</td>
+<td>NEW <code>app/api/notifications/route.ts</code></td>
+<td>GET (list), PATCH (mark-read).</td>
+</tr>
+<tr>
+<td>R20-T2</td>
+<td>reuse <code>lib/toast-emitter.ts</code></td>
+<td>Surface inbound notifications as toasts.</td>
+</tr>
+</tbody></table>
+<h3>Batch WF1 — <code>silkskyair-workflows</code> — R20 email + R2 (BLOCKED on X0-T2)</h3>
+<p>Until access lands, only intent-level entries are listed; concrete file:line / node identifiers will be filled in after X0-T2 + a follow-up Explore pass.</p>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Where</th>
+<th>Intent</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>R2</strong></td>
+<td>n8n workflow <code>/invitations/send-email</code> (file path TBD post-access)</td>
+<td>Change the email node&#39;s &quot;From&quot; identity to <code>Silk Sky Partner Portal &lt;system@silkskyair.com&gt;</code>.</td>
+</tr>
+<tr>
+<td><strong>R20 email</strong></td>
+<td>NEW n8n workflow <code>/notifications/cancellation-email</code> (file path TBD post-access)</td>
+<td>Webhook POST → DB query for manager-role recipients → email template with booking reference + reason.</td>
+</tr>
+</tbody></table>
+<h3>Batch P3 — <code>silkskyair-partner</code> — R21 verification popup (partial — partner-repo half plannable; cross-repo contract pending X0-T3)</h3>
+<p>Server infrastructure for OTP issuance + verification is live (see R21 disposition entry in Discoveries). The partner-side popup is greenfield. Files involved:</p>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>File:line</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>R21-T1</strong></td>
+<td>NEW <code>app/api/bookings/[id]/verify/route.ts</code> (partner-repo proxy)</td>
+<td>POST receives <code>{ otp }</code>, calls the existing <code>verify</code> edge function (<code>silkskyair-api/supabase/functions/verify/index.ts</code>) with <code>entity_type=&#39;booking&#39;, entity_id=[id], method=&#39;otp&#39;, otp</code>; returns <code>{ verified: true/false, error? }</code>. Service-role auth (booking belongs to partner).</td>
+</tr>
+<tr>
+<td><strong>R21-T2</strong></td>
+<td>NEW <code>components/bookings/create/verification-modal.tsx</code></td>
+<td>Modal with a 6-digit code input (auto-advance / paste-fill), &quot;Verify&quot; CTA, error state, &quot;Resend code&quot; link (deferred — see Open Q below). Calls R21-T1.</td>
+</tr>
+<tr>
+<td><strong>R21-T3</strong></td>
+<td><code>components/bookings/create/create-booking-drawer.tsx:195-259</code></td>
+<td>After <code>POST /api/bookings</code> succeeds, replace immediate close with <code>setShowVerification(true)</code>. Pass the new booking ID to the modal. On <code>verified=true</code>, close drawer + emit toast; on close-without-verify, leave booking in unverified state (per user choice: post-submit verification).</td>
+</tr>
+<tr>
+<td><strong>R21-T4</strong></td>
+<td><code>app/api/bookings/route.ts:202-225</code></td>
+<td>No change required for the happy path; the booking row will already have <code>booking_verifications</code> populated by the DB trigger. Verify this by Supabase MCP <code>execute_sql</code> post-create.</td>
+</tr>
+<tr>
+<td><strong>R21-T5</strong> (post-X0-T3)</td>
+<td>Cross-repo contract review against <code>silkskyair-member/app/verify/page.tsx</code> (or wherever the customer-facing <code>/verify</code> page lives)</td>
+<td>Confirm: token format, OTP-vs-HMAC dual-method behavior, response shape. Adjust R21-T1/T2 if assumptions are wrong.</td>
+</tr>
+</tbody></table>
+<p>Open Q (does NOT block initial planning): does R21 need a &quot;Resend code&quot; affordance? The DB trigger generates the OTP once; resend would need a new RPC. Default in this plan: no resend in v1 — if the partner closes the modal, they can re-trigger via a &quot;Verify email&quot; action surfaced on the booking detail (added as R21-T6).</p>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>File:line</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>R21-T6</strong></td>
+<td><code>app/bookings/[id]/page.tsx</code> (verify location post-discovery)</td>
+<td>Surface a &quot;Verify email&quot; action when <code>booking_verifications.verified_at IS NULL</code>. Opens the same modal.</td>
+</tr>
+</tbody></table>
+<h3>Critical files (consolidated)</h3>
+<p><strong><code>silkskyair-api/supabase/migrations/</code></strong> (all NEW)</p>
+<ul>
+<li><code>20260513120000_review_rename_keys.sql</code></li>
+<li><code>20260513120100_member_profiles_archived_at.sql</code></li>
+<li><code>20260513120200_commission_indirect_no_wht.sql</code></li>
+<li><code>20260513120300_notification_on_cancellation.sql</code></li>
+</ul>
+<p><strong><code>silkskyair-partner</code></strong></p>
+<ul>
+<li><code>app/home/page.tsx</code> — R5</li>
+<li><code>app/team/page.tsx:170</code> — R7 fallback</li>
+<li><code>app/members/page.tsx</code>, <code>components/members/member-card.tsx</code> — R22 UI</li>
+<li>NEW <code>app/api/countries/route.ts</code> — R12</li>
+<li>NEW <code>app/api/members/[id]/archive/route.ts</code> — R22</li>
+<li>NEW <code>lib/auth/roles.ts</code> — R3</li>
+<li><code>components/team/team-table.tsx:74-75</code>, <code>pending-invitations.tsx:49-50</code>, <code>team-member-drawer.tsx:235</code> — R3 consolidation</li>
+<li><code>components/bookings/create/extras-step.tsx:213-216</code> — R8-T3 delete</li>
+<li><code>components/bookings/passenger-card.tsx:262-269</code> — R12 select</li>
+<li><code>components/bookings/booking-payment-section.tsx:130-135</code> — R15</li>
+<li><code>lib/bookings/commission.ts:142</code> + <code>lib/bookings/__tests__/commission.test.ts</code> — R16</li>
+<li><code>components/bookings/payment-checkout.tsx:337-342, :345-353, :426, :460-464</code> — R17/R18/R19</li>
+<li>NEW <code>lib/n8n/trigger-cancellation-email.ts</code> + <code>app/api/bookings/[id]/cancel/route.ts</code> (call site) — R20 email</li>
+<li><code>.env.example</code> — add <code>OMISE_PUBLIC_KEY=</code> / <code>NEXT_PUBLIC_OMISE_PUBLIC_KEY=</code> placeholders</li>
+</ul>
+<p><strong><code>silkskyair-manager</code></strong></p>
+<ul>
+<li><code>app/(workspace)/partners/_components/partners-manager.tsx:469-484, :616-626</code> — R1</li>
+<li><code>lib/modules/registry.ts:116</code>, <code>app/(workspace)/members/_components/members-manager.tsx:70, :338</code> — R4-T6</li>
+<li>NEW <code>components/home/notification-bell.tsx</code>, <code>app/api/notifications/route.ts</code>; mount in header — R20-T2</li>
+</ul>
+<p><strong><code>silkskyair-orchestrator</code></strong></p>
+<ul>
+<li>No source change.</li>
+</ul>
+<p><strong><code>silkskyair-account</code></strong> (BLOCKED on X0-T1)</p>
+<ul>
+<li>R3 chip rendering on Create-Account page. File:line TBD post-access.</li>
+</ul>
+<p><strong><code>silkskyair-workflows</code></strong> (BLOCKED on X0-T2)</p>
+<ul>
+<li><code>invitations/send-email</code> workflow (R2 From identity)</li>
+<li>NEW <code>notifications/cancellation-email</code> workflow (R20 email half)</li>
+</ul>
+<p><strong>Vercel projects</strong> (BLOCKED on X0-T4)</p>
+<ul>
+<li><code>silkskyair-partner</code> (staging + prod): <code>OMISE_PUBLIC_KEY</code>, <code>OMISE_SECRET_KEY</code></li>
+</ul>
+<p><strong><code>silkskyair-member</code></strong> (BLOCKED on X0-T3, contract review only)</p>
+<ul>
+<li><code>app/verify/page.tsx</code> (or equivalent) — referenced by R21-T5 for cross-repo contract review.</li>
+</ul>
+<h3>Verification matrix</h3>
+<table>
+<thead>
+<tr>
+<th>Review item</th>
+<th>Verification</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>R1</td>
+<td>Playwright <code>silkskyair-manager/e2e/</code> partner-create flow: fill, save, re-open → fields populated; <code>?partner=ID</code> in URL</td>
+</tr>
+<tr>
+<td>R2</td>
+<td>Manual: send a fresh invitation, inspect Gmail &quot;From&quot; header (n8n config change is separate)</td>
+</tr>
+<tr>
+<td>R3 (partial)</td>
+<td>Vitest for <code>formatRoleLabel</code>; Playwright on <code>/team</code> renders human labels not raw role strings</td>
+</tr>
+<tr>
+<td>R3 (full)</td>
+<td>OUT OF SCOPE — Account Portal repo</td>
+</tr>
+<tr>
+<td>R4 partner</td>
+<td>Supabase MCP <code>execute_sql</code> verifies <code>i18n.entries</code>; Playwright crawls sidebar / <code>/members</code></td>
+</tr>
+<tr>
+<td>R4 manager</td>
+<td>Playwright <code>silkskyair-manager/e2e/</code> — sidebar + <code>/members</code> render &quot;Clients&quot;</td>
+</tr>
+<tr>
+<td>R5</td>
+<td>Playwright <code>/home</code> — <code>&lt;ReportingWidget&gt;</code> absent from DOM; grid is 2-col</td>
+</tr>
+<tr>
+<td>R6</td>
+<td>OUT OF SCOPE</td>
+</tr>
+<tr>
+<td>R7</td>
+<td>Playwright <code>/team</code> button reads &quot;Invite Team&quot;</td>
+</tr>
+<tr>
+<td>R8-T1</td>
+<td>Supabase MCP confirms rows; drawer renders &quot;Archived&quot;</td>
+</tr>
+<tr>
+<td>R8-T2</td>
+<td>Already exists; verification: no raw <code>actions.save</code> in UI</td>
+</tr>
+<tr>
+<td>R8-T3 / R11</td>
+<td>Playwright <code>/bookings/new</code> step 4 — no raw <code>create.finalPriceNote</code> text</td>
+</tr>
+<tr>
+<td>R9</td>
+<td>Stepper shows <code>4) Shared/Private Flight</code></td>
+</tr>
+<tr>
+<td>R10</td>
+<td>Step-5 CTA reads &quot;Submit Booking&quot;</td>
+</tr>
+<tr>
+<td>R12</td>
+<td>Supabase MCP confirms FK target; Playwright edits passenger nationality via <code>&lt;select&gt;</code>, saves, refresh persists; weight also persists</td>
+</tr>
+<tr>
+<td>R13/R14</td>
+<td>Supabase MCP confirms new EN/TH/RU strings; Playwright booking detail shows them</td>
+</tr>
+<tr>
+<td>R15</td>
+<td>Indirect breakdown has NO WHT row; Direct still shows it</td>
+</tr>
+<tr>
+<td>R16</td>
+<td>Vitest: 28000 THB / 10% indirect → <code>netToPartner = 2616.82</code>, <code>netToOperator = 25383.18</code></td>
+</tr>
+<tr>
+<td>R17</td>
+<td>Manual with <code>OMISE_PUBLIC_KEY</code> set: test card <code>4242 4242 4242 4242</code> completes Full Payment</td>
+</tr>
+<tr>
+<td>R18</td>
+<td>Manual: same for Net Payment</td>
+</tr>
+<tr>
+<td>R19</td>
+<td>Indirect payment dialog shows TOTAL AMOUNT card</td>
+</tr>
+<tr>
+<td>R20</td>
+<td>Partner cancels a booking → row inserted in <code>account.notifications</code> (Supabase MCP); bell shows unread count in manager; manager-role user receives email (after n8n workflow exists)</td>
+</tr>
+<tr>
+<td>R21</td>
+<td>OUT OF SCOPE — deferred</td>
+</tr>
+<tr>
+<td>R22</td>
+<td>Archive a client → hidden from default list; &quot;Show archived&quot; toggle reveals; Supabase MCP confirms <code>archived_at IS NOT NULL</code>; no unarchive UI present</td>
+</tr>
+</tbody></table>
+<h3>Trade-offs and recommendations (recorded)</h3>
+<ol>
+<li><strong>R16 server mirror — additive vs overwrite.</strong> Going with <strong>additive</strong>: new <code>compute_settlement_v2()</code> function called from the settlement INSERT. Safer rollback than overwriting the existing trigger.</li>
+<li><strong>R5 — kept dead component file</strong> per decision log; only <code>app/home/page.tsx</code> mounts/uses commented out.</li>
+<li><strong>R12 — combobox vs <code>&lt;select&gt;</code>.</strong> 249 ISO codes is a lot for a plain <code>&lt;select&gt;</code>. If a combobox component already exists in the partner app (search <code>components/</code> for <code>combobox</code> / <code>autocomplete</code>), prefer it; otherwise fall back to a plain <code>&lt;select&gt;</code> sorted by country name. Decide in implementation.</li>
+<li><strong>R19 privacy comment.</strong> The existing wrapper at <code>payment-checkout.tsx:344</code> carried a &quot;hide net amounts for customer privacy&quot; comment. Decision overrides that; flag in PR description for client visibility.</li>
+<li><strong>R20 email path.</strong> Lands the DB trigger + bell in this branch; email requires an n8n workflow we cannot commit. Tracked separately.</li>
+<li><strong>R3 Account Portal scope.</strong> Only the partner-repo cleanup ships here; the actual reviewer-visible chip needs Account Portal repo access. Track separately.</li>
+</ol>
+<h3>Blocked items (was &quot;out-of-scope&quot; — corrected)</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Blocker</th>
+<th>Unblocks when</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>R3 reviewer-visible chip</td>
+<td>No read access to <code>silkskyair-account</code></td>
+<td>X0-T1 grants access; then a quick Explore pass yields file:line</td>
+</tr>
+<tr>
+<td>R2 From identity</td>
+<td>No read access to <code>silkskyair-workflows</code></td>
+<td>X0-T2 grants access; we identify the workflow node and edit it</td>
+</tr>
+<tr>
+<td>R20 email half</td>
+<td>No read access to <code>silkskyair-workflows</code></td>
+<td>X0-T2 grants access; we add a new workflow</td>
+</tr>
+<tr>
+<td>R17/R18 env provisioning</td>
+<td>No access to Vercel project dashboards</td>
+<td>X0-T4 — client confirms keys are present, or grants Vercel access</td>
+</tr>
+<tr>
+<td>R21-T5 cross-repo contract</td>
+<td>No read access to <code>silkskyair-member</code></td>
+<td>X0-T3 grants access; we verify token/response shape so R21-T1/T2 land safely</td>
+</tr>
+<tr>
+<td>R6 Available Tours widget</td>
+<td>No client spec (data source, card layout, empty state, pagination)</td>
+<td>Client provides spec</td>
+</tr>
+</tbody></table>
+<p>Note: R21 partner-side popup (T1–T4, T6) is <strong>plannable today</strong> because the OTP server-side flow is fully discovered. The cross-repo contract check (T5) is the only access-gated piece, and it&#39;s a verification, not a design step — so the bulk of R21 work can proceed in parallel with X0-T3.</p>
+<h3>Verification (per batch)</h3>
+<p>For each batch:</p>
+<ol>
+<li><code>pnpm typecheck &amp;&amp; pnpm lint &amp;&amp; pnpm test</code> in the affected repo.</li>
+<li>Playwright suites in <code>silkskyair-partner/e2e/</code> and <code>silkskyair-manager/e2e/</code> extended with new specs per the verification matrix.</li>
+<li>Supabase MCP <code>list_tables</code>, <code>execute_sql</code>, <code>list_migrations</code> for DB-shape verifications.</li>
+<li>Manual walkthrough mirroring each PDF screenshot.</li>
+<li>i18n leak check: crawl the happy path; fail on any rendered raw key.</li>
+</ol>
+<p>After each repo&#39;s batch lands, <code>git push -u origin claude/plan-client-review-YNHfY</code> per repo (retry up to 4× with 2/4/8/16s backoff on network failure). No PR is created unless explicitly requested.</p>
+<hr>
+
+</article>
+</body>
+</html>

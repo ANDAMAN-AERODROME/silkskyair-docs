@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Production Release — Staging → Production</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Production Release — Staging → Production</h1>
+<p><strong>Date:</strong> 2026-05-26
+<strong>Release scope:</strong> All apps with commits ahead of <code>main</code> (full coordinated release)</p>
+<hr>
+<h2>0. Release Inventory</h2>
+<table>
+<thead>
+<tr>
+<th>Repo</th>
+<th>Branch</th>
+<th align="right">Commits ahead of <code>main</code></th>
+<th>Deploy target</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>silkskyair-api</code> (API/DB)</td>
+<td><code>develop</code></td>
+<td align="right">45</td>
+<td>Supabase prod (<code>sinxjnvesyrrkydhtqts</code>)</td>
+<td>27 new migrations since 2026-05-01</td>
+</tr>
+<tr>
+<td><code>silkskyair-cms</code></td>
+<td><code>develop</code></td>
+<td align="right">3</td>
+<td>Strapi Cloud</td>
+<td>Schema change: <code>sky-story</code> ↔ <code>tours</code> manyToMany, slug doc-level</td>
+</tr>
+<tr>
+<td><code>silkskyair-workflows</code></td>
+<td><code>develop</code></td>
+<td align="right">23</td>
+<td>n8n (production instance)</td>
+<td>SkyStories events router, sync retirement</td>
+</tr>
+<tr>
+<td><code>silkskyair-www</code></td>
+<td><code>develop</code></td>
+<td align="right">39</td>
+<td>Vercel</td>
+<td>SSA-621 payment-before-confirmation, deeplinks, SkyStories Related Tours</td>
+</tr>
+<tr>
+<td><code>silkskyair-manager</code></td>
+<td><code>develop</code></td>
+<td align="right">30</td>
+<td>Vercel</td>
+<td>SkyStories editorial UI, Tours+keywords sync, perf</td>
+</tr>
+<tr>
+<td><code>silkskyair-account</code></td>
+<td><code>develop</code></td>
+<td align="right">1</td>
+<td>Vercel</td>
+<td>E2E config only</td>
+</tr>
+<tr>
+<td><code>silkskyair-member</code></td>
+<td><code>develop</code></td>
+<td align="right">3</td>
+<td>Vercel</td>
+<td>UI alias rename + Globals + E2E</td>
+</tr>
+<tr>
+<td><code>silkskyair-partner</code></td>
+<td><code>develop</code></td>
+<td align="right">2</td>
+<td>Vercel</td>
+<td>Cancellation logging + offline handling</td>
+</tr>
+<tr>
+<td><code>silkskyair-skystories</code> (lib)</td>
+<td><code>develop</code></td>
+<td align="right">1</td>
+<td>Workspace dependency</td>
+<td><code>updateMediaMetadata</code> export — consumed by Manager</td>
+</tr>
+</tbody></table>
+<h3>Headline features in this release</h3>
+<ol>
+<li><strong>SSA-621 — Payment-before-confirmation</strong> (API + WWW + Workflows + Manager emails)</li>
+<li><strong>Pricing W19</strong> — multi-tour scope, pax bounds, <code>pricing.promotion_tours</code> junction, booking attribution (API + WWW)</li>
+<li><strong>SkyStories editorial sync overhaul</strong> — retired <code>sync_queue</code>, per-entity locks, system actor, Strapi tours manyToMany (API + CMS + Workflows + Manager)</li>
+<li><strong>Bookings perf</strong> — read indexes, <code>expire_pending_bookings</code> cron, <code>get_booking_metadata</code></li>
+<li><strong>i18n</strong> — TH/RU labels for CustomerSubmitted note type, customer payment confirmation email template</li>
+</ol>
+<hr>
+<h2>1. Pre-flight (T-24h)</h2>
+<blockquote>
+<p>Run from your workstation. All steps <strong>must</strong> be done before declaring the release window.</p>
+</blockquote>
+<h3>1.1 Confirm staging is healthy</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Smoke-test staging WWW: book a tour end-to-end with a Thai 3DS card (touches SSA-621 payment flow + W19 promotions)</li>
+<li><input disabled="" type="checkbox"> Smoke-test staging Manager: publish a SkyStory in EN + TH + RU; verify it appears on staging WWW</li>
+<li><input disabled="" type="checkbox"> Open staging Strapi admin — verify sky-story content type has <code>tours</code> (manyToMany) relation</li>
+<li><input disabled="" type="checkbox"> Check n8n staging instance — SkyStories Events Router last 24h has no failures</li>
+<li><input disabled="" type="checkbox"> Run E2E suites on staging:<pre><code class="language-bash">cd silkskyair-www &amp;&amp; pnpm test:e2e
+cd silkskyair-manager &amp;&amp; pnpm test:e2e
+</code></pre>
+</li>
+<li><input disabled="" type="checkbox"> Inspect Sentry / logs for unhandled errors on staging in the last 7 days</li>
+</ul>
+<h3>1.2 Freeze + announce</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Post in #engineering: <strong>&quot;Production release window: <start>–<end>. No staging deploys, no prod hotfixes during this window.&quot;</strong></li>
+<li><input disabled="" type="checkbox"> Confirm no in-flight bookings on prod that would be disrupted by 5–10 min API downtime during the payment-flow cutover</li>
+</ul>
+<h3>1.3 Verify credentials are in place</h3>
+<ul>
+<li><input disabled="" type="checkbox"> <code>silkskyair-api/.env.production</code> has <code>SUPABASE_PASSWORD</code></li>
+<li><input disabled="" type="checkbox"> <code>silkskyair-cms/.env.transfer</code> has <code>PRODUCTION_URL</code>, <code>PRODUCTION_PUSH_TOKEN</code>, <code>STRAPI_UPLOAD_SCRIPT_TOKEN</code></li>
+<li><input disabled="" type="checkbox"> <code>silkskyair-workflows/.env.production</code> has n8n production API key</li>
+<li><input disabled="" type="checkbox"> Vercel CLI logged in (<code>vercel whoami</code>) with access to all 5 Vercel projects</li>
+</ul>
+<h3>1.4 Take pre-release backups</h3>
+<pre><code class="language-bash"># API + Storage
+cd silkskyair-api
+pnpm backup:full:production
+
+# CMS (use Strapi transfer pull or Strapi Cloud snapshot)
+# Trigger via Strapi Cloud dashboard → Backups → Create snapshot
+
+# Workflows (snapshot current production state)
+cd silkskyair-workflows
+pnpm versions:snapshot:production
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> Backups landed in <code>.tmp/backups/</code> (API) and Strapi Cloud snapshot completed</li>
+<li><input disabled="" type="checkbox"> Note backup filenames in the release log</li>
+</ul>
+<hr>
+<h2>2. Deploy order (rationale)</h2>
+<p>Order matters because of forward dependencies. The flow is:</p>
+<pre><code>silkskyair-skystories (lib)              ← no runtime impact, built first
+        ↓
+silkskyair-api (DB migrations + RPCs)    ← schema must land before consumers
+        ↓
+silkskyair-cms (Strapi schema)           ← sky-story↔tours relation required by WWW + Workflows
+        ↓
+silkskyair-workflows (n8n)               ← consumes new RPCs + new Strapi schema
+        ↓
+silkskyair-www + silkskyair-manager      ← consume new API contract + new CMS schema
+        ↓
+silkskyair-member / -account / -partner  ← UI-only, fan out last
+        ↓
+Post-deploy verification
+</code></pre>
+<p><strong>Hard rule:</strong> never deploy WWW or Manager before API migrations + CMS schema are live in prod — they will hit &quot;column does not exist&quot; and &quot;relation not found&quot; errors.</p>
+<hr>
+<h2>3. Step-by-step</h2>
+<h3>Step 3.1 — Tag &amp; merge <code>develop</code> → <code>main</code> (all repos)</h3>
+<p>For each repo with commits ahead, fast-forward <code>main</code> to <code>develop</code> and tag. Do <strong>not</strong> push yet — we push per-repo at deploy time.</p>
+<pre><code class="language-bash"># Run for each of: silkskyair-skystories, silkskyair-api, silkskyair-cms,
+# silkskyair-workflows, silkskyair-www, silkskyair-manager,
+# silkskyair-account, silkskyair-member, silkskyair-partner
+
+cd silkskyair-&lt;name&gt;
+git fetch origin
+git checkout main
+git pull --ff-only origin main
+git merge --ff-only origin/develop          # or merge --no-ff if you want a merge commit
+git tag -a v&lt;x.y.z&gt; -m &quot;Production release 2026-05-26&quot;
+# DO NOT git push yet — staged per step below
+</code></pre>
+<p>If fast-forward fails on any repo, stop and investigate: <code>main</code> has diverged. Per <code>silkskyair-manager/CLAUDE.md</code>, <strong>never push without explicit user approval</strong>.</p>
+<hr>
+<h3>Step 3.2 — Build &amp; publish <code>silkskyair-skystories</code> lib</h3>
+<p>The lib is a workspace dependency consumed by Manager. The <code>updateMediaMetadata</code> export change must be present before Manager builds in CI.</p>
+<pre><code class="language-bash">cd silkskyair-skystories
+pnpm install
+pnpm build
+git push origin main
+git push origin v&lt;x.y.z&gt;
+</code></pre>
+<p>Verify: <code>dist/</code> artifact contains the new export and the version bump landed.</p>
+<hr>
+<h3>Step 3.3 — Deploy API migrations to production Supabase</h3>
+<p><strong>This is the riskiest step. There are 27 new migrations including the W19 pricing junction rewrite and SkyStories sync retirement.</strong></p>
+<h4>3.3.1 Dry-run locally one more time</h4>
+<pre><code class="language-bash">cd silkskyair-api
+# Verify ALL migrations apply cleanly locally — required by CLAUDE.md
+# (does NOT reset prod; resets local 127.0.0.1:54322 only)
+npx supabase db reset --local
+</code></pre>
+<p>If any migration fails locally, <strong>stop and fix the root cause</strong> — do not rename <code>.bak</code>, do not skip (per <code>silkskyair-api/CLAUDE.md</code>).</p>
+<h4>3.3.2 Confirm production backup completed (from §1.4)</h4>
+<pre><code class="language-bash">ls -lh .tmp/backups/production_*.sql.gz | tail -3
+</code></pre>
+<h4>3.3.3 Push migrations to production</h4>
+<pre><code class="language-bash"># Source the production password
+source .env.production
+
+npx supabase db push \
+  --db-url &quot;postgresql://postgres:${SUPABASE_PASSWORD}@db.sinxjnvesyrrkydhtqts.supabase.co:6543/postgres&quot;
+</code></pre>
+<p>Watch for:</p>
+<ul>
+<li>&quot;ERROR&quot; output → abort, restore from backup</li>
+<li>Long-running statements on <code>pricing.promotion_tours</code> junction creation (W19) — expected, do not interrupt</li>
+<li><code>expire_pending_bookings</code> cron — confirm it registered in <code>cron.job</code></li>
+</ul>
+<h4>3.3.4 Spot-check schema</h4>
+<pre><code class="language-bash">PGPASSWORD=&quot;$SUPABASE_PASSWORD&quot; psql \
+  -h db.sinxjnvesyrrkydhtqts.supabase.co -U postgres -d postgres \
+  -c &quot;SELECT count(*) FROM pricing.promotion_tours;&quot; \
+  -c &quot;SELECT * FROM cron.job WHERE jobname LIKE &#39;%expire_pending%&#39;;&quot; \
+  -c &quot;SELECT count(*) FROM api.bookings LIMIT 1;&quot;
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> All three queries return without error</li>
+<li><input disabled="" type="checkbox"> No tables marked <code>error</code> in the migration history (<code>supabase_migrations.schema_migrations</code>)</li>
+</ul>
+<h4>3.3.5 Push <code>main</code> for <code>silkskyair-api</code></h4>
+<pre><code class="language-bash">git push origin main
+git push origin v&lt;x.y.z&gt;
+</code></pre>
+<hr>
+<h3>Step 3.4 — Deploy Strapi CMS</h3>
+<p>The sky-story content type gained a <code>tours</code> manyToMany relation and the slug field moved to doc-level (not localized). This is a <strong>schema change</strong> in Strapi Cloud.</p>
+<h4>3.4.1 Push code to Strapi Cloud</h4>
+<p>Strapi Cloud auto-deploys from the configured branch. Push <code>main</code>:</p>
+<pre><code class="language-bash">cd silkskyair-cms
+git push origin main
+git push origin v&lt;x.y.z&gt;
+</code></pre>
+<p>Strapi Cloud will:</p>
+<ol>
+<li>Detect the schema change</li>
+<li>Run its migration</li>
+<li>Restart the admin</li>
+</ol>
+<h4>3.4.2 Verify in Strapi Cloud admin</h4>
+<ul>
+<li><input disabled="" type="checkbox"> Log into prod Strapi admin</li>
+<li><input disabled="" type="checkbox"> Open Content-Type Builder → <code>sky-story</code> → confirm <code>tours</code> (manyToMany) relation exists</li>
+<li><input disabled="" type="checkbox"> Confirm <code>slug</code> field is no longer per-locale</li>
+<li><input disabled="" type="checkbox"> Existing sky-story entries still load (spot-check 3)</li>
+<li><input disabled="" type="checkbox"> Build status: green</li>
+</ul>
+<p>If Strapi Cloud build fails, do <strong>not</strong> retry blindly — inspect the migration log; the prior bump-to-1.3.0 commit was specifically to re-trigger a Strapi Cloud build, so re-triggering may be safe but verify the failure first.</p>
+<hr>
+<h3>Step 3.5 — Deploy n8n workflows to production</h3>
+<p>23 workflow changes including SkyStories events router refactor (sync_queue retirement) and notification additions.</p>
+<pre><code class="language-bash">cd silkskyair-workflows
+
+# Dry-run the diff
+pnpm check:production
+
+# Review the diff — confirm only expected workflows are changing
+# Then deploy
+pnpm sync:production
+</code></pre>
+<p>Per-workflow individual deploy (if you prefer surgical control):</p>
+<pre><code class="language-bash">node scripts/deploy-to-production.js workflows/skystories/sky-stories-events.json
+node scripts/deploy-to-production.js workflows/skystories/sky-stories-notifications.json
+# ... repeat for each changed workflow
+</code></pre>
+<p>Verify in n8n production UI:</p>
+<ul>
+<li><input disabled="" type="checkbox"> SkyStories Events Router is active and pointing at the new RPC names</li>
+<li><input disabled="" type="checkbox"> SkyStories Notifications workflow is active</li>
+<li><input disabled="" type="checkbox"> No workflows are deactivated unintentionally</li>
+<li><input disabled="" type="checkbox"> Run a manual test execution of <code>sky-stories-events</code> against a fixture payload</li>
+</ul>
+<p>Push code:</p>
+<pre><code class="language-bash">git push origin main
+git push origin v&lt;x.y.z&gt;
+</code></pre>
+<hr>
+<h3>Step 3.6 — Deploy WWW (Vercel)</h3>
+<p>SSA-621 payment islands, deeplinks, Related Tours under SkyStory detail.</p>
+<pre><code class="language-bash">cd silkskyair-www
+git push origin main
+git push origin v&lt;x.y.z&gt;
+</code></pre>
+<p>Vercel will build automatically off the production branch. While it builds:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Confirm Vercel env vars for prod include <code>WWW_BASE_URL</code> (added in commit 38531b0)</li>
+<li><input disabled="" type="checkbox"> Confirm <code>OMISE_*</code> keys are set on prod (these moved to env-vars in commit 4a9b4db)</li>
+<li><input disabled="" type="checkbox"> Watch build log for Astro errors</li>
+</ul>
+<p>When build is green:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Hit <code>https://silkskyair.com</code> — homepage renders</li>
+<li><input disabled="" type="checkbox"> Hit a sky-story detail page — Related Tours section renders</li>
+<li><input disabled="" type="checkbox"> Hit <code>/promotions</code> — filler promotions are filtered out, urgency badges render</li>
+<li><input disabled="" type="checkbox"> Open booking widget on a tour — opens via hash trigger</li>
+<li><input disabled="" type="checkbox"> <strong>Do a real 3DS test booking</strong> (small-amount tour) — payment-before-confirmation flow completes, return_uri routes correctly</li>
+</ul>
+<hr>
+<h3>Step 3.7 — Deploy Manager (Vercel)</h3>
+<p>SkyStories editorial UI, Tours+keyword sync, optimistic-update fixes, perf.</p>
+<pre><code class="language-bash">cd silkskyair-manager
+git push origin main
+git push origin v&lt;x.y.z&gt;
+</code></pre>
+<p>When Vercel build is green:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Log into prod Manager</li>
+<li><input disabled="" type="checkbox"> Open SkyStories → publish a draft story in EN + TH + RU → verify it lands in Strapi prod and on WWW prod</li>
+<li><input disabled="" type="checkbox"> Open Tours → save + publish a tour → verify <code>strapi_sync_map</code> updated and tour appears on WWW</li>
+<li><input disabled="" type="checkbox"> Taxonomy → create a keyword → confirm it publishes across all locales</li>
+<li><input disabled="" type="checkbox"> OngoingFlights screen loads without 429 / rate-limit errors (new throttling)</li>
+</ul>
+<hr>
+<h3>Step 3.8 — Deploy remaining portals (Vercel)</h3>
+<p>These are small changes but verify each one independently:</p>
+<pre><code class="language-bash">cd silkskyair-account &amp;&amp; git push origin main &amp;&amp; git push origin v&lt;x.y.z&gt;
+cd silkskyair-member  &amp;&amp; git push origin main &amp;&amp; git push origin v&lt;x.y.z&gt;
+cd silkskyair-partner &amp;&amp; git push origin main &amp;&amp; git push origin v&lt;x.y.z&gt;
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> account.silkskyair.com — sign-in works</li>
+<li><input disabled="" type="checkbox"> member.silkskyair.com — globals load, sign-in works</li>
+<li><input disabled="" type="checkbox"> partner.silkskyair.com — booking cancellation works, offline state renders if API blip</li>
+</ul>
+<hr>
+<h2>4. Post-deploy verification (T+30 min)</h2>
+<h3>4.1 Cross-system smoke test</h3>
+<p>The goal: prove the <strong>new</strong> end-to-end paths added in this release work in production.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Scenario</th>
+<th>Touches</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Anonymous user books a Phang Nga tour with a 3DS card, completes 3DS, sees confirmation page</td>
+<td>WWW + API (SSA-621)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Anonymous user applies a multi-tour promotion deeplink, sees pax-clamp + progressive disclosure</td>
+<td>WWW + API (W19)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Manager user publishes a new SkyStory in EN/TH/RU, verifies it appears on WWW in all 3 locales</td>
+<td>Manager + API + Workflows + CMS + WWW</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Manager user creates a keyword via Taxonomy UI, verifies it syncs to Strapi in all locales</td>
+<td>Manager + Workflows + CMS</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Cron: confirm <code>api.expire_pending_bookings</code> runs on schedule and expires a stale test booking</td>
+<td>API</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Customer receives the new payment-confirmation email</td>
+<td>API (templates) + Workflows</td>
+</tr>
+</tbody></table>
+<p>Track results in the release log.</p>
+<h3>4.2 Monitoring</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Sentry: no spike in errors across WWW, Manager, Account, Member, Partner</li>
+<li><input disabled="" type="checkbox"> Supabase logs: no spike in 5xx, no migration locks lingering</li>
+<li><input disabled="" type="checkbox"> n8n: SkyStories Events Router execution history is green</li>
+<li><input disabled="" type="checkbox"> Strapi Cloud: no build/runtime errors</li>
+</ul>
+<h3>4.3 Update memory + release notes</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Tag the release in <code>silkskyair-docs/weekly-statements/</code> if applicable</li>
+<li><input disabled="" type="checkbox"> Note any discrepancies vs. this plan in <code>silkskyair-docs/plans/production-release-2026-05-26.md</code> (this file)</li>
+</ul>
+<hr>
+<h2>5. Rollback plan</h2>
+<p>Rollback is <strong>per-app</strong>, not global. The order matters: WWW + Manager rolling back without API rolling back is safer than the inverse.</p>
+<h3>5.1 If WWW/Manager/Account/Member/Partner is broken</h3>
+<ul>
+<li>Use Vercel dashboard → Deployments → previous deployment → <strong>Promote to production</strong></li>
+<li>Or <code>vercel rollback</code> via CLI</li>
+<li>Resume forward fix on a hotfix branch</li>
+</ul>
+<h3>5.2 If Strapi schema is broken</h3>
+<ul>
+<li>Restore from the Strapi Cloud snapshot taken in §1.4</li>
+<li>Revert the <code>silkskyair-cms</code> <code>main</code> commit and re-push to trigger a clean build</li>
+<li>Notify Manager users that publishing is paused</li>
+</ul>
+<h3>5.3 If n8n workflows are broken</h3>
+<ul>
+<li>Each workflow has a previous activeVersionId in <code>silkskyair-workflows/.versions/production.json</code></li>
+<li>Re-activate the prior version from the n8n UI or by re-deploying the prior workflow JSON</li>
+</ul>
+<h3>5.4 If API/DB is broken (worst case)</h3>
+<ul>
+<li><strong>Stop all Vercel projects first</strong> (set production deployment paused) to prevent new traffic hitting broken schema</li>
+<li>Restore the database backup from §1.4:<pre><code class="language-bash">cd silkskyair-api
+gunzip .tmp/backups/production_backup_TIMESTAMP.sql.gz
+PGPASSWORD=&quot;$SUPABASE_PASSWORD&quot; psql \
+  -h db.sinxjnvesyrrkydhtqts.supabase.co -U postgres -d postgres \
+  -f .tmp/backups/production_backup_TIMESTAMP.sql
+</code></pre>
+</li>
+<li><strong>DO NOT</strong> run <code>supabase db reset</code> — explicitly forbidden by <code>silkskyair-api/CLAUDE.md</code></li>
+<li>Once DB is back to pre-release state, roll back each Vercel project to its pre-release deployment</li>
+</ul>
+<h3>5.5 If only ONE migration is broken</h3>
+<p>Don&#39;t restore the whole DB. Author a forward-fix migration (<code>20260526_HHMMSS_revert_&lt;thing&gt;.sql</code>) and push via <code>supabase db push</code>. Restore is only for catastrophic / unrecoverable state.</p>
+<hr>
+<h2>6. Out of scope for this release</h2>
+<p>Documented here so they don&#39;t get bundled in by accident:</p>
+<ul>
+<li>Customer-generated tables (bookings, member_*, payment_intents, etc.) are <strong>never</strong> copied from staging to production (see <a href="../../silkskyair-api/DEPLOYMENT.html">DEPLOYMENT.md</a>)</li>
+<li>The 47-table data export pipeline (<code>pnpm deploy:production</code> in <code>silkskyair-api</code>) is <strong>not</strong> part of this release — it was used for initial seeding only. This release is schema-only via <code>supabase db push</code>.</li>
+<li><code>silkskyair-orchestrator</code> and <code>silkskyair-reporting</code> — no commits ahead, nothing to ship</li>
+</ul>
+<hr>
+<h2>7. Release checklist (compressed)</h2>
+<p>Copy this into the release tracking issue / Slack thread:</p>
+<ul>
+<li><input disabled="" type="checkbox"> §1 Pre-flight done (smoke tests, freeze announced, backups taken)</li>
+<li><input disabled="" type="checkbox"> §3.1 All 9 repos: develop merged to main + tagged locally</li>
+<li><input disabled="" type="checkbox"> §3.2 skystories lib pushed</li>
+<li><input disabled="" type="checkbox"> §3.3 API migrations pushed to prod Supabase (27 migrations applied)</li>
+<li><input disabled="" type="checkbox"> §3.4 CMS pushed; Strapi Cloud build green; schema verified</li>
+<li><input disabled="" type="checkbox"> §3.5 Workflows synced to prod n8n; manual test execution green</li>
+<li><input disabled="" type="checkbox"> §3.6 WWW deployed; real 3DS booking succeeded</li>
+<li><input disabled="" type="checkbox"> §3.7 Manager deployed; cross-locale story publish verified end-to-end</li>
+<li><input disabled="" type="checkbox"> §3.8 Account / Member / Partner deployed</li>
+<li><input disabled="" type="checkbox"> §4 Post-deploy smoke tests all green</li>
+<li><input disabled="" type="checkbox"> Release window closed; freeze lifted in #engineering</li>
+</ul>
+
+</article>
+</body>
+</html>

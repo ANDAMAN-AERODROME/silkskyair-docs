@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Amendment-Received Customer Emails (Member Portal)</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Amendment-Received Customer Emails (Member Portal)</h1>
+<blockquote>
+<p><strong>App:</strong> Member Portal (trigger), n8n bookings-event workflow (delivery)
+<strong>Who uses it:</strong> Customers who just submitted a date/time change or an add-passenger request from the booking detail page. Support staff fielding &quot;did my request go through?&quot;
+<strong>What it does:</strong> As soon as a member submits an amendment request, the customer receives a localized acknowledgement email — &quot;We&#39;ve received your request, our concierge team is reviewing it.&quot; This closes the silence between request submission and the existing approved / declined email.</p>
+</blockquote>
+<h2>Trigger flow</h2>
+<ol>
+<li>Customer opens a confirmed booking and clicks the relevant CTA (e.g. <strong>Change date &amp; time</strong>, <strong>Add passenger</strong>).</li>
+<li>Member portal POSTs <code>/api/bookings/&lt;id&gt;/change-requests</code> with <code>{ type: &quot;amendment&quot;, payload: { amendment_subtype: &quot;change_datetime&quot; | &quot;add_passengers&quot;, ... } }</code>.</li>
+<li>The route inserts a <code>booking_change_requests</code> row, then a <code>booking_events</code> row of type <code>BookingAmendmentRequested</code>. The event&#39;s <code>metadata</code> carries <code>amendment_subtype</code> verbatim from the request body (F2.5 added this field — the workflow needs it to pick the right template).</li>
+<li>Postgres trigger <code>trg_booking_events_webhook</code> fires the n8n <strong>Bookings Event</strong> workflow.</li>
+<li>The workflow&#39;s Switch routes <code>BookingAmendmentRequested</code> (output index 5, the &quot;BAR&quot; branch). F2.5 wired this output to fan out to <strong>both</strong> branches: <code>fetch-booking-customer-notes</code> → <code>prepare-manager-email-data</code> (the existing operator notification — <code>booking-amendment-requested-manager</code>) AND the new <code>prepare-member-email-data</code> (the customer-side acknowledgement).</li>
+<li><code>prepare-member-email-data</code> reads <code>event_payload.metadata.amendment_subtype</code> and picks one of the two new templates; if the subtype is anything else, <code>template_slug</code> is left empty and the member sub-workflow short-circuits (no email).</li>
+<li><code>call-booking-member-email</code> sends via Zoho SMTP, addressed to <code>bookings_snapshot.contact_email</code>.</li>
+</ol>
+<h2>The two new templates</h2>
+<table>
+<thead>
+<tr>
+<th><code>amendment_subtype</code></th>
+<th>Template slug</th>
+<th>EN subject</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>change_datetime</code></td>
+<td><code>booking-change-request-received-member-date-time</code></td>
+<td><code>Date &amp; Time Change Request Received: {{reference_code}}</code></td>
+</tr>
+<tr>
+<td><code>add_passengers</code></td>
+<td><code>booking-change-request-received-member-add-passenger</code></td>
+<td><code>Add Passenger Request Received: {{reference_code}}</code></td>
+</tr>
+</tbody></table>
+<p>Each template has EN / TH / RU rows in <code>email_templates_i18n</code> with localized subject, body, and <code>sender_name</code>. The body references <code>{{contact_name}}</code>, <code>{{reference_code}}</code>, <code>{{tour_title}}</code>, <code>{{departure_date}}</code>, <code>{{departure_time}}</code> — all populated by <code>prepare-member-email-data</code> from <code>bookings_snapshot</code>.</p>
+<h2>What&#39;s intentionally NOT covered</h2>
+<ul>
+<li><strong><code>remove_passengers</code></strong> and <strong><code>change_tour</code></strong> subtypes — the member portal supports submitting these (see <code>remove-passenger-modal.tsx</code> and <code>tour-change-modal.tsx</code>), but F2.5&#39;s plan only specified the two templates above. The slugMap falls through to <code>&#39;&#39;</code> for them and no customer email is sent today. When ops wants to cover those subtypes, the pattern is: add the two template rows in a follow-up migration, then extend <code>amendmentSubtypeSlugs</code> in <code>prepare-member-email-data</code>&#39;s Code node.</li>
+<li><strong>Approved / declined / applied</strong> emails — those already existed pre-F2.5 (<code>booking-change-request-approved-member</code>, <code>booking-change-request-declined-member</code>) and fire from Switch outputs 7 / 8 / 9. F2.5 is specifically about the <em>initial</em> &quot;we got your request&quot; stage.</li>
+</ul>
+<h2>Observability</h2>
+<p>Same pattern as every other booking notification — local MailPit does <strong>not</strong> catch these (the workflow uses real Zoho SMTP). To verify a customer received the email:</p>
+<ol>
+<li>Open the n8n executions UI: <code>http://localhost:5678/executions?workflowId=UWRU5xWgrLz3Zuic</code>.</li>
+<li>Filter to the run whose <code>event-data</code> shows the booking&#39;s <code>reference_code</code>.</li>
+<li>Expand <code>prepare-member-email-data</code> — check <code>template_slug</code> is the expected one for the subtype.</li>
+<li>Expand <code>call-booking-member-email</code> — check <code>success: true</code> and <code>recipient_email</code> matches the customer&#39;s address.</li>
+</ol>
+<p>For real recipients, check the customer&#39;s actual inbox.</p>
+<h2>Failure modes</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>No member-side run at all in n8n</td>
+<td>Older revision of <code>bookings-event.json</code> is deployed (Switch output 5 not wired to the member branch)</td>
+<td>Re-run <code>pnpm sync:&lt;env&gt;</code> from <code>silkskyair-workflows</code></td>
+</tr>
+<tr>
+<td>Member run fires but <code>template_slug</code> is empty</td>
+<td><code>amendment_subtype</code> not in event metadata, OR subtype is <code>remove_passengers</code> / <code>change_tour</code> (no template yet)</td>
+<td>Confirm the change-requests route is shipping the F2.5 change; for unsupported subtypes, add a follow-up migration</td>
+</tr>
+<tr>
+<td><code>template_slug</code> correct but <code>call-booking-member-email</code> reports an error</td>
+<td>Template row missing for the customer&#39;s locale</td>
+<td>Migration <code>20260529100000</code> seeds en/th/ru; for new locales add an i18n row with the same shape</td>
+</tr>
+<tr>
+<td>Customer email body shows <code>{{reference_code}}</code> literally</td>
+<td><code>bookings_snapshot</code> returned no row for this <code>booking_id</code></td>
+<td>Booking insert is missing — check <code>fetch-booking</code> upstream</td>
+</tr>
+</tbody></table>
+<h2>Support staff playbook</h2>
+<blockquote>
+<p><strong>&quot;I submitted a request five minutes ago and haven&#39;t heard anything.&quot;</strong>
+Two emails should fire when a customer submits an amendment: one to back-office (<code>booking-amendment-requested-manager</code>) and one to the customer (<code>booking-change-request-received-member-*</code>). If the customer didn&#39;t get theirs, check spam folder first; then look at the n8n execution for the booking — if <code>template_slug</code> is empty in <code>prepare-member-email-data</code>, the subtype is one we haven&#39;t templated yet (today: <code>remove_passengers</code>, <code>change_tour</code>).</p>
+</blockquote>
+<blockquote>
+<p><strong>&quot;Can we customize the email per amendment type more deeply (e.g. show a date diff for change_datetime)?&quot;</strong>
+Possible but not in F2.5&#39;s scope. The body templates use the standard variable set populated by <code>prepare-member-email-data</code>. Adding <code>requested_date</code>, <code>requested_time</code>, etc. would require both (a) the change-requests route to surface those fields in the event metadata, and (b) the workflow to pass them through. Out-of-scope here; talk to the ops team about prioritization.</p>
+</blockquote>
+<h2>Reference</h2>
+<ul>
+<li><strong>Migration:</strong> <code>silkskyair-api/supabase/migrations/20260529100000_member_amendment_received_templates.sql</code></li>
+<li><strong>Member route:</strong> <code>silkskyair-member/app/api/bookings/[bookingId]/change-requests/route.ts</code> (lines ~270–290 — stash of <code>amendment_subtype</code> in event metadata)</li>
+<li><strong>Workflow:</strong> <code>silkskyair-workflows/workflows/bookings/bookings-event.json</code> — Switch output 5 fan-out + the slugMap in <code>prepare-member-email-data</code></li>
+<li><strong>Sub-workflow:</strong> <code>silkskyair-workflows/workflows/notifications/booking-member-email.json</code> (unchanged — same delivery path the F1.15 customer cancellation email uses)</li>
+<li><strong>E2E:</strong> <code>silkskyair-partner/e2e/partner-amendment-received-emails.spec.ts</code> — two tests: <code>change_datetime</code> → date-time template; <code>add_passengers</code> → add-passenger template + payload assertions</li>
+</ul>
+
+</article>
+</body>
+</html>

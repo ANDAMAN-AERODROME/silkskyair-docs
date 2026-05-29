@@ -1,0 +1,870 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>W23 Work Plan v2 — Tangible Execution Recipes</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>W23 Work Plan v2 — Tangible Execution Recipes</h1>
+<blockquote>
+<p><strong>Generated:</strong> 2026-05-27 (revised from v1).
+<strong>Inputs:</strong> <a href="partnership-portal-client-review.html"><code>partnership-portal-client-review.md</code></a>, <a href="member-portal-1st-review-2026-05-19.html"><code>member-portal-1st-review-2026-05-19.md</code></a>, <a href="meta-capi-purchase-integration.html"><code>meta-capi-purchase-integration.md</code></a>, and the factual code audit in <a href="w23-already-done-audit.html"><code>w23-already-done-audit.md</code></a>.
+<strong>Scope:</strong> Three independent Scopes of Work, 34 shippable features, each with implementation steps (or verification steps if already done), an e2e test pair (simple + complex Happy Path), and a user-manual page.
+<strong>Convention:</strong> Every feature has the same shape — see §1.3.</p>
+</blockquote>
+<hr>
+<h2>0. Executive snapshot (post-audit)</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Features</th>
+<th>Already done</th>
+<th>Partial</th>
+<th>To start</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>SoW 1 — Partnership Portal</strong></td>
+<td>17</td>
+<td>1 (R21-T7 by accident)</td>
+<td>1 (R17 Omise skeleton)</td>
+<td>15</td>
+</tr>
+<tr>
+<td><strong>SoW 2 — Member Portal</strong></td>
+<td>11</td>
+<td>0</td>
+<td>2 (MP1-W10 infra, MP1-W11 repo)</td>
+<td>9</td>
+</tr>
+<tr>
+<td><strong>SoW 3 — Meta CAPI</strong></td>
+<td>6</td>
+<td>2 (workflow + credential)</td>
+<td>3 (forward, IF gate, deploy)</td>
+<td>1 (www capture)</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>34</strong></td>
+<td><strong>3</strong></td>
+<td><strong>6</strong></td>
+<td><strong>25</strong></td>
+</tr>
+</tbody></table>
+<p><strong>Order-of-leverage to ship the most value this week:</strong></p>
+<ol>
+<li><strong>Finish SoW 3</strong> (1–2 days): 4 small fixes + 6 e2e specs + 6 manual pages. The workflow side is already deployed; only the www-side capture + the IF gate are missing.</li>
+<li><strong>Start SoW 1 Batch A1</strong> (1 day): one consolidated SQL migration unlocks 11+ partner-side rename tasks.</li>
+<li><strong>Start SoW 2 MP1-W06</strong> in parallel (longest critical path, 2–4 days).</li>
+<li>Fan out everything else.</li>
+</ol>
+<hr>
+<h2>1. Cross-cutting conventions</h2>
+<h3>1.1 Branches</h3>
+<table>
+<thead>
+<tr>
+<th>SoW</th>
+<th>Per-repo branch name</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SoW 1</td>
+<td><code>claude/plan-client-review-YNHfY</code></td>
+<td><strong>NOT CUT in any repo.</strong> First action of SoW 1 is to cut this branch in <code>silkskyair-api</code>, <code>silkskyair-manager</code>, <code>silkskyair-partner</code>, <code>silkskyair-workflows</code>, <code>silkskyair-account</code> (and rebase off <code>develop</code>).</td>
+</tr>
+<tr>
+<td>SoW 2</td>
+<td><code>claude/mp1-review-w23</code></td>
+<td><strong>NOT CUT.</strong> Cut on each repo when W06 work begins.</td>
+</tr>
+<tr>
+<td>SoW 3</td>
+<td><code>claude/meta-capi-w23</code></td>
+<td><strong>NOT CUT</strong> in <code>silkskyair-www</code>; in <code>silkskyair-workflows</code>, work has been committed straight to default branches (<code>bac3351</code> etc.) — pull remaining changes onto a fresh branch.</td>
+</tr>
+</tbody></table>
+<h3>1.2 User-manual numbering scheme</h3>
+<p>The W22 manual at <code>silkskyair-docs/manuals/</code> ships pages <code>01..06</code>. W23 continues sequentially <code>07..</code>. The <code>_parent.md</code> index will need a new section header <strong>&quot;Features in this W23 release&quot;</strong> appended with rows for each new page. Each page follows the W22 shape — <code>title / app / who / what / slug / ssa</code> frontmatter; <strong>Before you start / Step-by-step (numbered, each step has a screenshot + &quot;what you should see&quot; line) / Tips &amp; common questions</strong> body.</p>
+<p>Screenshots live under <code>manual/screenshots/&lt;slug&gt;/NN-name.png</code>. Use 1440×900 viewport, English locale.</p>
+<h3>1.3 Per-feature recipe shape</h3>
+<p>Every feature section below uses this template:</p>
+<pre><code>### F&lt;N.M&gt; — &lt;feature name&gt; [&lt;ID code&gt;]
+- Audit state: ✅ done / ⚠️ partial / ❌ not started — with one-line evidence
+- Code changes (or Verification only):
+   &lt;file:line&gt; — &lt;change&gt;
+- Simple Happy Path E2E:
+   &lt;repo&gt;/&lt;e2e folder&gt;/&lt;spec file&gt; — scenario in one paragraph
+- Complex Happy Path E2E:
+   &lt;repo&gt;/&lt;e2e folder&gt;/&lt;spec file&gt; — scenario in one paragraph
+- User manual: manual/&lt;NN&gt;-&lt;slug&gt;.md — one paragraph of what it covers
+- Acceptance gate: typecheck + lint + simple e2e green + complex e2e green + manual page committed (+ screenshots present)
+</code></pre>
+<p><strong>Rule:</strong> No feature is &quot;done&quot; until <strong>all five</strong> of {code change, simple e2e green, complex e2e green, manual page committed, screenshots present} are true. Move to the next feature only after the current one closes.</p>
+<h3>1.4 E2E infrastructure to reuse (per [memory note <code>reuse_existing_test_infra</code>])</h3>
+<table>
+<thead>
+<tr>
+<th>Repo</th>
+<th>Test folder</th>
+<th>Conventions to follow</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>silkskyair-www</code></td>
+<td><code>tests/e2e/</code></td>
+<td><code>booking-fixtures.ts</code>, <code>booking-flow-helpers.ts</code> (<code>openBookingWidget</code>, <code>selectConfiguredTour</code>, <code>setPassengers</code>, <code>selectDateAndSlot</code>, <code>fillContactInfo</code>, <code>submitBooking</code>, <code>verifyEmailWithOtp</code>, <code>payWithCardViaUI</code>, <code>TEST_CARD_4242</code>, <code>TEST_CARD_4111</code>). New specs follow <code>ssa-NNN-&lt;feature&gt;.spec.ts</code> naming.</td>
+</tr>
+<tr>
+<td><code>silkskyair-member</code></td>
+<td><code>e2e/</code></td>
+<td>Only <code>payment.spec.ts</code> + <code>global-setup.ts</code> exist — fixtures need extending. <strong>Before writing new specs, extend <code>e2e/global-setup.ts</code> with magic-link helper, processing-state helper, amendment-payment helper.</strong></td>
+</tr>
+<tr>
+<td><code>silkskyair-partner</code></td>
+<td><code>e2e/</code></td>
+<td><code>fixtures/</code>, <code>partner-auth-*.spec.ts</code>. New specs: <code>partner-&lt;feature&gt;.spec.ts</code>.</td>
+</tr>
+<tr>
+<td><code>silkskyair-manager</code></td>
+<td><code>e2e/</code></td>
+<td><code>fixtures/</code>, many <code>manager-*.spec.ts</code>. New specs: <code>manager-&lt;feature&gt;.spec.ts</code>.</td>
+</tr>
+<tr>
+<td><code>silkskyair-account</code></td>
+<td><code>e2e/</code></td>
+<td>New specs: <code>account-&lt;feature&gt;.spec.ts</code>.</td>
+</tr>
+<tr>
+<td><code>silkskyair-workflows</code></td>
+<td>(no Playwright; n8n integration tests live in <code>silkskyair-www/tests/e2e/</code> as cross-repo specs, e.g. <code>email-delivery-control.spec.ts</code>, <code>payment-success-emits-confirmed-once.spec.ts</code>)</td>
+<td>When testing a workflow change, write the spec in <code>silkskyair-www/tests/e2e/</code> and drive via real booking flow + assertion against side-effects (email delivery, DB events).</td>
+</tr>
+</tbody></table>
+<h3>1.5 Acceptance gates run command</h3>
+<pre><code># Per-repo before pushing a feature:
+pnpm -C &lt;repo&gt; typecheck &amp;&amp; pnpm -C &lt;repo&gt; lint &amp;&amp; pnpm -C &lt;repo&gt; test e2e -- &lt;spec-file&gt;
+</code></pre>
+<p>If multiple repos are touched by a feature, run the gate in each.</p>
+<hr>
+<h2>2. SoW 1 — Partnership Portal Review (17 features)</h2>
+<blockquote>
+<p>All R-T work lands on branch <code>claude/plan-client-review-YNHfY</code> per repo. <strong>First action of SoW 1:</strong> cut this branch in all 5 repos.</p>
+</blockquote>
+<h3>F1.1 — Back-office partner-create form fix [R1]</h3>
+<ul>
+<li><strong>Audit state:</strong> ⚠️ Likely <strong>pre-fixed</strong> in commit <code>6f1231b3</code> (2026-04-11) — <code>setDrawer({ mode: &quot;edit&quot;, partner })</code> pattern exists. Predates plan; needs UI verification.</li>
+<li><strong>Verification first (no code change unless verify fails):</strong><ul>
+<li>Manual: open staging back-office → Partners → +Create → fill all fields → Save → confirm drawer stays open in edit mode with all values populated; URL gains <code>?partner=&lt;id&gt;</code>; refresh persists.</li>
+</ul>
+</li>
+<li><strong>Code change (only if verify fails):</strong> <code>silkskyair-manager/app/(workspace)/partners/_components/partners-manager.tsx:469-484, :616-626</code> — replace <code>setTimeout(closeDrawer, 700)</code> with <code>setDrawer({ mode: &quot;edit&quot;, partner: saved })</code>; <code>router.push(\</code>?partner=${saved.id}`)`.</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-manager/e2e/manager-partner-create.spec.ts</code> — fill required fields only (name, slug, status), save, assert drawer remains in edit mode with values populated, assert URL = <code>?partner=&lt;id&gt;</code>.</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-manager/e2e/manager-partner-create-full.spec.ts</code> — fill every field including location coordinates, commission %, logo upload; save; refresh page; assert all fields re-populated from server; re-edit one field and re-save; assert the edit persists.</li>
+<li><strong>User manual:</strong> <code>manual/07-manager-partner-create.md</code> (slug <code>partner-create</code>) — walks ops through creating a new partner end-to-end, with screenshots of empty form → filled → after-save edit state → re-opened partner record.</li>
+<li><strong>Acceptance gate:</strong> verify pass OR fix-in-place + both e2e specs green + manual page + screenshots.</li>
+</ul>
+<h3>F1.2 — Invitation email From identity [R2]</h3>
+<ul>
+<li><strong>Audit state:</strong> ❌ Not started. <code>workflows/notifications/invitation-email.json</code> uses config-driven <code>zoho_mail_from_address</code> only.</li>
+<li><strong>Code changes:</strong><ol>
+<li><code>silkskyair-api/supabase/migrations/&lt;TS&gt;_email_templates_from_name.sql</code> (NEW) — add nullable <code>from_name text</code> column to <code>i18n.email_templates</code> (or wherever the template table lives — confirm via R2-T0 investigation first); UPSERT <code>from_name = &#39;Silk Sky Partner Portal&#39;</code> on the invitation template row.</li>
+<li><code>silkskyair-workflows/workflows/notifications/invitation-email.json</code> — extend the email send node so <code>fromName</code> reads the template&#39;s <code>from_name</code> field with fallback to <code>Silk Sky Air</code>. Add <code>from_name</code> to the upstream Supabase query.</li>
+</ol>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-www/tests/e2e/r2-invitation-from-name.spec.ts</code> (cross-repo) — trigger a partner-user invitation via Manager UI on staging; poll Mailpit/Mailcatch for the message; assert <code>From</code> header = <code>Silk Sky Partner Portal &lt;system@silkskyair.com&gt;</code>.</li>
+<li><strong>Complex Happy Path E2E:</strong> same file, second test — trigger invitation for a different template (e.g. amendment-approved-member), assert that template&#39;s <code>from_name</code> is used; trigger one with <code>from_name IS NULL</code>, assert fallback applies.</li>
+<li><strong>User manual:</strong> <code>manual/08-manager-invitation-from-name.md</code> — explains the new behaviour to ops (&quot;invited users now see &#39;Silk Sky Partner Portal&#39; as sender&quot;); shows before/after screenshots of received email; explains how to override <code>from_name</code> per template via DB.</li>
+<li><strong>Acceptance gate:</strong> migration applied to staging + e2e green + manual page.</li>
+</ul>
+<h3>F1.3 — Role-label humanization [R3] ✅ DONE (partner-side)</h3>
+<ul>
+<li><strong>Audit state:</strong> ✅ Done partner-side. <code>lib/auth/roles.ts</code> shipped earlier; spec <code>silkskyair-partner/e2e/partner-team-role-labels.spec.ts</code> now locks in the regression — asserts no raw <code>organization_manager</code> / <code>organization_member</code> / <code>organization_support</code> slug appears on /team and a humanised &quot;Manager&quot; / &quot;Менеджер&quot; / &quot;ผู้จัดการ&quot; label is visible. Account-portal Create-Account chip remains deferred (separate repo, X0-T1).</li>
+<li><strong>Code changes:</strong><ol>
+<li>NEW <code>silkskyair-partner/lib/auth/roles.ts</code> — export <code>formatRoleLabel(role: string, i18n: I18n): string</code>; tries <code>i18n(\</code>team.role.${role}`)`, falls back to title-cased role with underscores split.</li>
+<li><code>silkskyair-partner/components/team/team-table.tsx:74-75</code> — replace local helper with import.</li>
+<li><code>silkskyair-partner/components/team/pending-invitations.tsx:49-50</code> — same.</li>
+<li><code>silkskyair-partner/components/team/team-member-drawer.tsx:235</code> — replace inline call with <code>formatRoleLabel(member.role, i18n)</code>.</li>
+<li><code>silkskyair-account/&lt;TBD via X0-T1 investigation&gt;</code> — apply the same helper to the Create-Account page chip (R3-T5).</li>
+</ol>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-team-role-labels.spec.ts</code> — sign in → /team → assert no row renders raw <code>organization_manager</code> / <code>member</code> / <code>support</code> strings; assert chips read &quot;Manager&quot; / &quot;Member&quot; / &quot;Support&quot;.</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-account/e2e/account-create-from-invitation.spec.ts</code> — fetch an invitation URL via API helper → open the Create-Account page → assert chip reads &quot;Manager&quot; (not <code>organization_manager</code>); also test for Member / Support invitations.</li>
+<li><strong>User manual:</strong> <code>manual/09-partner-team-role-labels.md</code> — explains that role labels now consistently read in plain English everywhere ops surfaces them; shows screenshots of /team, drawer, Create-Account page.</li>
+<li><strong>Acceptance gate:</strong> helper + 4 call-site swaps + Account-side fix + both e2e green.</li>
+</ul>
+<h3>F1.4 — Members → Clients terminology [R4] ✅ DONE</h3>
+<ul>
+<li><strong>Audit state:</strong> ✅ Done. i18n migration shipped earlier; spec <code>silkskyair-partner/e2e/partner-clients-rename.spec.ts</code> asserts the sidebar link to <code>/members</code> and the <code>/members</code> page heading both read the localized &quot;Clients&quot; label (EN/TH/RU), and verifies the literal word &quot;Members&quot; no longer appears in <code>&lt;main&gt;</code>. Partner-side audit gap closed.</li>
+<li><strong>Code changes (consolidated as Batch A1 — see also F1.7/F1.8/F1.9/F1.11):</strong><ol>
+<li><code>silkskyair-api/supabase/migrations/20260513120000_review_rename_keys.sql</code> — UPSERT <code>i18n.entries</code>:<ul>
+<li><code>sidebar.members</code>: EN &quot;Clients&quot; / TH &quot;ลูกค้า&quot; / RU &quot;Клиенты&quot;</li>
+<li><code>members:page.title</code>: same</li>
+<li><code>members:page.subtitle</code>: &quot;Manage your registered clients&quot; + translations</li>
+<li><code>members:actions.create</code>: &quot;Add Client&quot;</li>
+</ul>
+</li>
+<li><code>silkskyair-manager/lib/modules/registry.ts:116</code> — <code>label: &quot;Members&quot;</code> → <code>&quot;Clients&quot;</code>.</li>
+<li><code>silkskyair-manager/app/(workspace)/members/_components/members-manager.tsx:70</code> — <code>label: &quot;All Members&quot;</code> → <code>&quot;All Clients&quot;</code>.</li>
+<li><code>silkskyair-manager/app/(workspace)/members/_components/members-manager.tsx:338</code> — <code>&lt;p&gt;Members&lt;/p&gt;</code> → <code>&lt;p&gt;Clients&lt;/p&gt;</code>.</li>
+</ol>
+</li>
+<li><strong>Note:</strong> R4-T6 (Manager-side) was missing from Notion per audit; <strong>create a new Notion task before starting</strong> so the W23 view reflects it.</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-clients-rename.spec.ts</code> — sign in → assert sidebar reads &quot;Clients&quot; not &quot;Members&quot;; visit <code>/members</code>; assert page heading + Add Client button.</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-manager/e2e/manager-clients-rename.spec.ts</code> — sign in → sidebar + Members page heading both read &quot;Clients&quot;; switch locale (en → th → ru) and assert the localized strings are correct.</li>
+<li><strong>User manual:</strong> <code>manual/10-partner-clients-terminology.md</code> — explains the terminology change (&quot;we now say Clients everywhere — same data, new word&quot;); screenshots of partner sidebar, manager sidebar, member-detail page.</li>
+<li><strong>Acceptance gate:</strong> A1 migration applied + manager JSX edits + both e2e green + manual.</li>
+</ul>
+<h3>F1.5 — Dashboard cleanup (hide Reporting/Commission cards) [R5] ✅ DONE</h3>
+<ul>
+<li><strong>Audit state:</strong> ✅ Done. <code>ReportingWidget</code> import + render commented out (<code>R5-DISABLED-2026-05</code> markers in <code>app/home/page.tsx</code>). Spec <code>silkskyair-partner/e2e/partner-dashboard-no-reporting.spec.ts</code> asserts the widget&#39;s heading copy (&quot;Performance Overview&quot; / &quot;Обзор результатов&quot; / &quot;ภาพรวมผลการดำเนินงาน&quot;) does not appear on /home, plus a positive check that the F1.6 AvailableToursWidget renders in the slot. AgreementWidget also moved out in F1.6 — that&#39;s F1.6&#39;s territory, not double-covered here.</li>
+<li><strong>Code changes:</strong> <code>silkskyair-partner/app/home/page.tsx</code><ul>
+<li>Comment out <code>import { ReportingWidget } from &quot;@/components/home/widgets/reporting-widget&quot;</code> at line 7.</li>
+<li>Comment out the <code>&lt;ReportingWidget … /&gt;</code> JSX at line 77.</li>
+<li>Change <code>lg:grid-cols-3</code> → <code>lg:grid-cols-2</code> at line 75.</li>
+<li>Comment out <code>fetchPerformance</code> callback + <code>useEffect</code> at lines 36-47 so no dead fetch fires.</li>
+<li>Leave <code>reporting-widget.tsx</code> itself untouched for future re-enablement.</li>
+</ul>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-dashboard-no-reporting.spec.ts</code> — sign in → /home → assert <code>[data-testid=&quot;reporting-widget&quot;]</code> (or whatever selector exists) is not in the DOM; assert two visible widgets, not three.</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-dashboard-layout.spec.ts</code> — sign in at 1440×900 → assert grid <code>data-cols=&quot;2&quot;</code>; resize to 768 → assert single column reflow; reload → assert no network call to performance endpoint fires (network-spy assertion).</li>
+<li><strong>User manual:</strong> <code>manual/11-partner-dashboard-cleanup.md</code> — explains why Commission Rate + Performance Overview were temporarily removed (pre-launch confusion about commission expectations); states the commission rate is still applied server-side and communicated by email per month.</li>
+<li><strong>Acceptance gate:</strong> code + both e2e + manual.</li>
+</ul>
+<h3>F1.6 — Available Tours widget [R6] ✅ DONE</h3>
+<ul>
+<li><strong>Audit state:</strong> ✅ Done. Spec answered in the W23 close-out session (layout: take AgreementWidget slot; list: all active tours, vertical scroll in fixed-height card; card: hero image + gradient fallback; CTAs on hover: Book Tour / Copy Link / Open Tour with Book Tour pre-selecting the tour in the wizard).</li>
+<li><strong>Code changes:</strong><ol>
+<li><code>silkskyair-partner/app/api/tours/route.ts</code> — joined <code>tour_media role=&#39;hero&#39;</code>, generated a 1 h signed URL per tour, surfaced <code>heroUrl</code> in the response.</li>
+<li>NEW <code>silkskyair-partner/components/home/widgets/available-tours-widget.tsx</code> — widget + <code>useAvailableTours</code> hook.</li>
+<li><code>silkskyair-partner/app/home/page.tsx</code> — replaced <code>AgreementWidget</code> with <code>AvailableToursWidget</code> (Agreement import commented + reason noted).</li>
+<li><code>silkskyair-partner/components/bookings/create/create-booking-drawer.tsx</code> — <code>useEffect</code> hydrates <code>resolvedTour</code> from <code>/api/tours</code> when the wizard opens cold with <code>?tour=&lt;slug&gt;</code>, so step 4 (review) gets the data it needs.</li>
+<li><code>silkskyair-partner/lib/bookings/types.ts:TourSummary</code> — added optional <code>heroUrl</code>.</li>
+<li><code>silkskyair-partner/.env.example</code> — added <code>NEXT_PUBLIC_WWW_URL</code> documentation block.</li>
+<li>Migration <code>20260528140000_partner_available_tours_i18n.sql</code> — 6 keys × EN/TH/RU under <code>partner.dashboard.availableTours.*</code>.</li>
+</ol>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-available-tours-simple.spec.ts</code> — widget mounts on <code>/home</code> with heading + at least one tour row. Green.</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-available-tours-full.spec.ts</code> — hover reveals all 3 CTAs; Copy Link writes the expected <code>/tour/&lt;slug&gt;</code> URL to the clipboard + shows the &quot;Link copied&quot; chip; Open Tour spawns a new tab on the same URL; Book Tour navigates to <code>/bookings?create=true&amp;tour=&lt;slug&gt;</code>. Green.</li>
+<li><strong>User manual:</strong> <code>silkskyair-docs/manuals/domains/partners/available-tours.md</code>.</li>
+<li><strong>Acceptance gate:</strong> code + migration + both E2E + manual — ALL GREEN.</li>
+</ul>
+<h3>F1.7 — &quot;Invite Member&quot; → &quot;Invite Team&quot; [R7] ✅ DONE</h3>
+<ul>
+<li><strong>Audit state:</strong> ✅ Done. Fallback string at <code>app/team/page.tsx:170</code> reads &quot;Invite Team&quot; now. Spec <code>silkskyair-partner/e2e/partner-team-invite-rename.spec.ts</code> asserts the <code>/team</code> CTA renders the new label and the legacy &quot;Invite Member&quot; copy is absent.</li>
+<li><strong>Code changes:</strong><ol>
+<li>Folded into Batch A1 migration — UPSERT <code>i18n.entries</code> <code>settings:team.invite</code> = &quot;Invite Team&quot; (+ TH/RU).</li>
+<li><code>silkskyair-partner/app/team/page.tsx:170</code> — change fallback string <code>&quot;Invite Member&quot;</code> → <code>&quot;Invite Team&quot;</code>.</li>
+</ol>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-team-invite-rename.spec.ts</code> — sign in → /team → assert button reads &quot;+ Invite Team&quot;.</li>
+<li><strong>Complex Happy Path E2E:</strong> same file second test — open Invite dialog → fill email → send → assert success toast + new pending invite row appears with role chip &quot;Manager&quot;/&quot;Member&quot;/&quot;Support&quot;.</li>
+<li><strong>User manual:</strong> Folded into <code>manual/12-partner-team-management.md</code> (covering F1.3 + F1.7 + F1.8 together since they&#39;re all team-page surface fixes).</li>
+<li><strong>Acceptance gate:</strong> A1 migration row + JSX fallback string + both e2e + (shared) manual.</li>
+</ul>
+<h3>F1.8 — i18n leak fixes (archived/save/finalPriceNote) [R8 + R11]</h3>
+<ul>
+<li><strong>Audit state:</strong> ❌ Not started. <code>extras-step.tsx</code> still has the <code>&lt;p&gt;</code> referencing <code>create.finalPriceNote</code>.</li>
+<li><strong>Code changes:</strong><ol>
+<li>Batch A1 migration row — <code>settings:team.status.archived</code> = &quot;Archived&quot; (+ TH/RU).</li>
+<li><code>actions.save</code> — verify the existing row at migration <code>20260217100000_member_module.sql:247</code> covers the leak case (audit confirms it does); R8-T2 collapses to verification only.</li>
+<li><code>silkskyair-partner/components/bookings/create/extras-step.tsx:213-216</code> — <strong>delete</strong> the <code>&lt;p className=&quot;text-center text-xs text-foreground/40&quot;&gt;{i18n(&quot;create.finalPriceNote&quot;)}&lt;/p&gt;</code> block per plan decision.</li>
+</ol>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-i18n-no-leaks.spec.ts</code> — crawl the happy path (sign-in → /home → /bookings → /team → /members → /bookings/new through all 5 steps) and assert no DOM text matches the regex <code>/^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*)+$/</code> (raw i18n key pattern).</li>
+<li><strong>Complex Happy Path E2E:</strong> same file second test — switch locale to TH then RU and re-run the crawler; assert zero raw-key leaks in either locale.</li>
+<li><strong>User manual:</strong> Folded into <code>manual/12-partner-team-management.md</code> (covers the team drawer fix); finalPriceNote is silent — no manual mention needed.</li>
+<li><strong>Acceptance gate:</strong> A1 rows + JSX deletion + both e2e + manual.</li>
+</ul>
+<h3>F1.9 — Booking stepper + Submit Booking [R9 + R10]</h3>
+<ul>
+<li><strong>Audit state:</strong> ❌ Not started.</li>
+<li><strong>Code changes:</strong> Batch A1 migration rows:<ul>
+<li><code>bookings:create.step4</code> = &quot;Shared/Private Flight&quot; / TH &quot;เที่ยวบินแบบใช้ร่วม/ส่วนตัว&quot; / RU &quot;Совместный/Частный рейс&quot;</li>
+<li><code>bookings:create.confirm</code> = &quot;Submit Booking&quot; / TH &quot;ส่งการจอง&quot; / RU &quot;Отправить заявку&quot;</li>
+</ul>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-create-booking-stepper-labels.spec.ts</code> — open Create Booking drawer → assert stepper reads <code>1) Select Tour · 2) Select Date &amp; Time · 3) Contact &amp; Passengers · 4) Shared/Private Flight · 5) Review &amp; Confirm</code>; on step 5 assert CTA reads &quot;Submit Booking&quot;.</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-create-booking-full.spec.ts</code> — drive the entire create-booking flow end-to-end (tour → date+slot → contact → sharing → review → submit) including a shared-flight toggle test; assert final success state + assert no raw i18n keys at any step.</li>
+<li><strong>User manual:</strong> <code>manual/13-partner-create-booking.md</code> — walks partner staff through creating a booking on behalf of a client; covers all 5 steps incl. the new stepper labels and submit CTA.</li>
+<li><strong>Acceptance gate:</strong> A1 rows + both e2e + manual.</li>
+</ul>
+<h3>F1.10 — Passenger nationality + weight save fix [R12]</h3>
+<ul>
+<li><strong>Audit state:</strong> ❌ Not started. Nationality is still <code>&lt;input type=&quot;text&quot;&gt;</code> in <code>passenger-card.tsx</code>.</li>
+<li><strong>Code changes:</strong><ol>
+<li>R12-T0 (investigation): determine if a fuzzy-selector component exists in <code>silkskyair-partner/components/ui/</code> (search for <code>combobox</code>, <code>autocomplete</code>). If yes → reuse; if no → plain <code>&lt;select&gt;</code> sorted by country name.</li>
+<li>NEW <code>silkskyair-partner/app/api/countries/route.ts</code> — GET returns <code>{ code, name }[]</code> from <code>public.countries</code> (RLS permits public SELECT per <code>20260211120000:15-17</code>).</li>
+<li>NEW <code>silkskyair-partner/lib/hooks/use-countries.ts</code> — fetches once, caches in module scope.</li>
+<li><code>silkskyair-partner/components/bookings/passenger-card.tsx:262-269</code> — replace <code>&lt;input&gt;</code> for nationality with <code>&lt;select&gt;</code> (or fuzzy selector). Bind value = ISO-2 code.</li>
+<li>Verify weight field validation accepts positive numbers (already numeric per audit; R12-T3 is verification-only).</li>
+</ol>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-passenger-edit-nationality.spec.ts</code> — open existing booking → Edit Passenger → change nationality from blank to &quot;Thailand&quot; → save → assert success toast; reload page → assert nationality persists as &quot;Thai&quot; / &quot;Thailand&quot;.</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-passenger-edit-full.spec.ts</code> — edit all editable fields of a passenger (name, DOB, nationality via select, weight as number, gender); save; reload; assert every field persists; also edit weight to <code>0</code> and assert validation rejects.</li>
+<li><strong>User manual:</strong> <code>manual/14-partner-edit-passenger.md</code> — covers the nationality-picker change and how partner staff resolve the previous FK error.</li>
+<li><strong>Acceptance gate:</strong> investigation done + endpoint + selector swap + both e2e + manual.</li>
+</ul>
+<h3>F1.11 — Payment terminology (Full / Net) [R13 + R14] ✅ DONE</h3>
+<ul>
+<li><strong>Audit state:</strong> ✅ Done. <code>payment.directPayment</code> i18n value reads &quot;Full Payment&quot; (en) and <code>payment.indirectPayment</code> reads &quot;Net Payment (after deducting commission)&quot; (en). Spec <code>silkskyair-partner/e2e/partner-payment-terminology.spec.ts</code> asserts both buttons on the booking-detail payment section render the new EN/TH/RU labels and neither still leads with the legacy &quot;Direct payment&quot; / &quot;Indirect payment&quot; phrasing.</li>
+<li><strong>Code changes:</strong> Batch A1 migration rows:<ul>
+<li><code>bookings:payment.directPayment</code> = &quot;Full Payment&quot; / TH &quot;ชำระเต็มจำนวน&quot; / RU &quot;Полная оплата&quot;</li>
+<li><code>bookings:payment.indirectPayment</code> = &quot;Net Payment (after deducting commission)&quot; / TH &quot;ชำระสุทธิ (หักค่าคอมมิชชั่นแล้ว)&quot; / RU &quot;Чистая оплата (после вычета комиссии)&quot;</li>
+</ul>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-payment-terminology.spec.ts</code> — open a booking with <code>payment_collected_by=&#39;direct&#39;</code> → assert all payment-area labels read &quot;Full Payment&quot;; open one with <code>payment_collected_by=&#39;indirect&#39;</code> → assert &quot;Net Payment …&quot;.</li>
+<li><strong>Complex Happy Path E2E:</strong> same file second test — toggle locale en→th→ru on both booking types; assert localized strings in all 6 cases.</li>
+<li><strong>User manual:</strong> Folded into <code>manual/15-partner-payment-flow.md</code> (covers F1.11 + F1.12 + F1.13 + F1.14 — the full payment surface).</li>
+<li><strong>Acceptance gate:</strong> A1 rows + both e2e + (shared) manual.</li>
+</ul>
+<h3>F1.12 — Commission breakdown — WHT row + math [R15 + R16]</h3>
+<ul>
+<li><strong>Audit state:</strong> ❌ Not started. <code>commission.ts:142</code> still adds <code>+ withholdingTax</code>; <code>booking-payment-section.tsx:131-133</code> renders WHT unconditionally.</li>
+<li><strong>Code changes:</strong><ol>
+<li><code>silkskyair-partner/lib/bookings/commission.ts:142</code> — for the indirect branch, replace <code>netToOperator = round2(totalInclVat - commission - vatOnCommission + withholdingTax)</code> with <code>netToOperator = round2(totalInclVat - commission - vatOnCommission)</code>. (For 28000 / 10% indirect: <code>netToPartner = 2616.82</code>, <code>netToOperator = 25383.18</code>.)</li>
+<li><code>silkskyair-partner/lib/bookings/__tests__/commission.test.ts</code> — add/update vitest cases covering both arms.</li>
+<li><code>silkskyair-partner/components/bookings/booking-payment-section.tsx:131-133</code> — wrap WHT <code>&lt;BreakdownRow&gt;</code> in <code>{data.paymentCollectedBy === &quot;direct&quot; &amp;&amp; (…)}</code>.</li>
+<li><code>silkskyair-partner/app/api/bookings/[id]/payments/intent/route.ts:218-239</code> — mirror the fix on server settlement so <code>booking_commission_settlements</code> rows for indirect have <code>withholding_tax = 0</code> and <code>net_to_partner = commission + vat_on_commission</code>. (Pure side-effect of #1 if the route calls into <code>commission.ts</code>; verify and adjust.)</li>
+<li>(Optional) <code>silkskyair-api/supabase/migrations/&lt;TS&gt;_commission_indirect_check.sql</code> — DB CHECK constraint: <code>payment_collected_by = &#39;indirect&#39; ⇒ withholding_tax = 0</code>.</li>
+</ol>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-commission-breakdown-direct.spec.ts</code> — open a direct-payment booking → expand breakdown → assert rows: Total / VAT / Service excl. VAT / Commission / WHT (3%) / Net to Partner / Net to Operator; assert numbers match <code>lib/bookings/commission.ts</code> output for a known input.</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-commission-breakdown-indirect-no-wht.spec.ts</code> — open an indirect-payment booking with 28,000 THB at 10% → expand breakdown → assert NO WHT row in DOM; assert <code>Net to Partner = 2,616.82 THB</code>, <code>Net to Operator = 25,383.18 THB</code>; verify same numbers in <code>booking_commission_settlements</code> row via API.</li>
+<li><strong>User manual:</strong> Folded into <code>manual/15-partner-payment-flow.md</code> (commission section).</li>
+<li><strong>Acceptance gate:</strong> code + vitest + server mirror + both e2e + manual.</li>
+</ul>
+<h3>F1.13 — Pay-with-Card enablement [R17 + R18]</h3>
+<ul>
+<li><strong>Audit state:</strong> ⚠️ Partial. Omise SDK loader has <code>onLoad</code>/<code>onError</code>; missing 5s timeout + visible inline error. Env vars not provisioned (X0-T4 gated).</li>
+<li><strong>Code changes:</strong><ol>
+<li><code>silkskyair-partner/components/bookings/payment-checkout.tsx:337-342</code> — add 5-second timeout that flips <code>omiseLoaded=true</code> to <code>omiseError=&quot;Omise SDK failed to load&quot;</code>; render inline error banner above Pay-with-Card button when <code>omiseError</code> set.</li>
+<li><code>silkskyair-partner/.env.example</code> — add <code>OMISE_PUBLIC_KEY=</code> and <code>OMISE_SECRET_KEY=</code> placeholders with a comment pointing at the Omise dashboard.</li>
+<li><strong>Manual prereq (X0-T4):</strong> provision <code>OMISE_PUBLIC_KEY</code> + <code>OMISE_SECRET_KEY</code> in <code>silkskyair-partner</code> Vercel project for both staging and production.</li>
+</ol>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-pay-with-card-direct.spec.ts</code> — sign in → open unpaid direct-payment booking → Pay → Credit Card → enter test card <code>4242 4242 4242 4242</code> → complete 3DS → assert booking flips to Paid.</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-pay-with-card-indirect.spec.ts</code> — same flow for indirect; also test the SDK-failure path by mocking <code>window.OmiseCard</code> to throw and asserting the inline error banner appears within 5s.</li>
+<li><strong>User manual:</strong> Folded into <code>manual/15-partner-payment-flow.md</code> (card-payment section). Mention the <code>OMISE_PUBLIC_KEY</code> env provisioning note in the ops appendix.</li>
+<li><strong>Acceptance gate:</strong> code + env provisioned in Vercel + both e2e + manual section.</li>
+</ul>
+<h3>F1.14 — TOTAL AMOUNT + PromptPay parity on Indirect [R19] ✅ DONE</h3>
+<ul>
+<li><strong>Audit state:</strong> ✅ Done. Direct-only guards lifted in <code>payment-checkout.tsx</code>; the TOTAL AMOUNT card carries <code>data-payment-total</code> and the PromptPay method exposes <code>data-payment-method=&#39;promptpay&#39;</code>. Spec <code>silkskyair-partner/e2e/partner-indirect-payment-parity.spec.ts</code> seeds an indirect booking, clicks Net Payment, and asserts both elements render — plus a sanity check that the Card tab is also present.</li>
+<li><strong>Code changes:</strong><ol>
+<li><code>silkskyair-partner/components/bookings/payment-checkout.tsx:345-353</code> — remove the <code>paymentCollectedBy === &quot;direct&quot; &amp;&amp;</code> wrapper around TOTAL AMOUNT card so both flows show it.</li>
+<li><code>silkskyair-partner/components/bookings/payment-checkout.tsx:460-464</code> — same removal around PromptPay amount display.</li>
+<li>Add PR note: existing comment at <code>:344</code> (&quot;hide net amounts for customer privacy&quot;) is overridden by R19 decision.</li>
+</ol>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-indirect-total-amount.spec.ts</code> — open Indirect Payment dialog → assert TOTAL AMOUNT card visible with correct value.</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-indirect-promptpay.spec.ts</code> — open Indirect Payment → switch to PromptPay → assert amount value visible alongside QR; complete payment with PromptPay simulator (or mocked webhook) → assert booking flips to Paid.</li>
+<li><strong>User manual:</strong> Folded into <code>manual/15-partner-payment-flow.md</code> (indirect-payment section, with screenshots of both dialogs side-by-side).</li>
+<li><strong>Acceptance gate:</strong> code + both e2e + manual section.</li>
+</ul>
+<h3>F1.15 — Back-office cancellation notification [R20]</h3>
+<ul>
+<li><strong>Audit state:</strong> ❌ Not started across all repos. Plan needs an 8-task fan-out.</li>
+<li><strong>Code changes:</strong><ol>
+<li>R20-T0 (investigation): confirm current cancellation event lifecycle — what triggers fire when <code>booking_events.event_type = &#39;BookingCancellationRequested&#39;</code>.</li>
+<li><code>silkskyair-api/supabase/migrations/&lt;TS&gt;_notification_on_cancellation.sql</code> (NEW) — trigger on <code>booking_events</code> AFTER INSERT WHERE <code>event_type=&#39;BookingCancellationRequested&#39;</code> inserts one row per recipient into <code>account.notifications</code> (recipients: all <code>organization_users</code> with <code>module:bookings:access</code> privilege). Register <code>booking.cancellation_requested</code> in <code>account.event_types</code>.</li>
+<li>NEW <code>silkskyair-manager/components/home/notification-bell.tsx</code> — bell icon + unread count + dropdown; subscribes via Supabase Realtime to <code>account.notifications</code> (REPLICA IDENTITY FULL already set per <code>20260308100000:91</code>).</li>
+<li>NEW <code>silkskyair-manager/app/api/notifications/route.ts</code> — GET (list unread), PATCH (mark-read).</li>
+<li>Mount <code>&lt;NotificationBell /&gt;</code> in <code>silkskyair-manager/components/home/header.tsx</code>; surface inbound notifications as toasts via existing <code>lib/toast-emitter.ts</code>.</li>
+<li>NEW <code>silkskyair-workflows/workflows/notifications/cancellation-manager-email.json</code> — webhook trigger → DB query for manager-role recipients → email template with booking ref + reason.</li>
+<li>NEW <code>silkskyair-workflows/workflows/notifications/cancellation-customer-email.json</code> — webhook trigger → email customer (lead pax) confirming the cancellation request was received.</li>
+<li><code>silkskyair-partner/app/api/bookings/[id]/cancel/route.ts</code> — after RPC succeeds, call both n8n webhooks (<code>POST</code> to <code>cancellation-manager-email</code> + <code>cancellation-customer-email</code> URLs from env).</li>
+</ol>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-cancel-booking-simple.spec.ts</code> — partner cancels a confirmed booking with reason &quot;test cancellation&quot; → assert success toast + booking event timeline shows <code>CancellationRequested</code>.</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-www/tests/e2e/r20-cancellation-fanout.spec.ts</code> (cross-repo) — partner cancels a booking → assert (a) <code>account.notifications</code> row exists for at least one manager user, (b) NotificationBell on <code>silkskyair-manager</code> shows unread count incremented within 5s of cancel, (c) manager email arrived in Mailpit, (d) customer confirmation email arrived in Mailpit.</li>
+<li><strong>User manual:</strong> <code>manual/16-manager-notification-bell.md</code> (slug <code>notification-bell</code>) — explains the new notification bell, what events fire it, how to mark as read; screenshots of unread state, opened dropdown, after-mark-read.</li>
+<li><strong>Acceptance gate:</strong> migration + 7 code changes + both workflows synced to local n8n + both e2e + manual + screenshots.</li>
+</ul>
+<h3>F1.16 — Email verification popup [R21]</h3>
+<ul>
+<li><strong>Audit state:</strong> ❌ Not started (except R21-T7 — Member-side <code>/verify</code> page already ships per <code>silkskyair-member/app/(public)/verify/page.tsx</code> from 2026-02-12).</li>
+<li><strong>Code changes (all in <code>silkskyair-manager</code> per Notion):</strong><ol>
+<li>R21-T1: NEW or extend <code>components/bookings/booking-card.tsx</code> — show verified-email icon when <code>booking_verifications.verified_at IS NOT NULL</code>; clickable when null → opens drawer.</li>
+<li>R21-T2: NEW <code>components/bookings/verification-drawer.tsx</code> — side drawer with 6-digit OTP input (auto-advance / paste-fill), Verify CTA, error state, &quot;Send new code&quot; link.</li>
+<li>R21-T3: <code>app/(workspace)/bookings/[bookingId]/page.tsx</code> — read <code>?verify=open</code> query string and auto-open the drawer.</li>
+<li>R21-T4: NEW <code>app/api/bookings/[id]/verification/route.ts</code> — POST receives <code>{ otp }</code>, calls existing <code>silkskyair-api/supabase/functions/verify</code> edge function with <code>entity_type=&#39;booking&#39;, entity_id, method=&#39;otp&#39;, otp</code>; returns <code>{ verified, error? }</code>.</li>
+<li>R21-T8: role gate the POST route — only <code>booking_manager</code>/<code>organization_manager</code> may call it.</li>
+<li>R21-T6: NEW <code>silkskyair-workflows/workflows/notifications/booking-verification-email.json</code> — sends OTP email to the lead-pax address (re-uses existing <code>booking_verifications.otp</code> plaintext window from the DB trigger).</li>
+</ol>
+</li>
+<li><strong>Verification (R21-T7 pre-existing):</strong> confirm <code>silkskyair-member/app/(public)/verify/page.tsx</code> handles <code>?token=&lt;HMAC&gt;&amp;bookingId=&lt;id&gt;</code> arrivals from magic-link properly — assert HMAC verifies, booking marked verified, member redirected to booking detail.</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-manager/e2e/manager-booking-verify-simple.spec.ts</code> — open unverified booking → click verify icon → drawer opens → enter correct OTP (read from <code>bookings.metadata.verification.otp</code> via test helper) → assert success + icon flips to verified.</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-manager/e2e/manager-booking-verify-full.spec.ts</code> — three sub-scenarios: (a) wrong OTP → error state shown, drawer remains open; (b) deep-link <code>?verify=open</code> auto-opens drawer; (c) Send-new-code triggers new OTP email + booking marked verified via re-entry; also assert that a non-manager role gets 403 on the POST route.</li>
+<li><strong>User manual:</strong> <code>manual/17-manager-booking-verification.md</code> (slug <code>booking-verification</code>) — explains the verified-email icon, when to verify, how to enter the OTP, what to do if customer didn&#39;t receive the code.</li>
+<li><strong>Acceptance gate:</strong> 6 code changes + workflow synced + both e2e + verification of pre-existing /verify page + manual.</li>
+</ul>
+<h3>F1.17 — Archive clients [R22]</h3>
+<ul>
+<li><strong>Audit state:</strong> ❌ Not started. Zero &quot;archive&quot; hits anywhere in <code>silkskyair-partner/{components/members,app/members}</code>.</li>
+<li><strong>Code changes:</strong><ol>
+<li><code>silkskyair-api/supabase/migrations/&lt;TS&gt;_member_profiles_archived_at.sql</code> (NEW) — <code>ALTER TABLE public.member_profiles ADD COLUMN archived_at timestamptz</code>; index on <code>(archived_at) WHERE archived_at IS NULL</code>; RPC <code>api.archive_member(p_member_id uuid)</code> gated by <code>rls_has_privilege(&#39;module:partner-members:access&#39;)</code> — <strong>one-way</strong>, no <code>unarchive_member</code>.</li>
+<li>NEW <code>silkskyair-partner/app/api/members/[id]/archive/route.ts</code> — POST calls the RPC.</li>
+<li><code>silkskyair-partner/app/members/page.tsx</code> — add &quot;Show archived&quot; toggle (default off); filter <code>WHERE archived_at IS NULL</code> when off.</li>
+<li><code>silkskyair-partner/components/members/member-card.tsx</code> — add Archive action; confirm dialog; on success refetch list; archived rows hidden by default.</li>
+</ol>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-archive-client-simple.spec.ts</code> — sign in → /members → find a member → click Archive → confirm → assert row removed from default list.</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-partner/e2e/partner-archive-client-full.spec.ts</code> — archive one client → toggle &quot;Show archived&quot; on → assert archived client visible with archived badge → toggle off → assert hidden again; reload page → assertion holds across reloads (DB-driven); attempt second-time-archive via API → assert idempotent (RPC silently noops or returns 409 — confirm in T1).</li>
+<li><strong>User manual:</strong> <code>manual/18-partner-archive-clients.md</code> (slug <code>archive-clients</code>) — explains archive is one-way, what archive means (hidden from default list, still queryable), screenshots of menu → confirm → after-archive empty state.</li>
+<li><strong>Acceptance gate:</strong> migration + 3 code changes + both e2e + manual.</li>
+</ul>
+<hr>
+<h2>3. SoW 2 — Member Portal 1st Review (11 features)</h2>
+<blockquote>
+<p>Branch <code>claude/mp1-review-w23</code> per repo. <strong>Lynchpin = F2.6 (MP1-W06).</strong> Phase 1 features can start in parallel; Phase 2 chain serial.</p>
+</blockquote>
+<h3>F2.1 — Check-in disable [MP1-W01]</h3>
+<ul>
+<li><strong>Audit state:</strong> ❌ Not started. <code>grep -rln CHECKIN-DISABLED-2026-05 silkskyair-member</code> → 0 hits.</li>
+<li><strong>Code changes:</strong> Per plan §&quot;MP1-W01&quot; — comment out (block-marker <code>CHECKIN-DISABLED-2026-05</code>) the entire check-in tree (15 files) + surgical edits to 3 entry points (booking-detail-content.tsx, [bookingId]/page.tsx, middleware.ts).</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-member/e2e/member-no-checkin-simple.spec.ts</code> — sign in → /bookings/<id> → assert no &quot;Check In Now&quot; green banner, no &quot;Complete Info&quot; yellow banner, no Confirm Check-In button anywhere on the page.</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-member/e2e/member-no-checkin-routes.spec.ts</code> — assert <code>/bookings/&lt;id&gt;/checkin</code> returns 404; assert middleware does not redirect to a check-in route; <code>grep -rln CHECKIN-DISABLED-2026-05 silkskyair-member</code> returns exactly 15 hits (asserted in test); production build passes.</li>
+<li><strong>User manual:</strong> <code>manual/19-member-checkin-removed.md</code> (slug <code>member-checkin-removed</code>) — short page explaining check-in is not part of Phase 1; what staff tell customers who ask about boarding pass / check-in.</li>
+<li><strong>Acceptance gate:</strong> all markers in place + both e2e + manual.</li>
+</ul>
+<h3>F2.2 — Magic-link only auth [MP1-W02]</h3>
+<ul>
+<li><strong>Audit state:</strong> ❌ Not started. <code>lib/auth/url-context.ts</code> doesn&#39;t exist; sign-in form has no <code>magicLinkOnly</code> prop.</li>
+<li><strong>Code changes:</strong> Per plan §&quot;MP1-W02&quot; — NEW <code>lib/auth/url-context.ts</code>; extend <code>components/auth/sign-in-form.tsx</code> with <code>magicLinkOnly</code> prop; update <code>app/(auth)/sign-in/page.tsx</code> to read <code>redirect_to</code> and pass prop. Default <code>magicLinkOnly=true</code> for member portal.</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-member/e2e/member-magic-link-simple.spec.ts</code> — visit <code>/sign-in</code> → assert no password field, no Forgot Password link, no Sign In button; assert only Email field + &quot;Send magic link&quot; button visible.</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-member/e2e/member-magic-link-full.spec.ts</code> — visit <code>/sign-in?redirect_to=/bookings/xyz</code> → submit email → assert magic-link email arrived in Mailpit → extract HMAC token → visit <code>/api/auth/verify?token=&lt;token&gt;</code> → assert redirect to <code>/bookings/xyz</code> with session cookie set.</li>
+<li><strong>User manual:</strong> <code>manual/20-member-magic-link-auth.md</code> (slug <code>member-magic-link</code>) — explains members log in by email link only; covers how to handle &quot;didn&#39;t get the email&quot; support requests.</li>
+<li><strong>Acceptance gate:</strong> code + both e2e + manual.</li>
+</ul>
+<h3>F2.3 — Positive-number weight [MP1-W03] — <strong>CROSS-APP</strong> ✅ DONE</h3>
+<p><strong>Scope update (W23 in-flight):</strong> F2.3 was cross-app, not member-only. The Partner Portal already shipped <code>&lt;input type=&quot;number&quot;&gt;</code> for weight a few releases ago but the schema kept the FK to <code>weight_ranges</code>; partners typing a number got a 500. F2.3 landed the schema + both apps&#39; validation together. <strong>Now fully closed</strong>: partner side (migration <code>20260528120000_passenger_weight_numeric.sql</code> + PATCH validation in <code>silkskyair-partner/app/api/bookings/[id]/passengers/[passengerId]/route.ts</code>) + member side (UI swap in <code>passenger-edit-drawer.tsx</code> + <code>validateWeight()</code> + PATCH validation) + member E2E specs (simple + complex, both green) + manual <code>silkskyair-docs/manuals/domains/members/passenger-weight.md</code>.</p>
+<h4>Original plan below:</h4>
+<ul>
+<li><strong>Audit state:</strong> ❌ Not started.</li>
+<li><strong>Code changes:</strong> Per plan §&quot;MP1-W03&quot; — replace <code>WeightRangeSelector</code> in <code>app/(workspace)/bookings/_components/passenger-edit-drawer.tsx</code> with <code>&lt;input type=&quot;number&quot; min=&quot;0&quot; max=&quot;250&quot; step=&quot;0.1&quot;&gt;</code>; update <code>lib/modules/bookings/passenger-validation.ts:validateWeight()</code> from bucket-id to positive-numeric; capture Advance Aviation rationale (deferred to F2.11).</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-member/e2e/member-weight-edit-simple.spec.ts</code> — sign in → /bookings/<id> → edit passenger → enter <code>72.5</code> → save → reload → assert weight = &quot;72.5 kg&quot;.</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-member/e2e/member-weight-edit-validation.spec.ts</code> — assert rejection for <code>0</code>, negative numbers, non-numeric input, &gt; 250; assert valid numbers including decimals save and persist.</li>
+<li><strong>User manual:</strong> <code>manual/21-member-passenger-weight.md</code> (slug <code>member-passenger-weight</code>) — short page for ops; explains why exact weight (Advance Aviation safety req); shows the new numeric field.</li>
+<li><strong>Acceptance gate:</strong> code + both e2e + manual.</li>
+</ul>
+<h3>F2.4 — Add-passenger Paid/Due/Total [MP1-W04] ✅ DONE</h3>
+<ul>
+<li><strong>Audit state:</strong> ✅ Done. Balance helper landed, API extended, modal rows live, both E2E green, manual published, shared PaxCounter gained data-action attrs for tests.</li>
+<li><strong>Code changes:</strong> Per plan §&quot;MP1-W04&quot;:<ol>
+<li>✅ NEW <code>lib/modules/bookings/balance.ts</code> — <code>computeBookingBalance(bookingId): { total, paid, due, currency }</code>. Sums <code>booking_price_components.amount</code> (THB major units) for total, <code>payment_intents.amount / 100</code> filtered to <code>status=&#39;successful&#39;</code> for paid, due = max(0, total − paid). Throws on mixed-currency components.</li>
+<li>✅ <code>/api/bookings/[bookingId]/add-passenger-pricing/route.ts</code> now calls the helper and returns <code>paidAmount</code> + <code>dueAmount</code> alongside the existing <code>currentTotal</code>.</li>
+<li>✅ <code>app/(workspace)/bookings/_components/add-passenger-modal.tsx</code> — Paid + Due rows added between Additional cost and the New estimated total. Container tagged <code>data-section=&#39;add-passenger-pricing&#39;</code>; rows tagged <code>data-row=&#39;cost-per-pax&#39; / &#39;additional&#39; / &#39;paid&#39; / &#39;due&#39; / &#39;new-total&#39;</code>. Hidden when fields are undefined (back-compat).</li>
+<li>✅ i18n: <code>bookings.addPassengers.paid</code> + <code>.due</code> in <code>en.json</code> / <code>th.json</code> / <code>ru.json</code>.</li>
+<li>✅ AddPassengerGhostCard gained <code>data-action=&quot;open-add-passenger-modal&quot;</code> for stable E2E selection.</li>
+<li>✅ <code>silkskyair-ui/src/components/pax-counter.tsx</code> — PaxCounter wrapper gets <code>data-pax-counter=&quot;&lt;label&gt;&quot;</code>, buttons get <code>data-action=&quot;pax-counter-increment|decrement&quot;</code> + accessible <code>aria-label</code>. Generic instrumentation; usable by any spec that drives a stepper. UI package rebuilt (<code>pnpm build</code>).</li>
+</ol>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> ✅ <code>silkskyair-member/e2e/member-add-passenger-simple.spec.ts</code> — sign in via real magic-link flow → /bookings/<seeded id> → click ghost card → wait for dialog → assert all 5 data-row attrs visible with numeric currency values. Green.</li>
+<li><strong>Complex Happy Path E2E:</strong> ✅ <code>silkskyair-member/e2e/member-add-passenger-full.spec.ts</code> — seeds a confirmed shared-flight booking (total ฿17,000, paid ฿17,000) → reads the pricing API to capture canonical per-pax cost → opens modal → asserts every row&#39;s exact THB formatting at default (adults=1) → clicks Adults <code>+</code> → asserts additional + new-total scale; Paid + Due rows stay invariant. Green.</li>
+<li><strong>Test infra:</strong> NEW <code>silkskyair-member/e2e/fixtures/auth.fixture.ts</code> (<code>signInViaMagicLink</code> extracted from F2.2 complex spec, <code>uniqueE2eEmail</code>) and NEW <code>silkskyair-member/e2e/fixtures/supabase.fixture.ts</code> (<code>seedConfirmedBooking</code> — provisions member_profile + member_account + bookings + price_components + events walked to BookingConfirmed + successful payment_intent; clears trigger-inserted artefacts so the math is deterministic). <code>playwright.config.ts</code> now also loads <code>.env.local</code> so the fixture sees <code>NEXT_PUBLIC_SUPABASE_URL</code> + <code>SUPABASE_SERVICE_ROLE_KEY</code>.</li>
+<li><strong>User manual:</strong> ✅ <code>silkskyair-docs/manuals/domains/members/add-passenger-pricing.md</code> — explains the 5 rows, why Paid + Due matter, edge cases (private charter, zero-paid, missing tour), and a support-staff playbook for the most common &quot;why is the modal asking for more money&quot; questions.</li>
+<li><strong>Acceptance gate:</strong> balance helper + API extension + UI rows + both e2e + manual — ALL GREEN.</li>
+</ul>
+<h3>F2.5 — Customer change-request confirmation emails [MP1-W05] ✅ DONE</h3>
+<ul>
+<li><strong>Audit state:</strong> ✅ Done. Templates seeded, workflow wired, route stashes subtype, both E2E green, manual published.</li>
+<li><strong>Code changes:</strong><ol>
+<li>✅ <code>silkskyair-api/supabase/migrations/20260529100000_member_amendment_received_templates.sql</code> — 2 new <code>email_templates</code> rows (<code>booking-change-request-received-member-date-time</code>, <code>booking-change-request-received-member-add-passenger</code>) + 6 <code>email_templates_i18n</code> rows (en/th/ru × 2 templates), with subject/body/sender_name following the F1.15 customer-cancellation template shape. Idempotent UPSERTs.</li>
+<li>✅ <code>silkskyair-member/app/api/bookings/[bookingId]/change-requests/route.ts</code> — also stashes <code>amendment_subtype</code> in the <code>booking_events.metadata</code> so the workflow can route on it without joining back to <code>booking_change_requests</code>.</li>
+<li>✅ <code>silkskyair-workflows/workflows/bookings/bookings-event.json</code> — Switch output 5 (BAR / BookingAmendmentRequested) now fans out to <strong>both</strong> the manager branch (existing) AND <code>prepare-member-email-data</code> (new — mirrors F1.15&#39;s CR wiring); <code>prepare-member-email-data</code>&#39;s Code node gained an <code>amendmentSubtypeSlugs</code> map that picks the per-subtype template based on the metadata. Deployed to local n8n.</li>
+</ol>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> ✅ <code>silkskyair-partner/e2e/partner-amendment-received-emails.spec.ts</code> (first test) — seed booking → insert <code>BookingAmendmentRequested</code> with <code>amendment_subtype=&#39;change_datetime&#39;</code> → poll n8n executions filtered on <code>booking_id</code> + <code>event_type</code> → assert <code>template_slug=&#39;booking-change-request-received-member-date-time&#39;</code> + <code>call-booking-member-email</code> succeeds. Green.</li>
+<li><strong>Complex Happy Path E2E:</strong> ✅ same file second test — same flow with <code>amendment_subtype=&#39;add_passengers&#39;</code> → assert the OTHER template slug + body variables populated (<code>reference_code</code> matches the seed, <code>contact_email</code> non-empty) + <code>recipient_email=&#39;john.smith@example.com&#39;</code> (the seed customer). Green.</li>
+<li><strong>Test result:</strong> both tests run in <strong>27.8 s</strong> together.</li>
+<li><strong>User manual:</strong> ✅ <code>silkskyair-docs/manuals/domains/members/amendment-received-emails.md</code> — trigger flow, template table, observability, failure-modes table, support-staff playbook. (Plan originally said fold into a shared amendment-lifecycle doc; that umbrella doc isn&#39;t needed now that F2.6/7/8 are deferred to W24, so this lives standalone.)</li>
+<li><strong>Not covered (deliberate):</strong> <code>remove_passengers</code> and <code>change_tour</code> subtypes fall through to no email — plan only specified the two templates above; adding the missing two is a follow-up migration in the same pattern.</li>
+<li><strong>Acceptance gate:</strong> migration + route + workflow + both E2E + manual — ALL GREEN.</li>
+</ul>
+<h3>F2.6 — Booking status state machine [MP1-W06] ← <strong>LYNCHPIN</strong> — 🚫 DEFERRED to W24</h3>
+<ul>
+<li><strong>Audit state:</strong> ❌ Not started, deferred per user decision 2026-05-29 — scope (6 migrations + omise.json edit + new RPC + open lifecycle decision about <code>BookingPaidInFull</code> restore semantics) needs more focused time than the W23 close-out window allows. The dependent items (F2.7, F2.8, F2.9, and the complex half of F2.10) defer with it.</li>
+<li><strong>Code changes:</strong> Per plan §&quot;MP1-W06&quot; — six new migrations + omise.json edit:<ol>
+<li><code>&lt;TS&gt;_add_processing_status.sql</code> — INSERT <code>processing</code> row into <code>booking_statuses</code>.</li>
+<li><code>&lt;TS&gt;_event_state_changing_flag.sql</code> — <code>ALTER booking_event_types ADD COLUMN is_state_changing boolean DEFAULT true</code>.</li>
+<li><code>&lt;TS&gt;_payment_lifecycle_event_types.sql</code> — INSERT <code>PaymentRequestSent</code> (transient), <code>PaymentSuccessful</code> (transient), <code>BookingAmended</code> (audit).</li>
+<li><code>&lt;TS&gt;_processing_state_transitions.sql</code> — update <code>booking_status_from_event_type()</code> to walk only <code>is_state_changing=true</code>; map <code>BookingAmended</code> w/ surcharge → <code>processing</code>; <code>BookingPaidInFull</code> → restore-prior-status.</li>
+<li><code>&lt;TS&gt;_amendment_approve_payment_request.sql</code> — update <code>booking_amendment_approve()</code> RPC: when surcharge &gt; 0, insert <code>payment_requests</code> row, insert <code>PaymentRequestSent</code>, transition booking → <code>processing</code>.</li>
+<li><code>silkskyair-workflows/workflows/payments/omise.json</code> — after <code>supabase-rpc-success</code> node (line 260), insert <code>PaymentSuccessful</code> event; call a new balance-check RPC that emits <code>BookingPaidInFull</code> when <code>paid == due</code>.</li>
+</ol>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-www/tests/e2e/mp1-w06-payment-emits-confirmed.spec.ts</code> (cross-repo) — book + pay one passenger → assert booking events timeline shows <code>Registered → PaymentSuccessful → BookingPaidInFull → BookingConfirmed</code>; assert final status = <code>confirmed</code>.</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-www/tests/e2e/mp1-w06-amendment-lifecycle.spec.ts</code> — book + pay → request add-passenger amendment → manager approves with surcharge → assert booking flips to <code>processing</code>; member pays the surcharge via Omise → assert events <code>PaymentSuccessful → BookingPaidInFull</code> → assert status restored to <code>confirmed</code>.</li>
+<li><strong>User manual:</strong> Folded into <code>manual/23-member-amendments-end-to-end.md</code>.</li>
+<li><strong>Acceptance gate:</strong> 6 migrations + omise.json edit + both e2e + manual.</li>
+</ul>
+<h3>F2.7 — Payment Successful bug + amendment CTA [MP1-W07]</h3>
+<ul>
+<li><strong>Audit state:</strong> ❌ Not started. Depends on F2.6.</li>
+<li><strong>Code changes:</strong> Per plan §&quot;MP1-W07&quot; — add <code>processing</code> entry to <code>statusConfig</code> map in <code>silkskyair-member/app/(workspace)/bookings/_components/booking-detail-content.tsx:102-134</code>; add amendment-payment widget (mirror existing <code>approved</code> Payment widget at 139-157); fix <code>lib/modules/bookings/normalizers.ts:205</code> so <code>isPaidInFull</code> returns false when an outstanding <code>payment_requests</code> exists; localise <code>processing</code> label in i18n.</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-member/e2e/member-processing-state-simple.spec.ts</code> — force a test booking to <code>processing</code> via SQL helper → reload member portal → assert badge reads &quot;Payment Required&quot; (or localized) + Pay-now CTA visible.</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-member/e2e/member-amendment-pay-flow.spec.ts</code> — full chain from F2.6 complex flow: amendment approved → assert badge change to &quot;Payment Required&quot; → click Pay-now → land on amendment payment screen (F2.8) → complete payment → assert booking returns to &quot;Confirmed and paid&quot; state.</li>
+<li><strong>User manual:</strong> Folded into <code>manual/23-member-amendments-end-to-end.md</code>.</li>
+<li><strong>Acceptance gate:</strong> statusConfig + widget + normalizer fix + i18n + both e2e + manual.</li>
+</ul>
+<h3>F2.8 — Amendment payment screen + approval email [MP1-W08]</h3>
+<ul>
+<li><strong>Audit state:</strong> ❌ Not started. Depends on F2.6.</li>
+<li><strong>Code changes:</strong> Per plan §&quot;MP1-W08&quot;:<ol>
+<li><code>silkskyair-api/supabase/migrations/&lt;TS&gt;_payment_requests_booking_link.sql</code> — add FK columns <code>booking_id</code> + <code>amendment_event_id</code> to <code>payments.payment_requests</code>.</li>
+<li>NEW <code>silkskyair-member/app/(workspace)/bookings/[bookingId]/amendments/[paymentRequestId]/pay/page.tsx</code> — authenticated screen rendering existing <code>PaymentCheckout</code> component with the amendment amount + <code>paymentRequestId</code>.</li>
+<li><code>silkskyair-api/supabase/migrations/&lt;TS&gt;_approval_email_payment_link.sql</code> — UPSERT <code>booking-change-request-approved-member</code> template body with <code>{{amendment_payment_url}}</code> placeholder.</li>
+<li><code>silkskyair-workflows/workflows/bookings/bookings-event.json</code> — construct the URL when firing approval email (using <code>MEMBER_PORTAL_URL/bookings/&lt;id&gt;/amendments/&lt;paymentRequestId&gt;/pay</code>).</li>
+</ol>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-member/e2e/member-amendment-pay-page.spec.ts</code> — navigate directly to <code>/bookings/&lt;id&gt;/amendments/&lt;pr&gt;/pay</code> while authenticated → assert page renders with correct amount + booking ref + Pay button.</li>
+<li><strong>Complex Happy Path E2E:</strong> chained with F2.7 complex; also test that unauthenticated GET to the amendment-pay URL redirects to <code>/sign-in?redirect_to=...</code>.</li>
+<li><strong>User manual:</strong> Folded into <code>manual/23-member-amendments-end-to-end.md</code>.</li>
+<li><strong>Acceptance gate:</strong> 2 migrations + new page + workflow edit + both e2e + manual.</li>
+</ul>
+<h3>F2.9 — Manager per-payment rows [MP1-W09]</h3>
+<ul>
+<li><strong>Audit state:</strong> ❌ Not started. Depends on F2.8 (FK columns on payment_requests).</li>
+<li><strong>Code changes:</strong> Per plan §&quot;MP1-W09&quot;:<ol>
+<li>NEW <code>silkskyair-manager/app/api/bookings/[bookingId]/payments/route.ts</code> — returns aggregated list of original payment + amendment payment-requests.</li>
+<li>Extend <code>silkskyair-manager/lib/modules/bookings/payment-links.ts</code> with <code>buildPaymentRequestLink(paymentRequestId)</code>.</li>
+<li><code>silkskyair-manager/app/(workspace)/bookings/_components/booking-payment-section.tsx</code> — replace single payment row with list iteration (pattern from <code>payments-manager.tsx:61-105</code>).</li>
+</ol>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-manager/e2e/manager-booking-payments-simple.spec.ts</code> — open a booking with one original payment → assert single payment row with &quot;Paid&quot; badge.</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-manager/e2e/manager-booking-payments-amendment.spec.ts</code> — booking with paid original + unpaid amendment → assert two rows; assert Copy button copies the amendment pay-link to clipboard; assert Open button opens the amendment pay page in new tab.</li>
+<li><strong>User manual:</strong> <code>manual/24-manager-per-payment-rows.md</code> (slug <code>manager-per-payment-rows</code>) — explains the new per-payment view for ops; how to identify unpaid amendments; how to share the pay link with the customer.</li>
+<li><strong>Acceptance gate:</strong> API + helper + UI + both e2e + manual.</li>
+</ul>
+<h3>F2.10 — Back-office payment notification [MP1-W10] ✅ DONE (simple)</h3>
+<ul>
+<li><strong>Audit state:</strong> ✅ Simple path closed. Infrastructure was already present at audit time — <code>bookings-event.json</code> Switch routes <code>BookingConfirmed</code> (and post-F2.6 <code>BookingPaidInFull</code>) through <code>prepare-manager-email-data</code> → <code>call-booking-manager-email</code> → <code>booking-paid-manager</code> template; <code>email_templates_i18n</code> has EN/TH/RU rows with subject + sender_name; <code>public.get_users_with_role(&#39;booking_manager&#39;)</code> returns the recipient list at send time. This close-out adds the E2E that proves the round-trip, plus the back-office manual.</li>
+<li><strong>Verification:</strong> Workflow execution (n8n execution <code>2870</code>) confirmed: Switch routed to the manager branch; <code>prepare-manager-email-data</code> produced <code>template_slug=&#39;booking-paid-manager&#39;</code> with the localized recipient payload; <code>call-booking-manager-email</code> returned <code>success: true, emails_sent_count: 1</code> (local seed has one <code>booking_manager</code>, <a href="mailto:peter@andaman.co.th">peter@andaman.co.th</a>). No template gap; no code change required.</li>
+<li><strong>Simple Happy Path E2E:</strong> ✅ <code>silkskyair-partner/e2e/partner-payment-staff-email.spec.ts</code> — seed an unpaid booking; insert a <code>BookingConfirmed</code> event via service client (the same Postgres trigger fires whether the insert comes from the member portal, partner portal, omise webhook, or test code); poll the n8n executions API filtered on both <code>booking_id</code> AND <code>event_type</code> (necessary because <code>seedUnpaidBooking</code> fires 4 concurrent lifecycle events at the same wall-clock second); assert slug + manager-email success + <code>emails_sent_count &gt; 0</code>. Green, 12.4 s.</li>
+<li><strong>Complex Happy Path E2E:</strong> ❌ Deferred with F2.6. The complex spec (&quot;book + pay + amendment + amendment-pay → assert TWO staff emails&quot;) requires the amendment-payment lifecycle that F2.6 LYNCHPIN introduces. The simple spec proves the surface that exists today; the complex one will land alongside F2.6.</li>
+<li><strong>User manual:</strong> ✅ <code>silkskyair-docs/manuals/domains/partners/payment-notifications.md</code> — trigger, recipient lookup, template + locale shape, delivery + observability (n8n executions UI, why MailPit doesn&#39;t catch these), failure-modes table, support-staff playbook.</li>
+<li><strong>Acceptance gate:</strong> simple spec + manual ✅; complex spec deferred to F2.6 (documented above).</li>
+</ul>
+<h3>F2.11 — Booking Status doc + passenger data doc [MP1-W11]</h3>
+<ul>
+<li><strong>Audit state:</strong> ⚠️ Partial. <code>silkskyair-docs/</code> repo exists; <code>docs/booking-status.md</code> + <code>docs/passenger-data.md</code> do NOT exist.</li>
+<li><strong>Code changes (docs only):</strong><ol>
+<li>NEW <code>silkskyair-docs/docs/booking-status.md</code> — exhaustive doc per plan §&quot;MP1-W11&quot;: status enum, event-type registry, transition rules, transient vs deterministic events, amendment lifecycle, per-payment model, gaps closed by W06/W08, citations into the monorepo files/lines.</li>
+<li>NEW <code>silkskyair-docs/docs/passenger-data.md</code> (optional) — capture Advance Aviation weight rationale for MP1-P03-03.</li>
+</ol>
+</li>
+<li><strong>No e2e tests</strong> (docs).</li>
+<li><strong>User manual:</strong> <code>manual/_index.md</code> should link to <code>docs/booking-status.md</code>; manual page <code>manual/26-ops-booking-status-doc.md</code> (slug <code>booking-status-doc</code>) is a short pointer page for ops: &quot;here&#39;s where to find the canonical booking-status doc&quot;.</li>
+<li><strong>Acceptance gate:</strong> both docs written + pointer manual + committed in <code>silkskyair-docs</code>.</li>
+</ul>
+<hr>
+<h2>4. SoW 3 — Meta Pixel CAPI Integration (6 features)</h2>
+<blockquote>
+<p>Branch <code>claude/meta-capi-w23</code> (cut in <code>silkskyair-www</code>; for workflows pull existing commits onto a feature branch). <strong>Fastest SoW to close — ship first.</strong></p>
+</blockquote>
+<h3>F3.1 — FB attribution capture (steps 1+2) [WWW]</h3>
+<ul>
+<li><strong>Audit state:</strong> ❌ Not started. Zero grep hits for <code>captureFbAttribution</code>, <code>fb-attribution</code>, <code>fbclid</code>, <code>ssa:analytics:fb</code> in <code>silkskyair-www/src</code>.</li>
+<li><strong>Code changes:</strong> Per plan §&quot;Step 1 + 2&quot;:<ol>
+<li>NEW <code>silkskyair-www/src/lib/analytics/fb-attribution.ts</code> — exports <code>captureFbAttribution()</code> + <code>readFbAttribution()</code>; reads <code>fbclid</code> from URLSearchParams, <code>_fbp</code>/<code>_fbc</code> from cookies, <code>landing_url</code> from <code>window.location.href</code>; synthesizes <code>fbc</code> as <code>fb.1.&lt;unix_ms&gt;.&lt;fbclid&gt;</code> if cookie absent but fbclid present; writes once per session to <code>localStorage[&#39;ssa:analytics:fb&#39;]</code>.</li>
+<li><code>silkskyair-www/src/components/bookings/booking-floating-widget.ts</code> (around L556) — call <code>captureFbAttribution()</code> on first widget mount; call <code>readFbAttribution()</code> when booking flow activates and merge into <code>BookingStore.metadata.analytics</code>.</li>
+</ol>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-www/tests/e2e/meta-capi-attribution-capture-simple.spec.ts</code> — visit homepage with <code>?fbclid=test-w23-simple</code> → open booking widget → assert <code>localStorage[&#39;ssa:analytics:fb&#39;]</code> contains <code>fbclid: &#39;test-w23-simple&#39;</code> + <code>landing_url</code> matches; visit second page → assert localStorage entry unchanged (once-per-session).</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-www/tests/e2e/meta-capi-attribution-capture-full.spec.ts</code> — three scenarios: (a) <code>?fbclid</code> + no <code>_fbc</code> cookie → assert synthesized <code>fbc</code> format <code>fb.1.&lt;ts&gt;.&lt;fbclid&gt;</code>; (b) pre-existing <code>_fbp</code> cookie → assert it&#39;s captured verbatim; (c) no <code>?fbclid</code> + no cookies → assert <code>readFbAttribution()</code> returns null and localStorage remains empty.</li>
+<li><strong>User manual:</strong> Folded into <code>manual/27-www-meta-capi-attribution.md</code> (covers F3.1 + F3.2 — the www-side capture pipeline).</li>
+<li><strong>Acceptance gate:</strong> code + both e2e + (shared) manual section.</li>
+</ul>
+<h3>F3.2 — Forward analytics metadata (steps 3+4) [WWW]</h3>
+<ul>
+<li><strong>Audit state:</strong> ⚠️ Partial. <code>submit.ts</code> does spread generic <code>payload.metadata</code>; the FB-specific <code>analytics</code> shape is missing.</li>
+<li><strong>Code changes:</strong> Per plan §&quot;Step 3 + 4&quot;:<ol>
+<li><code>silkskyair-www/src/lib/data/Bookings.ts</code> — extend <code>BookingStore.metadata</code> with optional <code>analytics?: { fbclid?: string; fbp?: string; fbc?: string; landing_url?: string; captured_at?: string }</code>.</li>
+<li><code>silkskyair-www/src/components/bookings/api/bookings.ts</code> — same shape on <code>SubmitBookingPayload.metadata</code>.</li>
+<li><code>silkskyair-www/src/pages/api/bookings/submit.ts</code> — fold <code>payload.metadata.analytics</code> into <code>bookingMetadata.analytics</code> (existing accumulator already carries <code>partner_slug</code> / <code>attribution_source</code>).</li>
+</ol>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-www/tests/e2e/meta-capi-forward-simple.spec.ts</code> — visit <code>?fbclid=test-fwd-simple</code> → book → submit → assert <code>bookings.metadata.analytics.fbclid = &#39;test-fwd-simple&#39;</code> via API helper.</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-www/tests/e2e/meta-capi-forward-full.spec.ts</code> — submit a booking that also has <code>?partner=foo</code> + <code>?fbclid=test-fwd-full</code> → assert <code>bookings.metadata</code> contains BOTH <code>partner_slug: &#39;foo&#39;</code> AND <code>analytics: { fbclid: &#39;test-fwd-full&#39;, ... }</code> (no clobbering).</li>
+<li><strong>User manual:</strong> Folded into <code>manual/27-www-meta-capi-attribution.md</code>.</li>
+<li><strong>Acceptance gate:</strong> 3 file edits + both e2e + manual section.</li>
+</ul>
+<h3>F3.3 — BC branch IF + dispatch (step 5) [Workflows]</h3>
+<ul>
+<li><strong>Audit state:</strong> ⚠️ Partial. <code>call-meta-capi-purchase</code> dispatch wired with <code>waitForSubWorkflow: false</code>; <strong>gating IF node missing</strong> — dispatcher fires for every BC event today.</li>
+<li><strong>Code changes:</strong> <code>silkskyair-workflows/workflows/bookings/bookings-event.json</code>:<ol>
+<li>On the BC (BookingConfirmed) Switch output, insert a new IF node <code>if-has-analytics-metadata</code> between the Switch output and the existing <code>call-meta-capi-purchase</code> node.</li>
+<li>IF condition: <code>{{ Object.keys($(&#39;fetch-booking&#39;).first().json.metadata?.analytics ?? {}).length &gt; 0 }}</code> (or simpler: <code>metadata.analytics.fbclid OR metadata.analytics.fbp</code> exists).</li>
+<li>TRUE → <code>call-meta-capi-purchase</code> (existing). FALSE → dead end (no dispatch).</li>
+</ol>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-www/tests/e2e/meta-capi-dispatch-gate-simple.spec.ts</code> — book without <code>?fbclid</code> → assert BC event fires → assert n8n executions log shows <code>meta-capi-purchase</code> did NOT run (query n8n REST API).</li>
+<li><strong>Complex Happy Path E2E:</strong> <code>silkskyair-www/tests/e2e/meta-capi-dispatch-gate-full.spec.ts</code> — book WITH <code>?fbclid=test-dispatch</code> → BC event fires → assert <code>meta-capi-purchase</code> DID run AND the post-to-meta node returned 200; also re-fire the same BC event (idempotency test) and assert second <code>meta-capi-purchase</code> execution returns the Meta dedupe response within 48h.</li>
+<li><strong>User manual:</strong> Folded into <code>manual/28-workflows-meta-capi-dispatcher.md</code> (covers F3.3 + F3.4 + F3.6 — the workflow side).</li>
+<li><strong>Acceptance gate:</strong> IF node added + sync to local n8n + both e2e + manual section.</li>
+</ul>
+<h3>F3.4 — Simplified shared workflow (step 6) [Workflows] — <strong>DONE</strong></h3>
+<ul>
+<li><strong>Audit state:</strong> ✅ Done. <code>workflows/marketing/meta-capi-purchase.json</code> has 10 nodes matching plan; deployed 2026-05-26T08:12:23.871Z.</li>
+<li><strong>Verification steps (no code change):</strong><ol>
+<li>Open <code>meta-capi-purchase.json</code> in local n8n → confirm 10 nodes present + names match (<code>workflow-trigger</code>, <code>get-config</code>, <code>fetch-booking</code>, <code>fetch-payment</code>, <code>build-capi-payload</code>, <code>if-should-send</code>, <code>post-to-meta</code>, <code>respond-sent</code>, <code>respond-error</code>, <code>respond-skipped</code>).</li>
+<li>Confirm credential binding <code>AAC | SAA | Auth | Meta CAPI</code> (id <code>gBlJLpOaFbGNrhFu</code>).</li>
+<li>Manually execute the workflow with <code>{booking_id: &lt;recent confirmed booking with fbclid&gt;, test_event_code: &lt;Meta-generated&gt;}</code> → assert response shape <code>{ status: &#39;sent&#39;, meta_response: {...} }</code>; assert Meta Events Manager Test Events stream shows the Purchase event with Event Match Quality ≥ 5.</li>
+</ol>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-www/tests/e2e/meta-capi-workflow-direct-simple.spec.ts</code> — POST directly to n8n test webhook for <code>meta-capi-purchase</code> with a sample payload → assert 200 + <code>status: &#39;sent&#39;</code>.</li>
+<li><strong>Complex Happy Path E2E:</strong> same file — test the three terminal branches: (a) booking with full FB metadata → <code>respond-sent</code>; (b) booking without FB metadata → <code>respond-skipped</code>; (c) booking with FB metadata but Meta returns 400 → <code>respond-error</code>.</li>
+<li><strong>User manual:</strong> Folded into <code>manual/28-workflows-meta-capi-dispatcher.md</code>.</li>
+<li><strong>Acceptance gate:</strong> verification done + both e2e + manual section.</li>
+</ul>
+<h3>F3.5 — Credential + Test Events verify [Workflows] — <strong>DONE</strong></h3>
+<ul>
+<li><strong>Audit state:</strong> ✅ Done. Credential <code>AAC | SAA | Auth | Meta CAPI</code> (<code>gBlJLpOaFbGNrhFu</code>) configured; <code>N8N_CRED_META_CAPI</code> in <code>.env</code>.</li>
+<li><strong>Verification steps:</strong><ol>
+<li>List credentials in n8n local + staging + production: confirm credential exists with the same name + matching id in each environment.</li>
+<li>Confirm the Bearer token value is a valid Meta System User token (test via curl: <code>curl -H &quot;Authorization: Bearer &lt;token&gt;&quot; https://graph.facebook.com/v20.0/me</code>).</li>
+<li>Document rotation procedure in <code>silkskyair-docs/docs/meta-capi-ops.md</code> (NEW) — when token expires, where to regenerate it.</li>
+</ol>
+</li>
+<li><strong>No e2e</strong> (manual credential management).</li>
+<li><strong>User manual:</strong> Add an ops appendix to <code>manual/28-workflows-meta-capi-dispatcher.md</code> covering credential lifecycle.</li>
+<li><strong>Acceptance gate:</strong> credential verified across 3 environments + ops doc written.</li>
+</ul>
+<h3>F3.6 — Deploy staging + production [Workflows]</h3>
+<ul>
+<li><strong>Audit state:</strong> ⚠️ Partial. Local deployed (2026-05-26); staging + production deploy not confirmed.</li>
+<li><strong>Code changes:</strong><ol>
+<li><code>pnpm -C silkskyair-workflows sync:staging</code> — push current <code>meta-capi-purchase.json</code> + (after F3.3 lands) updated <code>bookings-event.json</code> to staging n8n.</li>
+<li>Deploy <code>silkskyair-www</code> staging via Vercel — pushes F3.1 + F3.2 code.</li>
+<li>Smoke test on staging: open <code>https://staging.www.silkskyair.com/?fbclid=staging-smoke</code> → book a tour with test card 4242 → confirm Meta Events Manager Test Events stream shows the Purchase event.</li>
+<li><code>pnpm -C silkskyair-workflows sync:production</code> + Vercel production deploy.</li>
+<li>Production smoke test: same flow on production with test card; verify in real Meta Events Manager (production stream).</li>
+</ol>
+</li>
+<li><strong>Simple Happy Path E2E:</strong> <code>silkskyair-www/tests/e2e/meta-capi-staging-smoke.spec.ts</code> — run against <code>STAGING_BASE_URL</code> env; book with <code>?fbclid=ci-staging-&lt;run-id&gt;</code> → assert Meta Events Manager API shows the event (poll up to 60s).</li>
+<li><strong>Complex Happy Path E2E:</strong> production smoke is manual (don&#39;t run e2e against production by default).</li>
+<li><strong>User manual:</strong> Folded into <code>manual/28-workflows-meta-capi-dispatcher.md</code>.</li>
+<li><strong>Acceptance gate:</strong> staging sync + staging smoke + production sync + production smoke + manual section.</li>
+</ul>
+<hr>
+<h2>5. Sequenced execution timeline</h2>
+<pre><code>Day 1 ─ MORNING ────────────────────────────────────────────────────────
+   - Cut branches in all 5 SoW1 repos + 5 SoW2 repos + 2 SoW3 repos
+   - Start SoW 3 F3.3 (1h): add if-has-analytics-metadata IF node, sync to local n8n
+   - Start SoW 3 F3.1 (3h): fb-attribution.ts + widget hook + e2e pair + manual
+
+Day 1 ─ AFTERNOON ──────────────────────────────────────────────────────
+   - Finish SoW 3 F3.2 (2h): BookingStore + payload + submit.ts + e2e pair + manual section
+   - SoW 3 F3.4 + F3.5 verification (1h): execute against Meta Test Events
+   - SoW 3 F3.6 staging deploy + smoke (1h)
+   - SoW 3 closes ─ 6 features done, 12 e2e specs green, 2 manual pages committed
+
+Day 2 ─────────────────────────────────────────────────────────────────
+   - SoW 2 F2.6 (LYNCHPIN) starts: 6 migrations + omise.json edits
+   - SoW 1 Batch A1 starts (in parallel, different operator if possible):
+       single migration covering F1.4 + F1.7 + F1.8 + F1.9 + F1.11 + R2-T1 + R20-T1 + R22-T1
+   - SoW 2 Phase 1 trim work in parallel: F2.1 (check-in disable) + F2.2 (magic-link) + F2.3 (weight)
+       each = code + simple e2e + complex e2e + manual page (1-2h per feature)
+
+Day 3 ─────────────────────────────────────────────────────────────────
+   - SoW 2 F2.6 finishes; e2e pair green
+   - SoW 2 F2.8 (amendment payment screen) starts
+   - SoW 2 F2.11 (docs/booking-status.md) — write in parallel
+   - SoW 1 A1 migration applied to staging
+   - SoW 1 P2 fan-out begins:
+       F1.5 (dashboard cleanup) — 2h with e2e + manual
+       F1.10 (passenger nationality) — 4h with investigation + endpoint + e2e + manual
+       F1.12 (commission math) — 4h with vitest + server mirror + e2e + manual
+       F1.14 (TOTAL AMOUNT parity) — 1h with e2e + manual
+
+Day 4 ─────────────────────────────────────────────────────────────────
+   - SoW 2 F2.8 finishes; F2.7 starts (depends on W06+W08)
+   - SoW 2 F2.4 (Paid/Due/Total) — independent of W06 chain, can interleave
+   - SoW 1 P2 continues:
+       F1.3 (role labels) — 3h with helper + 4 swaps + e2e + manual
+       F1.13 (Pay-with-Card) — 2h + Vercel env provisioning (blocked on X0-T4)
+       F1.16 (R21 verification popup) — 6h with 6 code changes + workflow + e2e + manual + verification of /verify page
+
+Day 5 ─────────────────────────────────────────────────────────────────
+   - SoW 2 F2.9 (manager per-payment rows)
+   - SoW 2 F2.5 (amendment-received emails)
+   - SoW 1 R20 (cancellation notifications) — full fan-out: migration + 3 manager files + 2 workflows + partner trigger + 2 e2e + manual + screenshots
+   - SoW 1 F1.17 (archive clients) — full fan-out: migration + RPC + route + UI + e2e + manual
+
+Day 6-7 ───────────────────────────────────────────────────────────────
+   - Production deploys
+   - Manual screenshot capture pass across all new pages (run pages in staging at 1440×900, capture per step)
+   - X0-blocked tasks land if access arrived: F1.2 R2-T3 (invitation From), F1.16 R21-T6 (verification email workflow), F1.13 R17/R18 (Vercel env)
+   - W23 QA Notion task created (mirror of W22&#39;s &quot;Test pending features — Staging → Production (W22)&quot;)
+   - Final SoW 2 verification: F2.10 (back-office payment notification) — verify already-existing pipeline + 2 e2e + manual
+</code></pre>
+<p><strong>Critical-path note:</strong> SoW 2 W06 is the longest single block; start it Day 2 morning to give it the full chain through Day 4. Everything else fans out cleanly around it.</p>
+<hr>
+<h2>6. Manual table-of-contents update</h2>
+<p>Append to <code>silkskyair-docs/manuals/_parent.md</code>:</p>
+<pre><code class="language-markdown">## Features in this W23 release
+
+| # | App | Feature | SSA/Code |
+|---|---|---|---|
+| 7  | BackOffice          | Partners — Create form persists after save                       | R1 |
+| 8  | BackOffice/Workflows| Invitation email — sender identity                               | R2 |
+| 9  | Partner Portal      | Team — role labels in plain English                              | R3 |
+| 10 | Partner Portal      | Members → Clients terminology (everywhere)                       | R4 |
+| 11 | Partner Portal      | Dashboard — Commission Rate + Performance Overview hidden        | R5 |
+| 12 | Partner Portal      | Team Management — Invite Team rename + i18n fixes               | R7+R8 |
+| 13 | Partner Portal      | Create Booking — stepper labels + Submit Booking CTA            | R9+R10 |
+| 14 | Partner Portal      | Bookings — Edit Passenger (nationality + weight)                | R12 |
+| 15 | Partner Portal      | Bookings — Full / Net Payment + WHT + TOTAL AMOUNT + Pay-with-Card | R13-R19 |
+| 16 | BackOffice          | Notification Bell — cancellation alerts                          | R20 |
+| 17 | BackOffice          | Bookings — verified-email icon + OTP popup                       | R21 |
+| 18 | Partner Portal      | Clients — Archive action                                         | R22 |
+| 19 | Member Portal       | Check-in removed for Phase 1                                     | MP1-W01 |
+| 20 | Member Portal       | Sign-in — magic-link only                                        | MP1-W02 |
+| 21 | Member Portal       | Edit Passenger — weight as exact number                          | MP1-W03 |
+| 22 | Member Portal       | Add Passengers — Paid/Due/Total pricing                          | MP1-W04 |
+| 23 | Member Portal       | Amendments — end-to-end (request → approval → pay)               | MP1-W05/06/07/08 |
+| 24 | BackOffice          | Bookings — Per-payment rows                                      | MP1-W09 |
+| 25 | BackOffice          | Payment-success staff notifications                              | MP1-W10 |
+| 26 | (Ops doc)           | Booking Status — canonical reference                             | MP1-W11 |
+| 27 | WebSite             | Meta CAPI — FB attribution capture + forward                     | Meta CAPI |
+| 28 | (Ops doc/Workflows) | Meta CAPI — dispatcher + workflow + credentials                  | Meta CAPI |
+</code></pre>
+<hr>
+<h2>7. Risks + open questions (carried from v1, refined)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Risk / Q</th>
+<th>Affects</th>
+<th>Owner</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>X0 access grants not in by Day 4</td>
+<td>F1.2 (R2-T3), F1.13 (Vercel), F1.16 (R21-T6 workflow), F1.3 (R3-T5 Account)</td>
+<td>client</td>
+<td>Mitigation: 80%+ of W23 is unblocked; access-gated tasks slip to W24 if needed without breaking critical path</td>
+</tr>
+<tr>
+<td>2</td>
+<td>MP1-W06 <code>BookingPaidInFull</code> target semantics</td>
+<td>F2.6, F2.7</td>
+<td>Peter</td>
+<td>&quot;restore prior&quot; vs literal &quot;Completed&quot;? Affects <code>booking_status_from_event_type()</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>MP1-W03 weight upper bound</td>
+<td>F2.3</td>
+<td>Advance Aviation / Peter</td>
+<td>Suggest 250 kg sanity cap</td>
+</tr>
+<tr>
+<td>4</td>
+<td>R6 Available Tours spec</td>
+<td>F1.6 (deferred)</td>
+<td>client</td>
+<td>Don&#39;t start until spec lands</td>
+</tr>
+<tr>
+<td>5</td>
+<td>R4-T6 Manager-side rename missing from Notion</td>
+<td>F1.4</td>
+<td>self</td>
+<td><strong>Create Notion task before A1 ships</strong></td>
+</tr>
+<tr>
+<td>6</td>
+<td>11 <code>[SUPERSEDED]</code> Meta CAPI tasks pollute W23 view</td>
+<td>SoW 3</td>
+<td>self</td>
+<td>Archive or strip W23 tag</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Meta CAPI System User token rotation cadence</td>
+<td>F3.5</td>
+<td>ops</td>
+<td>Plan dropped rotation-doc task; write <code>docs/meta-capi-ops.md</code> (under F3.5 verification)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Cross-SoW branch hygiene</td>
+<td>all</td>
+<td>operators</td>
+<td>Don&#39;t commingle commits across SoWs in one repo</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Screenshot capture is a manual end-of-week pass</td>
+<td>all manual pages</td>
+<td>operator</td>
+<td>Block ~half a day on Day 7 for 1440×900 staging captures per page</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>silkskyair-member/e2e/</code> is sparse (1 spec)</td>
+<td>SoW 2 e2e</td>
+<td>self</td>
+<td>Extend <code>e2e/global-setup.ts</code> with magic-link, processing-state, amendment-payment helpers BEFORE writing the new specs (per memory rule <code>reuse_existing_test_infra</code>)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>8. Notion task index (W23)</h2>
+<p>See <a href="w23-already-done-audit.html"><code>w23-already-done-audit.md</code></a> §6 for the recommended Notion status changes:</p>
+<ul>
+<li><strong>Mark Done:</strong> Meta CAPI step 6 (<code>369bd1aa-e1c9-8153-a196-ddee10cb5a7e</code>), Meta CAPI credential (<code>369bd1aa-e1c9-8128-a754-fb224187e590</code>), R21-T7 (<code>368bd1aa-e1c9-81a7-9156-cdbc4b3b6fdc</code>).</li>
+<li><strong>Mark In Progress:</strong> Meta CAPI step 5 (<code>369bd1aa-e1c9-8134-90f1-c354978e4d66</code>), MP1-W10 (<code>368bd1aa-e1c9-813b-92a7-dfad9c6eea4c</code>), MP1-W11 (<code>368bd1aa-e1c9-81bb-b532-d758b4658a73</code>).</li>
+<li><strong>Create new:</strong> R4-T6 (Manager-side Members→Clients rename).</li>
+<li><strong>Archive:</strong> 11 <code>[SUPERSEDED]</code> Meta CAPI tasks (see Notion search &quot;Meta CAPI&quot; results).</li>
+</ul>
+<p>Full task ID index in <a href="w23-work-plan.html"><code>w23-work-plan.md</code> v1 §6</a> — superseded by this v2 but the ID list remains accurate.</p>
+<hr>
+<p><em>End of W23 work plan v2.</em></p>
+
+</article>
+</body>
+</html>

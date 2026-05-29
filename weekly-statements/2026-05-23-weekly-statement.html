@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weekly Statement — 2026-05-23</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Weekly Statement — 2026-05-23</h1>
+<p><strong>Week covered:</strong> 2026-05-15 → 2026-05-22
+<strong>Next week:</strong> 2026-05-25 → 2026-05-29
+<strong>From:</strong> Peter</p>
+<hr>
+<p>Hey team — quick recap on what landed this past week and what I&#39;m lining up for next week. I&#39;ve tried to keep this short and pointed at outcomes you can actually track, rather than a wall of commit messages. The full technical breakdown is in <a href="../weekly-reports/2026-05-22-weekly-report.html">2026-05-22-weekly-report.md</a> if you want to dig in.</p>
+<hr>
+<h2>What shipped this week (the value)</h2>
+<p>Three things actually moved the business forward this week, plus a bunch of plumbing that makes the next few weeks much faster.</p>
+<h3>1. SkyStories editorial pipeline is now production-ready end-to-end</h3>
+<p>This was the big one. Editorial team can now create a story in the Manager, attach keywords + tours + media in any of EN/TH/RU, hit Publish, and the story shows up on the public site with the right relationships — all three locales, all the media, both keywords and tours linked correctly. That whole chain (Manager → Supabase → n8n → Strapi → public site) used to have at least four places where it could silently drop data. Those are all closed now, with end-to-end tests proving it.</p>
+<p><strong>Why this matters:</strong> the editorial team can start producing real content without me babysitting the pipeline. The test coverage means we&#39;ll catch regressions before they hit staging instead of after a content person tells us a story is broken.</p>
+<h3>2. Customers now get a payment confirmation email (SSA-621)</h3>
+<p>Before this week, customers who paid for a booking got nothing — only the internal manager email fired. They&#39;d then email support asking &quot;did my payment go through?&quot;. That&#39;s done — they now get a confirmation in EN/TH/RU the moment payment lands. Plus I fixed a separate bug where bookings without customer notes were never sending the manager email either.</p>
+<p><strong>Why this matters:</strong> less inbound &quot;did it work?&quot; support traffic, less anxiety from customers in the gap between payment and the manager actually reaching out.</p>
+<h3>3. Translation completeness for booking notes (SSA-619)</h3>
+<p>Added TH + RU labels for customer-submitted note types. Small but visible — TH and RU users no longer see English labels mixed into otherwise translated screens.</p>
+<h3>Behind-the-scenes (the plumbing)</h3>
+<p>These don&#39;t show up on screens but they save a lot of time:</p>
+<ul>
+<li><strong>Workflow deploys are now safer.</strong> Added a content-level audit that catches drift between source files and the actual n8n instance (the old version-ID check missed three real drifts this week — Omise had an AND→OR bug, Booking Manager Email was missing the SSA-619 payload, and the Reporting Scheduler had a broken cron interval). Also added <code>--dry-run</code> so I can preview every workflow deploy before it runs.</li>
+<li><strong>Killed the <code>sync_queue</code></strong> — the SkyStories pipeline used to retry failures silently via a queue + cron. It&#39;s now direct execution with a fail-loud admin email when something breaks. Less infrastructure, faster signal when things go wrong.</li>
+<li><strong>Reporting Scheduler disabled</strong> — it was burning n8n quota on every 5-min fire (hitting plan limits) and starving other workflows. Killed the trigger; we&#39;ll re-enable when there&#39;s headroom.</li>
+<li><strong>Bookings read-path performance</strong> — three targeted indexes on the bookings + client_interactions tables. The expensive bits of the Manager (member detail, ongoing flights) are noticeably snappier.</li>
+<li><strong>Set up <code>silkskyair-docs</code></strong> (this repo) as the single home for all cross-cutting planning and reviews. The three planning docs below all live here now.</li>
+</ul>
+<h3>By the numbers</h3>
+<ul>
+<li>65 commits across 11 repos</li>
+<li>4 new shared repos initialized (<code>common</code>, <code>config</code>, <code>utils</code>, <code>docs</code>)</li>
+<li>0 production incidents</li>
+</ul>
+<hr>
+<h2>What&#39;s planned next week (the value, by initiative)</h2>
+<p>I&#39;ve got three big workstreams lined up. Listed in priority order:</p>
+<h3>Initiative 1 — Partnership Portal: client review remediation (Round 3)</h3>
+<p><strong>Goal:</strong> close out the 22-item review from Micheline / Panpaporn / Nuchada so we can ship the Partner Portal to launch.</p>
+<p><strong>What management can track this week:</strong></p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>What</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>R1</td>
+<td>Back Office partner-create form clearing on save</td>
+<td>Ready to land</td>
+</tr>
+<tr>
+<td>R4</td>
+<td>&quot;Members&quot; → &quot;Clients&quot; everywhere (Partner Portal + Back Office)</td>
+<td>Ready to land — DB migration + 3 file edits</td>
+</tr>
+<tr>
+<td>R5</td>
+<td>Hide Commission Rate + Performance Overview cards on Partner dashboard</td>
+<td>Ready to land</td>
+</tr>
+<tr>
+<td>R7</td>
+<td>&quot;+ Invite Member&quot; → &quot;+ Invite Team&quot;</td>
+<td>Ready to land</td>
+</tr>
+<tr>
+<td>R8, R9, R10, R11</td>
+<td>Untranslated i18n keys + stepper labels + &quot;Submit Booking&quot; CTA</td>
+<td>Ready to land</td>
+</tr>
+<tr>
+<td>R12</td>
+<td>Passenger nationality / weight save (FK violation bug)</td>
+<td>Ready — replacing free-text input with a country dropdown</td>
+</tr>
+<tr>
+<td>R13–R16</td>
+<td>Direct → Full / Indirect → Net + WHT removal + commission math fix</td>
+<td>Ready to land — both UI + server math</td>
+</tr>
+<tr>
+<td>R19</td>
+<td>TOTAL AMOUNT box parity on indirect payment dialog</td>
+<td>Ready to land</td>
+</tr>
+<tr>
+<td>R22</td>
+<td>Archive clients feature</td>
+<td>Ready — new DB column + UI action</td>
+</tr>
+<tr>
+<td>R20 in-app</td>
+<td>Back-office notification bell on partner-initiated cancellation</td>
+<td>Ready — bell + DB trigger</td>
+</tr>
+</tbody></table>
+<p><strong>What&#39;s blocked and what I need:</strong></p>
+<ul>
+<li><strong>R3 chip</strong> (<code>organization_manager</code> → <code>Manager</code> on Create Account page) — needs access to the <code>silkskyair-account</code> repo.</li>
+<li><strong>R2 invitation sender identity</strong> + <strong>R20 email half</strong> — needs access to the n8n workflows repo (or n8n cloud workspace).</li>
+<li><strong>R17 / R18 card payment</strong> — needs <code>OMISE_PUBLIC_KEY</code> / <code>OMISE_SECRET_KEY</code> provisioned in the partner-portal Vercel project (staging + prod). The code fix is small (~5 lines); the keys are the actual blocker.</li>
+<li><strong>R21 verification popup</strong> — the server-side OTP infrastructure is fully built and live. I can build the partner-side popup this week; just need a quick contract check against the existing <code>silkskyair-member/verify</code> page.</li>
+<li><strong>R6 Available Tours widget</strong> — blocked on a spec (what tours appear? card content? empty state?). Needs a 15-min decision from product.</li>
+</ul>
+<p><strong>Realistic deliverable next Friday:</strong> 15 of the 22 items shipped to staging (everything not blocked above). The blocked items move the same day access is granted.</p>
+<h3>Initiative 2 — Member Portal: 1st Review remediation (Phase 1)</h3>
+<p><strong>Goal:</strong> start the 33-item Member Portal review (MP1) that came in on 2026-05-19. Phase 1 is the low-risk trim; Phase 2 is the amendment-payment lifecycle which is much bigger.</p>
+<p><strong>Phase 1 (target next week — ~1-2 days):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Workstream</th>
+<th>What it does</th>
+<th>Why it matters</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>MP1-W01</strong></td>
+<td>Disable the entire check-in flow (commented out, not deleted)</td>
+<td>Per client direction, check-in is deferred to Phase 2. Removes 5 confusing UI elements customers were seeing</td>
+</tr>
+<tr>
+<td><strong>MP1-W02</strong></td>
+<td>Magic-link-only auth on the member portal</td>
+<td>No more password / &quot;Forgot password&quot; — single auth path</td>
+</tr>
+<tr>
+<td><strong>MP1-W03</strong></td>
+<td>Passenger weight: replace bucketed dropdown with numeric kg input</td>
+<td>Advance Aviation team needs the actual weight, not a range</td>
+</tr>
+<tr>
+<td><strong>MP1-W11</strong></td>
+<td>Booking Status reference doc in <code>silkskyair-docs</code></td>
+<td>Captures the state machine for ops/support reference</td>
+</tr>
+</tbody></table>
+<p><strong>Phase 2 (the bigger workstream — starts after Phase 1):</strong> amendment-payment lifecycle. This is the lynchpin (MP1-W06) — a booking that&#39;s been amended with a surcharge needs a new <code>processing</code> state, the customer needs to receive an email with a deep-linked pay screen, the Manager needs per-payment rows showing what&#39;s paid vs. unpaid. This is roughly 5-10 days of focused work and will likely span the following week. I&#39;ll flag the exact phase boundary in next week&#39;s report.</p>
+<p><strong>Realistic deliverable next Friday:</strong> MP1-W01, W02, W03, W11 shipped. Phase 2 (W06) started.</p>
+<h3>Initiative 3 — Meta CAPI / Pixel Purchase integration</h3>
+<p><strong>Goal:</strong> Meta finally gets a Purchase signal from us so the ad spend on the SilkSkyAir campaigns is actually optimizing against conversions instead of flying blind.</p>
+<p><strong>Why it matters for the business:</strong> right now, every Thai customer who initiates a booking on desktop and pays via PromptPay on mobile is invisible to Meta — desktop browser never sees the Purchase, so Pixel alone loses the conversion. The dual-track plan (browser Pixel + server-side CAPI sharing the same <code>event_id</code>) fixes that. Without this, lookalike audiences can&#39;t be built from real converters and attribution is broken.</p>
+<p><strong>What lands next week (target):</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Task</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Capture <code>fbclid</code>/<code>_fbp</code>/<code>_fbc</code> on the WWW landing (consent-gated)</td>
+<td>Reads from URL + cookies on first widget init</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Install Meta Pixel, fire <code>Purchase</code> on confirmation page</td>
+<td>Consent-gated via existing cookie banner</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Extend <code>api.bookings</code> view to surface the new fields</td>
+<td>DB foundation — small view migration</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Add <code>analytics.events_sent</code> table</td>
+<td>Idempotency + observability for retries</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Revise the existing <code>meta-capi-purchase.json</code> n8n workflow</td>
+<td>Per the new design (stored in <code>client_interactions</code>, retries, <code>events_sent</code> insert)</td>
+</tr>
+</tbody></table>
+<p><strong>What&#39;s blocked:</strong></p>
+<ul>
+<li><strong>Task 5</strong> — n8n credential <code>AAC | SAA | Auth | Meta CAPI</code> — needs the Meta access token from whoever owns the Meta Business Manager. Manual setup in the n8n UI.</li>
+</ul>
+<p><strong>Realistic deliverable next Friday:</strong> frontend capture + Pixel firing on www, DB foundations landed, workflow revised but not yet deployed (waiting on credential). Full end-to-end verification with Meta Events Manager Test Events likely lands week after.</p>
+<hr>
+<h2>Things I need from you (asks, in priority order)</h2>
+<table>
+<thead>
+<tr>
+<th>Ask</th>
+<th>Initiative</th>
+<th>Blocker for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Access to <code>silkskyair-account</code> repo</td>
+<td>Partner Portal</td>
+<td>R3 chip fix</td>
+</tr>
+<tr>
+<td>Access to the n8n workflows repo (or n8n cloud admin)</td>
+<td>Partner Portal + Meta CAPI</td>
+<td>R2, R20-email, Meta workflow deploy</td>
+</tr>
+<tr>
+<td>Omise keys provisioned in Partner Portal Vercel project (staging + prod)</td>
+<td>Partner Portal</td>
+<td>R17/R18 — card payment</td>
+</tr>
+<tr>
+<td>Spec for the Partner Portal &quot;Available Tours&quot; widget</td>
+<td>Partner Portal</td>
+<td>R6</td>
+</tr>
+<tr>
+<td>Meta access token for the CAPI credential</td>
+<td>Meta CAPI</td>
+<td>Task 5</td>
+</tr>
+<tr>
+<td>Confirm: should <code>BookingPaidInFull</code> return to <code>Confirmed</code> or <code>Completed</code>?</td>
+<td>Member Portal</td>
+<td>MP1-W06 state machine</td>
+</tr>
+</tbody></table>
+<p>Any of these you can unblock by Monday morning is real value — they&#39;re not waiting on me, they&#39;re waiting on access or a decision.</p>
+<hr>
+<h2>Status snapshot</h2>
+<p><strong>This week:</strong> ✅ on track. Three workstreams shipped end-to-end. Staging is fully aligned after mid-week sync work.</p>
+<p><strong>Next week confidence:</strong></p>
+<ul>
+<li>Partner Portal — <strong>high</strong> for unblocked items (15/22). Blocked items contingent on the access asks above.</li>
+<li>Member Portal Phase 1 — <strong>high</strong>. Low-risk, well-scoped.</li>
+<li>Meta CAPI — <strong>medium</strong>. Code chain is plannable; depends on the Meta credential landing in time for staging verification.</li>
+</ul>
+<p><strong>Risks I&#39;m watching:</strong></p>
+<ul>
+<li>Member Portal Phase 2 (amendment-payment lifecycle) is the largest unknown of the next 2-3 weeks. It touches the booking state machine, payment flow, manager UI, and customer emails. Worth a 30-min walkthrough with ops once Phase 1 lands.</li>
+<li>Meta CAPI verification depends on staging traffic — if we have a quiet period it may take an extra day to confirm events are landing in Meta Events Manager.</li>
+</ul>
+<p>That&#39;s it. Ping me if anything needs a deeper dive.</p>
+<p>— Peter</p>
+
+</article>
+</body>
+</html>

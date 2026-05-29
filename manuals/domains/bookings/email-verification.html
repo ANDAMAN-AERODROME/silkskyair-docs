@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Booking Email Verification (Back-office)</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Booking Email Verification (Back-office)</h1>
+<blockquote>
+<p><strong>App:</strong> BackOffice (Manager)
+<strong>Who uses it:</strong> Ops staff with the <code>module:bookings:access</code> privilege (booking managers and organization managers).
+<strong>What it does:</strong> Lets the back-office confirm that the lead passenger&#39;s email on a booking is genuinely theirs. A 6-digit code is emailed to the lead-pax address; staff enter it on the booking to flip its verification badge from amber (unverified) to green (verified). This is separate from the <em>member account</em> email badge — a booking can have a different lead-pax email than the member&#39;s portal-login email, and both are tracked independently.</p>
+</blockquote>
+<h2>Before you start</h2>
+<ul>
+<li><strong>Local URL:</strong> <code>http://localhost:3000/bookings</code> (staging / production: the same path on the relevant Manager host).</li>
+<li><strong>Account:</strong> Sign in with a Manager account that has the bookings module enabled (e.g. <code>peter@andaman.co.th</code> on local). Both <code>booking_manager</code> and <code>organization_manager</code> hold the required privilege.</li>
+<li><strong>Prerequisites:</strong> a booking with a lead-pax (contact) email. To verify successfully you need the 6-digit code that was emailed to that address — on local, read it from the n8n execution or the booking-verification email the workflow sends.</li>
+<li><strong>Two different badges:</strong> the <strong>member account</strong> badge tracks <code>member_accounts.email_verified_at</code> (portal-login email). The <strong>booking</strong> badge described here tracks <code>booking_verifications.verified_at</code> (this booking&#39;s lead-pax email). They sit next to each other and are independent.</li>
+</ul>
+<h2>Step-by-step</h2>
+<h3>Step 1 — Spot the unverified badge</h3>
+<p>On the Bookings list, each card shows the booking verification badge. An unverified booking shows an amber <strong>mail-warning</strong> badge.</p>
+<p><img src="../../../screenshots/bookings/email-verification/01-unverified-badge.png" alt="Step 1 — Unverified badge on a booking card"></p>
+<p><strong>What you should see:</strong> an amber badge next to the member-account badge on the booking card. In full (non-compact) mode it reads <strong>Verify Email</strong>; on cards it&#39;s the compact amber mail icon. Hovering shows &quot;Booking email not verified — click to enter the 6-digit code&quot;.</p>
+<h3>Step 2 — Open the verification drawer</h3>
+<p>Click the amber badge. From the <strong>list</strong>, this navigates to the booking detail with <code>?verify=open</code>, which auto-opens the drawer. On the <strong>detail page</strong>, the inline badge opens the drawer in place (no URL change).</p>
+<p><img src="../../../screenshots/bookings/email-verification/02-verification-drawer.png" alt="Step 2 — Verification drawer"></p>
+<p><strong>What you should see:</strong> a right-anchored drawer titled <strong>Verify <reference></strong>. A note reads &quot;A 6-digit code was emailed to <strong><lead-pax email></strong>. Ask the customer to read it back, then enter it below.&quot; Below are six single-character input cells, a <strong>Verify</strong> button (disabled until all six are filled), and a <strong>Send new code</strong> link.</p>
+<h3>Step 3 — Enter the 6-digit code</h3>
+<p>Type the code. The cells auto-advance as you type; Backspace in an empty cell jumps back; you can paste the whole code and it fans across the cells.</p>
+<p><img src="../../../screenshots/bookings/email-verification/03-otp-entered.png" alt="Step 3 — Code entered"></p>
+<p><strong>What you should see:</strong> all six cells filled and the <strong>Verify</strong> button now enabled. Pressing Enter also submits. If the code is wrong or expired, the cells clear, focus returns to the first cell, and an inline red error appears (&quot;Incorrect or expired code. Try again.&quot;).</p>
+<h3>Step 4 — Verified</h3>
+<p>Click <strong>Verify</strong>. On success the drawer closes, a success toast appears (&quot;Booking email verified&quot;), and the badge flips to green.</p>
+<p><img src="../../../screenshots/bookings/email-verification/04-verified-badge.png" alt="Step 4 — Verified badge"></p>
+<p><strong>What you should see:</strong> a green <strong>mail-check</strong> badge (in full mode it reads <strong>Email Verified</strong>). The green badge is <strong>not</strong> clickable — verification is one-way, so there&#39;s no reason to reopen the drawer.</p>
+<h2>Tips &amp; common questions</h2>
+<ul>
+<li><strong>The customer didn&#39;t get the code / it expired.</strong> Open the drawer and click <strong>Send new code</strong>. A fresh code is emailed and an info toast confirms it was sent.</li>
+<li><strong>What&#39;s the difference between the two mail badges?</strong> The member-account badge is about the customer&#39;s portal-login email; this booking badge is about <em>this booking&#39;s</em> lead-pax email. A returning member can book with a different contact email, so both are surfaced separately.</li>
+<li><strong>The badge spins forever / disappears.</strong> Loading shows a small spinner; a genuine fetch error renders nothing (the badge hides itself rather than showing a broken state). Reload the page to retry. Statuses are cached for 60 seconds to avoid hammering the API when a list renders many cards.</li>
+<li><strong>Why doesn&#39;t the code autofill from my email like other OTPs?</strong> The input deliberately omits <code>autoComplete=&quot;one-time-code&quot;</code> — Chrome&#39;s OTP autofill was clearing adjacent cells on repeating digits (e.g. <code>000000</code>). The manager reads the code from the customer verbally, so browser autofill isn&#39;t needed here.</li>
+<li><strong>I pressed back after <code>?verify=open</code> and the drawer reopened.</strong> It shouldn&#39;t — the <code>verify=open</code> param is stripped from the URL once consumed, so a reload won&#39;t re-trigger the drawer.</li>
+</ul>
+<h2>Reference</h2>
+<ul>
+<li><strong>Code:</strong> <a href="https://github.com/">silkskyair-manager/app/(workspace)/bookings/_components/booking-verification-badge.tsx</a> (badge + 60s cache) · <a href="https://github.com/">verification-drawer.tsx</a> (6-cell OTP entry) · mounted in <code>booking-card.tsx</code> (list) and <code>booking-detail-view.tsx</code> (inline + <code>?verify=open</code> / window-event open).</li>
+<li><strong>API:</strong> <code>silkskyair-manager/app/api/bookings/[bookingId]/verification/route.ts</code> — GET returns <code>{ verified_at, expires_at }</code>; POST <code>{ otp }</code> proxies the api <code>verify</code> edge function (<code>action=&#39;verify_otp&#39;</code>); POST <code>{ action: &#39;send_otp&#39; }</code> fires the booking-verification-email workflow. All methods gated to <code>module:bookings:access</code>.</li>
+<li><strong>Pairs with:</strong> silkskyair-api commit <code>3b0a3e8</code> (OTP email template) · silkskyair-workflows commit <code>81e51d4</code> (booking-verification-email workflow).</li>
+<li><strong>E2E:</strong> <code>silkskyair-manager/e2e/manager-booking-verification.spec.ts</code>.</li>
+<li><strong>Shipped:</strong> W23 — manager commit <code>c5f75d5</code> (F1.16 / R21).</li>
+</ul>
+
+</article>
+</body>
+</html>

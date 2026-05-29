@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>W23 — &quot;Already Done&quot; Audit</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>W23 — &quot;Already Done&quot; Audit</h1>
+<blockquote>
+<p><strong>Generated:</strong> 2026-05-27.
+<strong>Method:</strong> Four parallel <code>Explore</code> sub-agents audited git history + code state across all 7 W23 repos against the file/marker checklist in <a href="w23-work-plan.html"><code>w23-work-plan.md</code></a>. Each &quot;DONE&quot; claim was then verified directly via <code>grep</code> / <code>find</code> against the actual current file contents (one sub-agent&#39;s &quot;DONE&quot; calls turned out to be false positives where it confused &quot;file was touched&quot; with &quot;fix was applied&quot; — those have been corrected below).
+<strong>Bottom line:</strong> Out of ~85 W23 tasks across the three SoWs, <strong>5 are fully done, 2 are partial, and ~78 are not started</strong>. No branch named <code>claude/plan-client-review-YNHfY</code> (the SoW 1 shared branch) exists in any of the 5 repos that would carry it — meaning <strong>SoW 1 has not started on the planned branch in any repo</strong>.</p>
+</blockquote>
+<hr>
+<h2>1. SoW 1 — Partnership Portal Review (Round 3)</h2>
+<h3>Branch status</h3>
+<ul>
+<li><strong><code>claude/plan-client-review-YNHfY</code></strong> — <strong>NOT FOUND</strong> in any of: <code>silkskyair-api</code>, <code>silkskyair-manager</code>, <code>silkskyair-partner</code>, <code>silkskyair-workflows</code>, <code>silkskyair-account</code>. The plan&#39;s prescribed branch has not been cut anywhere.</li>
+</ul>
+<h3>Tasks audited</h3>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>X0-T1..T5</strong> (access)</td>
+<td>❓ Cannot verify from code</td>
+<td>All five repos <em>are</em> now reachable (we can <code>git log</code> them from this session), so partial unblocking has happened. Still: no W23 commits on any of them.</td>
+</tr>
+<tr>
+<td><strong>R1-T1</strong> (Manager: partner-create form fix)</td>
+<td>⚠️ <strong>Pre-existing pre-W23 work; not the W23 plan&#39;s fix</strong></td>
+<td><code>silkskyair-manager</code> commit <code>6f1231b3</code> (2026-04-11) does show <code>setDrawer({ mode: &quot;edit&quot;, partner })</code> pattern in <code>app/(workspace)/partners/_components/partners-manager.tsx</code>. <strong>But this commit predates the partnership plan (2026-05-12).</strong> It may have already fixed the bug — needs end-to-end verification in the back office before closing.</td>
+</tr>
+<tr>
+<td><strong>R2-T0/T1/T3</strong> (invitation From identity)</td>
+<td>❌ Not started</td>
+<td>No <code>from_name</code> column migration in <code>silkskyair-api</code>. <code>workflows/notifications/invitation-email.json</code> uses <code>{{ $json.zoho_mail_from_address }}</code> only — no template-driven <code>from_name</code>.</td>
+</tr>
+<tr>
+<td><strong>R3-T1</strong> (<code>formatRoleLabel</code> helper)</td>
+<td>❌ Not started</td>
+<td><code>silkskyair-partner/lib/auth/</code> contains only <code>partner-api-session.ts</code>, <code>partner-profile.ts</code>, <code>partner-session.ts</code>, <code>user-access.ts</code>, <code>user-profile.ts</code>. <strong>No <code>roles.ts</code>.</strong></td>
+</tr>
+<tr>
+<td><strong>R3-T2/T3</strong> (call-site swaps)</td>
+<td>❌ Not started</td>
+<td>Both files exist and were touched in 2026-03-12 &quot;Major Overhaul&quot; (<code>b6fe2eeb</code>), but that commit predates the plan. Since R3-T1 (the helper) doesn&#39;t exist, R3-T2/T3 cannot reference it.</td>
+</tr>
+<tr>
+<td><strong>R3-T5</strong> (Account chip)</td>
+<td>❌ Not started</td>
+<td><code>silkskyair-account</code> reachable; no <code>organization_manager</code> or <code>formatRoleLabel</code> references in the repo.</td>
+</tr>
+<tr>
+<td><strong>R4-T1..T3</strong> (Members→Clients i18n)</td>
+<td>❌ Not started</td>
+<td>No migration <code>20260513120000_review_rename_keys.sql</code> (or any 2026-05-13+ migration) in <code>silkskyair-api/supabase/migrations/</code>.</td>
+</tr>
+<tr>
+<td><strong>R4-T6</strong> (Manager-side rename — gap flagged in plan)</td>
+<td>❌ Not started</td>
+<td><code>silkskyair-manager/lib/modules/registry.ts</code> still shows <code>{ id: &quot;members&quot;, label: &quot;Members&quot; }</code>.</td>
+</tr>
+<tr>
+<td><strong>R5-T1</strong> (hide ReportingWidget)</td>
+<td>❌ Not started</td>
+<td><code>silkskyair-partner/app/home/page.tsx:7</code> still imports <code>ReportingWidget</code>; <code>:77</code> still mounts it; <code>:75</code> still <code>lg:grid-cols-3</code>. (Agent originally claimed DONE — was wrong; verified by direct grep.)</td>
+</tr>
+<tr>
+<td><strong>R6-T0/T2/T3/T4</strong> (Available Tours widget)</td>
+<td>❌ Not started</td>
+<td>No <code>/api/tours/active</code> route, no Available Tours component. Plan-side gated on R6-T1 spec sign-off.</td>
+</tr>
+<tr>
+<td><strong>R7-T1</strong> (i18n: Invite Team)</td>
+<td>❌ Not started</td>
+<td>No A1 migration.</td>
+</tr>
+<tr>
+<td><strong>R7-T2</strong> (Partner fallback string)</td>
+<td>❌ Not started</td>
+<td><code>silkskyair-partner/app/team/page.tsx:170</code> still reads <code>i18n(&quot;team.invite&quot;) || &quot;Invite Member&quot;</code>.</td>
+</tr>
+<tr>
+<td><strong>R8-T1/T2/T3</strong></td>
+<td>❌ Not started</td>
+<td>No A1 migration; i18n leak sweep not run.</td>
+</tr>
+<tr>
+<td><strong>R9-T1</strong> (<code>create.step4</code>)</td>
+<td>❌ Not started</td>
+<td>No A1 migration.</td>
+</tr>
+<tr>
+<td><strong>R10-T1</strong> (<code>create.confirm</code>)</td>
+<td>❌ Not started</td>
+<td>No A1 migration.</td>
+</tr>
+<tr>
+<td><strong>R11-T1</strong> (delete <code>finalPriceNote</code> block)</td>
+<td>❌ Not started</td>
+<td><code>silkskyair-partner/components/bookings/create/extras-step.tsx</code> still contains the <code>&lt;p&gt;</code> block referencing <code>create.finalPriceNote</code> at lines ~214-216.</td>
+</tr>
+<tr>
+<td><strong>R12-T0/T1/T2/T3</strong></td>
+<td>❌ Not started</td>
+<td><code>silkskyair-partner/app/api/countries/route.ts</code> does not exist; <code>passenger-card.tsx</code> nationality is still <code>&lt;input type=&quot;text&quot;&gt;</code>.</td>
+</tr>
+<tr>
+<td><strong>R13-T1</strong> (<code>payment.directPayment</code>)</td>
+<td>❌ Not started</td>
+<td>No A1 migration.</td>
+</tr>
+<tr>
+<td><strong>R14-T1</strong> (<code>payment.indirectPayment</code>)</td>
+<td>❌ Not started</td>
+<td>No A1 migration.</td>
+</tr>
+<tr>
+<td><strong>R15-T1</strong> (hide WHT row for indirect)</td>
+<td>❌ Not started</td>
+<td><code>silkskyair-partner/components/bookings/booking-payment-section.tsx:131-133</code> renders WHT <code>&lt;BreakdownRow testId=&quot;withholding-tax&quot;&gt;</code> <strong>unconditionally</strong> — no <code>paymentCollectedBy === &quot;direct&quot; &amp;&amp;</code> gate. (Agent originally claimed DONE — verified false by direct grep.)</td>
+</tr>
+<tr>
+<td><strong>R16-T1</strong> (<code>commission.ts:142</code> fix)</td>
+<td>❌ Not started</td>
+<td>Formula at <code>silkskyair-partner/lib/bookings/commission.ts:142</code> still reads <code>netToOperator = round2(totalInclVat - commission - vatOnCommission + withholdingTax)</code>. Plan wants <code>+ withholdingTax</code> removed for the indirect branch. (Agent originally claimed DONE — verified false.)</td>
+</tr>
+<tr>
+<td><strong>R16-T2</strong> (Vitest both arms)</td>
+<td>❌ Not started</td>
+<td>Test exists from 2026-02-15 but encodes the broken behaviour.</td>
+</tr>
+<tr>
+<td><strong>R16-T3</strong> (server settlement)</td>
+<td>❌ Not started</td>
+<td>Same reasoning as R16-T1; route at <code>app/api/bookings/[id]/payments/intent/route.ts</code> predates the plan.</td>
+</tr>
+<tr>
+<td><strong>R16-T4</strong> (DB CHECK constraint)</td>
+<td>❌ Not started</td>
+<td>No migration.</td>
+</tr>
+<tr>
+<td><strong>R17-T1</strong> (Omise SDK loader timeout + inline error)</td>
+<td>⚠️ Partial</td>
+<td><code>payment-checkout.tsx</code> has Omise <code>&lt;Script&gt;</code> with <code>onLoad</code>/<code>onError</code>. Plan asks to <strong>add</strong> a 5s timeout + visible inline error — that addition not present.</td>
+</tr>
+<tr>
+<td><strong>R17-T2</strong> (.env.example)</td>
+<td>❌ Not started</td>
+<td><code>silkskyair-partner/.env.example</code> exists; <code>grep -i omise</code> returns nothing.</td>
+</tr>
+<tr>
+<td><strong>R18-T1</strong> (verify card payment)</td>
+<td>❌ Not done</td>
+<td>Blocked behind X0-T4 (Vercel env) regardless.</td>
+</tr>
+<tr>
+<td><strong>R19-T1</strong> (TOTAL AMOUNT on indirect)</td>
+<td>❌ Not started</td>
+<td><code>payment-checkout.tsx:345</code> still wraps TOTAL AMOUNT with <code>{paymentCollectedBy === &quot;direct&quot; &amp;&amp; (...)}</code>. Plan wants the wrapper <strong>removed</strong>. (Agent originally claimed DONE — verified false.)</td>
+</tr>
+<tr>
+<td><strong>R19-T2</strong> (PromptPay amount visible)</td>
+<td>❌ Not started</td>
+<td><code>payment-checkout.tsx:460-462</code> still wraps <code>formatAmount(amount)</code> with <code>{paymentCollectedBy === &quot;direct&quot; &amp;&amp; (...)}</code>. (Agent originally claimed DONE — verified false.)</td>
+</tr>
+<tr>
+<td><strong>R20-T0</strong> (investigation)</td>
+<td>❌ Not started</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>R20-T1</strong> (notifications-on-cancellation migration)</td>
+<td>❌ Not started</td>
+<td>No migration in <code>silkskyair-api</code>.</td>
+</tr>
+<tr>
+<td><strong>R20-T2/T3/T4</strong> (Manager NotificationBell + API + mount)</td>
+<td>❌ Not started</td>
+<td><code>silkskyair-manager/components/home/notification-bell.tsx</code> does not exist; <code>app/api/notifications/route.ts</code> does not exist.</td>
+</tr>
+<tr>
+<td><strong>R20-T5/T6</strong> (Workflows cancellation emails)</td>
+<td>❌ Not started</td>
+<td><code>workflows/notifications/cancellation-manager-email.json</code> and <code>cancellation-customer-email.json</code> <strong>MISSING</strong>.</td>
+</tr>
+<tr>
+<td><strong>R20-T7</strong> (Partner cancel route triggers workflows)</td>
+<td>❌ Not started</td>
+<td>Directory <code>silkskyair-partner/app/api/bookings/[id]/cancel/</code> exists; <strong>zero references</strong> to <code>cancellation-manager-email</code> or <code>cancellation-customer-email</code> in any cancel-related file. (Agent originally claimed DONE based on a &quot;file touched&quot; 2026-05-07 commit — verified false; that commit was E2E test stabilization.)</td>
+</tr>
+<tr>
+<td><strong>R21-T1..T4, T6..T8</strong></td>
+<td>❌ Not started</td>
+<td>None of the verification-related Manager files exist. <code>R21-T6 workflows/notifications/booking-verification-email.json</code> MISSING.</td>
+</tr>
+<tr>
+<td><strong>R21-T7</strong> (Member <code>/verify</code> page)</td>
+<td>✅ <strong>DONE (pre-W23)</strong></td>
+<td><code>silkskyair-member/app/(public)/verify/page.tsx</code> exists (638 bytes, ships HMAC token handling). Commit <code>fd6c816</code> (2026-02-12). Pre-dates plan but satisfies the cross-repo contract reviewer R21-T5 was supposed to validate.</td>
+</tr>
+<tr>
+<td><strong>R22-T1</strong> (archived_at migration)</td>
+<td>❌ Not started</td>
+<td>No migration.</td>
+</tr>
+<tr>
+<td><strong>R22-T2/T3/T4</strong> (Partner archive UI + route + toggle)</td>
+<td>❌ Not started</td>
+<td><code>grep -rn &quot;archive&quot; silkskyair-partner/{components/members,app/members}</code> returns <strong>zero hits</strong>. <code>app/api/members/[id]/archive/route.ts</code> does not exist. (Agent originally claimed DONE — verified false.)</td>
+</tr>
+</tbody></table>
+<h3>SoW 1 summary</h3>
+<ul>
+<li><strong>Done:</strong> R21-T7 (pre-W23 by accident). Possibly R1-T1 (pre-W23, needs UI verification).</li>
+<li><strong>Partial:</strong> R17-T1 (skeleton exists, timeout addition missing).</li>
+<li><strong>Not started:</strong> Everything else (~55 tasks).</li>
+<li><strong>Critical observation:</strong> No <code>claude/plan-client-review-YNHfY</code> branch exists anywhere — the SoW has not begun on the planned branch.</li>
+</ul>
+<hr>
+<h2>2. SoW 2 — Member Portal 1st Review</h2>
+<h3>Branch status</h3>
+<ul>
+<li>No branches matching <code>mp1*</code>, <code>review*</code>, or <code>claude/*</code> in <code>silkskyair-member</code>, <code>silkskyair-manager</code>, <code>silkskyair-api</code>, <code>silkskyair-workflows</code>, or <code>silkskyair-docs</code>.</li>
+</ul>
+<h3>Tasks audited</h3>
+<table>
+<thead>
+<tr>
+<th>Workstream</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>MP1-W01</strong> (Check-in disable)</td>
+<td>❌ Not started</td>
+<td><code>grep -rln &quot;CHECKIN-DISABLED-2026-05&quot; silkskyair-member</code> returns <strong>0 hits</strong> across the 15 expected files.</td>
+</tr>
+<tr>
+<td><strong>MP1-W02</strong> (Magic-link only auth)</td>
+<td>❌ Not started</td>
+<td><code>silkskyair-member/lib/auth/url-context.ts</code> does not exist. Sign-in form has no <code>magicLinkOnly</code> prop. (Some prior magic-link infra from commit <code>0efd41e</code> 2026-03-25 is unrelated.)</td>
+</tr>
+<tr>
+<td><strong>MP1-W03</strong> (Positive-number weight)</td>
+<td>❌ Not started</td>
+<td><code>lib/modules/bookings/passenger-validation.ts</code> not recently modified.</td>
+</tr>
+<tr>
+<td><strong>MP1-W04</strong> (Add-passenger Paid/Due/Total)</td>
+<td>⚠️ Partial pre-W23 only</td>
+<td><code>add-passenger-pricing/route.ts</code> exists and returns <code>seatPrice</code>, <code>additionalCostPerPax</code>, <code>currentTotal</code> — but <strong>not</strong> <code>paidAmount</code> / <code>dueAmount</code>. <code>lib/modules/bookings/balance.ts</code> does not exist. <code>add-passenger-modal.tsx</code> shows pricing structure but no Paid + Due rows.</td>
+</tr>
+<tr>
+<td><strong>MP1-W05</strong> (Amendment-received emails)</td>
+<td>❌ Not started</td>
+<td>Templates <code>booking-change-request-received-member-date-time</code> / <code>booking-change-request-received-member-add-passenger</code> not referenced in <code>workflows/bookings/bookings-event.json</code>; no API migration.</td>
+</tr>
+<tr>
+<td><strong>MP1-W06</strong> (Booking status state machine)</td>
+<td>❌ Not started</td>
+<td>No <code>processing</code> status migration, no <code>is_state_changing</code> flag migration, no event-type migrations, no amendment-approve RPC change. <code>workflows/payments/omise.json</code> has the existing <code>supabase-rpc-success</code> node but no <code>PaymentSuccessful</code> event emission afterward, no balance-check RPC call, no <code>BookingPaidInFull</code> derivation. <strong>This is the SoW 2 lynchpin and zero of it is in place.</strong></td>
+</tr>
+<tr>
+<td><strong>MP1-W07</strong> (Payment Successful bug + amendment CTA)</td>
+<td>❌ Not started</td>
+<td><code>booking-detail-content.tsx</code> has no <code>processing</code> entry in statusConfig. <code>normalizers.ts:205</code> <code>isPaidInFull</code> unchanged. Depends on W06.</td>
+</tr>
+<tr>
+<td><strong>MP1-W08</strong> (Amendment payment screen + email)</td>
+<td>❌ Not started</td>
+<td><code>app/(workspace)/bookings/[bookingId]/amendments/[paymentRequestId]/pay/page.tsx</code> does not exist. No FK migration. No <code>amendment_payment_url</code> field in any workflow. Note: commit <code>0eae613</code> &quot;Removes amendment and cancellation features&quot; actually went the opposite direction at some point.</td>
+</tr>
+<tr>
+<td><strong>MP1-W09</strong> (Manager per-payment rows)</td>
+<td>❌ Not started</td>
+<td><code>silkskyair-manager/app/api/bookings/[bookingId]/payments/route.ts</code> does not exist. <code>booking-payment-section.tsx</code> last touched 2026-01-29 (pre-W23).</td>
+</tr>
+<tr>
+<td><strong>MP1-W10</strong> (Back-office payment notification)</td>
+<td>⚠️ Partial pre-existing</td>
+<td><code>workflows/notifications/booking-manager-email.json</code> <strong>exists</strong> (414 lines, 7 nodes). <code>bookings-event.json</code> routes <code>BookingPaidInFull</code> / <code>BookingConfirmed</code> to it (per workflows audit). <strong>The plumbing exists</strong> — but the plan still calls for a verification pass to confirm template suitability + <code>booking_manager</code> role membership in production.</td>
+</tr>
+<tr>
+<td><strong>MP1-W11</strong> (silkskyair-docs + Booking Status doc)</td>
+<td>⚠️ Partial</td>
+<td><code>silkskyair-docs</code> repo exists (this very plan lives in it). The four plan markdowns are present (<code>partnership-portal-client-review.md</code>, <code>member-portal-1st-review-2026-05-19.md</code>, <code>meta-capi-purchase-integration.md</code>, plus <code>production-release-2026-05-26.md</code>). <strong><code>docs/booking-status.md</code> does NOT exist; <code>docs/passenger-data.md</code> does NOT exist.</strong> The <code>docs/</code> directory itself does not exist.</td>
+</tr>
+</tbody></table>
+<h3>SoW 2 summary</h3>
+<ul>
+<li><strong>Done:</strong> None.</li>
+<li><strong>Partial:</strong> MP1-W10 (infra exists, verification pending). MP1-W11 (repo exists, key docs missing).</li>
+<li><strong>Not started:</strong> W01, W02, W03, W04, W05, W06, W07, W08, W09 (9 of 11 workstreams).</li>
+<li><strong>Critical observation:</strong> The lynchpin W06 has zero migrations or workflow edits in place. Phase 2 of the plan cannot proceed until W06 lands.</li>
+</ul>
+<hr>
+<h2>3. SoW 3 — Meta Pixel CAPI Purchase Integration</h2>
+<h3>Branch status</h3>
+<ul>
+<li>No <code>claude/*</code> / <code>capi*</code> / <code>meta*</code> branches in <code>silkskyair-www</code> or <code>silkskyair-workflows</code>. Work lives on <code>main</code> / <code>develop</code> / <code>staging</code> branches directly.</li>
+</ul>
+<h3>Tasks audited</h3>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Notion task</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Steps 1+2</strong> (WWW capture FB attribution)</td>
+<td>WWW | Analytics | Capture FB attribution at landing</td>
+<td>❌ Not started</td>
+<td><code>silkskyair-www/src/lib/analytics/fb-attribution.ts</code> does not exist. Zero <code>grep</code> hits for <code>captureFbAttribution</code>, <code>fb-attribution</code>, <code>fbclid</code>, or <code>ssa:analytics:fb</code> across all of <code>silkskyair-www/src</code>.</td>
+</tr>
+<tr>
+<td><strong>Steps 3+4</strong> (WWW forward + persist metadata)</td>
+<td>WWW | Bookings | Forward analytics metadata through booking submit</td>
+<td>⚠️ Partial (generic only)</td>
+<td><code>silkskyair-www/src/pages/api/bookings/submit.ts</code> does spread <code>payload.metadata</code> into <code>bookingMetadata</code> (commits <code>a8ab6d8</code> + <code>a9fd4b9</code>, both 2026-04-30). <strong>But</strong> there&#39;s no <code>analytics</code> subkey in <code>BookingStore.metadata</code> or <code>SubmitBookingPayload.metadata</code> — the generic pass-through is there, the FB-specific shape is not.</td>
+</tr>
+<tr>
+<td><strong>Step 5</strong> (BC branch IF + dispatch)</td>
+<td>Workflows | Bookings | Add IF + dispatch node</td>
+<td>⚠️ Partial</td>
+<td><code>workflows/bookings/bookings-event.json</code> does have a <code>call-meta-capi-purchase</code> <code>executeWorkflow</code> node with <code>waitForSubWorkflow: false</code> wired into the BC branch (3rd sibling alongside <code>prepare-member-email-data</code> and <code>fetch-booking-customer-notes</code>). <strong>But the gating IF <code>if-has-analytics-metadata</code> is MISSING</strong> — so today the dispatcher fires for every BookingConfirmed event, not only when analytics metadata exists.</td>
+</tr>
+<tr>
+<td><strong>Step 6</strong> (Simplify shared workflow)</td>
+<td>Workflows | Analytics | Simplify shared Meta CAPI workflow</td>
+<td>✅ <strong>DONE</strong></td>
+<td><code>workflows/marketing/meta-capi-purchase.json</code> has 10 nodes matching the plan&#39;s expected names: <code>workflow-trigger</code>, <code>get-config</code>, <code>fetch-booking</code>, <code>fetch-payment</code>, <code>build-capi-payload</code>, <code>if-should-send</code>, <code>post-to-meta</code> (POST to <code>graph.facebook.com/v20.0</code>), <code>respond-sent</code>, <code>respond-error</code>, <code>respond-skipped</code>. Credential `AAC</td>
+</tr>
+<tr>
+<td><strong>Manual prereq</strong> (n8n credential + Test Events verify)</td>
+<td>Workflows | Analytics | Create Meta CAPI credential</td>
+<td>✅ <strong>DONE</strong></td>
+<td>Credential exists in n8n with id <code>gBlJLpOaFbGNrhFu</code>, referenced in <code>.env</code> as <code>N8N_CRED_META_CAPI</code>. Test Events verification is a manual step — assume done given the workflow is deployed and the credential is wired.</td>
+</tr>
+<tr>
+<td><strong>Deploy</strong> (staging + production)</td>
+<td>Workflows | Analytics | Deploy CAPI</td>
+<td>⚠️ Partial</td>
+<td>Local deployment confirmed (2026-05-26 8:12 UTC). Staging / production deploy not directly verifiable from this audit — needs check via n8n cloud or sync-script run. The active workflow on local is <code>6e5cf068-5462-4990-9a3e-e4a7238352e3</code>.</td>
+</tr>
+</tbody></table>
+<h3>SoW 3 summary</h3>
+<ul>
+<li><strong>Done:</strong> Step 6 (workflow simplification), manual credential prereq. 2 of 6.</li>
+<li><strong>Partial:</strong> Steps 3+4 (generic metadata pass-through but no <code>analytics</code> subkey), step 5 (dispatcher wired but gate missing), deploy (local only confirmed).</li>
+<li><strong>Not started:</strong> Steps 1+2 (the entire <code>silkskyair-www</code> browser-side capture).</li>
+<li><strong>Critical observation:</strong> The workflow side is essentially ready to fire, but the <em>www side</em> (capture + forward FB attribution) has zero implementation. So the workflow is currently a no-op for real conversions — <code>metadata.analytics.fbclid</code> will always be absent. Adding the IF gate (step 5) and the www-side capture (steps 1-4) is what completes the integration end-to-end.</li>
+</ul>
+<hr>
+<h2>4. Cross-cutting facts</h2>
+<h3>Recent commit activity (since 2026-04-29) by repo</h3>
+<table>
+<thead>
+<tr>
+<th>Repo</th>
+<th>W23-relevant commits</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>silkskyair-api</code></td>
+<td>0</td>
+<td>Recent work: skystories, indexes, deeplink seeds</td>
+</tr>
+<tr>
+<td><code>silkskyair-docs</code></td>
+<td>4 plan additions</td>
+<td>The plans themselves landed but no derivative docs</td>
+</tr>
+<tr>
+<td><code>silkskyair-manager</code></td>
+<td>0</td>
+<td>SkyStories test/taxonomy work only</td>
+</tr>
+<tr>
+<td><code>silkskyair-partner</code></td>
+<td>1 (E2E test stabilization, 2026-05-07)</td>
+<td>Unrelated to W23</td>
+</tr>
+<tr>
+<td><code>silkskyair-account</code></td>
+<td>2 (e2e config, auth)</td>
+<td>Unrelated to W23</td>
+</tr>
+<tr>
+<td><code>silkskyair-member</code></td>
+<td>2 (Globals, Playwright config)</td>
+<td>Unrelated to W23</td>
+</tr>
+<tr>
+<td><code>silkskyair-www</code></td>
+<td>5 (e2e, OTP route enabling, NVM, Launch)</td>
+<td>Unrelated to W23 SoW 3</td>
+</tr>
+<tr>
+<td><code>silkskyair-workflows</code></td>
+<td>73 (incl. SSA-621 paid-customer email 2026-05-15, SSA-619 booking notes 2026-05-03, Meta CAPI deploy 2026-05-26)</td>
+<td><strong>The only repo with substantive W23 progress</strong></td>
+</tr>
+</tbody></table>
+<h3>Net effect</h3>
+<ul>
+<li><strong>SoW 1 (Partnership Review):</strong> ≈0% complete. No branch cut. ~55 tasks unstarted.</li>
+<li><strong>SoW 2 (Member Portal):</strong> ≈0% complete in code; 2 of 11 workstreams partially-already-in-place from prior infra (W10, W11). 9 workstreams unstarted, lynchpin W06 untouched.</li>
+<li><strong>SoW 3 (Meta CAPI):</strong> ≈40% complete. Workflow side substantially done; www side untouched; IF gate missing.</li>
+</ul>
+<hr>
+<h2>5. Corrections to the W23 work plan</h2>
+<p>Apply these to <a href="w23-work-plan.html"><code>w23-work-plan.md</code></a> §6 (Notion task index) when next updating it:</p>
+<ol>
+<li><strong>Mark SoW 3 step 6 + manual credential as DONE.</strong> Notion task IDs <code>369bd1aa-e1c9-8153-a196-ddee10cb5a7e</code> and <code>369bd1aa-e1c9-8128-a754-fb224187e590</code> can be closed (or set to Done) — code shipped.</li>
+<li><strong>Mark SoW 3 step 5 as IN PROGRESS.</strong> <code>call-meta-capi-purchase</code> dispatch exists; remaining work = add the <code>if-has-analytics-metadata</code> IF node as a guard.</li>
+<li><strong>Mark SoW 1 R21-T7 as DONE.</strong> <code>silkskyair-member/app/(public)/verify/page.tsx</code> already handles the magic-link arrival contract.</li>
+<li><strong>Mark SoW 2 MP1-W10 as IN PROGRESS — verification only.</strong> Infrastructure (<code>booking-manager-email.json</code> + bookings-event routing) is in place; the workstream collapses to verifying template content + <code>booking_manager</code> role membership.</li>
+<li><strong>Mark SoW 2 MP1-W11 as IN PROGRESS.</strong> Repo exists; remaining = write <code>docs/booking-status.md</code> and (optional) <code>docs/passenger-data.md</code>.</li>
+<li><strong>No other &quot;Done&quot; status changes are warranted</strong> — every other previously-touched file is in its pre-fix state.</li>
+</ol>
+<hr>
+<h2>6. Recommended next actions (order of leverage)</h2>
+<ol>
+<li><strong>Finish SoW 3 first</strong> (1–2 hours): add <code>if-has-analytics-metadata</code> IF node in <code>bookings-event.json</code> BC branch (gate the dispatcher), then write <code>fb-attribution.ts</code> + wire into <code>booking-floating-widget.ts</code> + extend <code>BookingStore.metadata.analytics</code> + <code>submit.ts</code>. Verify via Meta Test Events. <strong>SoW 3 closes.</strong></li>
+<li><strong>Cut <code>claude/plan-client-review-YNHfY</code> branch</strong> in <code>silkskyair-api</code>, <code>silkskyair-manager</code>, <code>silkskyair-partner</code>, <code>silkskyair-workflows</code>, <code>silkskyair-account</code> so SoW 1 work can actually start on the planned branch.</li>
+<li><strong>Ship SoW 1 Batch A1 migration</strong> (<code>20260513120000_review_rename_keys.sql</code>) — single SQL file covering 11 i18n rows + R20 trigger + R22 column + R2 from_name. This is the SoW 1 lynchpin.</li>
+<li><strong>Start SoW 2 MP1-W06</strong> in parallel with SoW 1 partner-side fan-out — it has the longest critical path and gates W07/W08/W09.</li>
+<li><strong>Create the missing Notion task R4-T6</strong> (Manager-side Members→Clients rename) before A1 ships, so it&#39;s not forgotten.</li>
+<li><strong>Archive / close</strong> the 11 <code>[SUPERSEDED]</code> Meta CAPI Notion tasks so the W23 view reflects reality.</li>
+</ol>
+<hr>
+<p><em>End of audit.</em></p>
+
+</article>
+</body>
+</html>

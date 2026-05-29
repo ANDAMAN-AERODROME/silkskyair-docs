@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weekly Report — Week of 2026-05-15 → 2026-05-22</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Weekly Report — Week of 2026-05-15 → 2026-05-22</h1>
+<p><strong>Scope:</strong> All commits across the <code>andaman-aerodrome</code> monorepo (16 sub-repos) since Friday 2026-05-15. Author: Peter A. Moelgaard (with Claude pair-programming). Source: git logs across all repos.</p>
+<p><strong>Headline totals:</strong> 65 commits across 11 active repositories. 4 new repositories initialized (<code>silkskyair-common</code>, <code>silkskyair-config</code>, <code>silkskyair-docs</code>, <code>silkskyair-utils</code>). All work landed on <code>develop</code> branches; staging deploy partially completed mid-week.</p>
+<hr>
+<h2>1. SkyStories v2 — End-to-End Publish Pipeline</h2>
+<p>The week&#39;s largest workstream. SkyStories is the editorial content surface that flows Manager UI → Supabase → n8n → Strapi → public WWW. Multiple architectural and correctness fixes hardened the full pipeline.</p>
+<h3>Architecture: retire <code>sync_queue</code></h3>
+<ul>
+<li><strong>API</strong> (<code>silkskyair-api</code> <code>401a82c</code>): dropped the <code>sync_queue</code> table, 5-min drain-tick cron, and queue-processor pattern. Removed orphan <code>claim_next_sync</code> function.</li>
+<li><strong>Workflows</strong> (<code>silkskyair-workflows</code> <code>6f0216e</code>): Events Router now invokes the sync workflow directly via <code>executeWorkflow</code>. On failure, emits a <code>SyncFailed</code> event that triggers an admin-email — fail-loud replaces silent retry.</li>
+<li><strong>Rationale:</strong> the queue burned n8n quota, hid real sync failures behind opaque retries, and shadow-loaded Supabase.</li>
+</ul>
+<h3>Tour ↔ Story relation (new feature)</h3>
+<ul>
+<li><strong>CMS</strong> (<code>silkskyair-cms</code> <code>1bbee26</code>): added <code>tours</code> many-to-many relation to the <code>sky-story</code> schema in Strapi.</li>
+<li><strong>API</strong> (<code>9fa25da</code>): extended <code>skystories.build_sync_payload</code> to LEFT JOIN <code>strapi_sync_map</code> and emit <code>tours[]</code> with each story.</li>
+<li><strong>Workflows</strong> (<code>2f08829</code>): passes <code>tour_document_ids</code> through sync → Strapi <code>PUT</code> body via <code>_strapi-write-story-locale</code>.</li>
+<li><strong>Manager</strong> (<code>silkskyair-manager</code> <code>8448a8c</code>): <code>KeywordsPanel</code> + <code>ToursPanel</code> now pass <code>userId</code> explicitly to RPC calls (A+C defense in depth).</li>
+</ul>
+<h3>Correctness fixes</h3>
+<ul>
+<li><strong>Per-locale re-sync</strong> (<code>62faede</code>): entity setters now bump <code>entities_i18n.updated_at</code> so <code>build_sync_payload</code>&#39;s <code>needs_sync</code> gate fires correctly after first publish.</li>
+<li><strong>Browser-authenticated RPCs</strong> (<code>83ab34b</code>): <code>set_keywords</code> / <code>set_tours</code> fall back to <code>auth.uid()</code> when actor is null (the Manager calls these directly from the browser).</li>
+<li><strong>Media uploads</strong> (<code>3f7d755</code>): <code>add_media</code> RPC auto-computes <code>sort_order = MAX+1</code>; restored lost <code>SECURITY DEFINER</code>. Fixes asset-id correlation in sync.</li>
+<li><strong>Keyword sync</strong> (Manager <code>7913657</code>, <code>a5d811b</code>, <code>8d0ecbc</code>): keyword sync now correctly <code>PUT</code>s the locale variant under the existing Strapi document (Strapi v5 model: one <code>documentId</code>, locale variants underneath), includes <code>slug</code> on every write, and publishes to ALL translated locales on auto-save (was only syncing the active locale tab).</li>
+<li><strong>Tour-keyword sync</strong> (Manager <code>1619f98</code>): tours-sync now delegates keyword sync to the locale-aware <code>syncKeywordToStrapi</code> helper instead of a locale-blind local copy.</li>
+<li><strong>Media-panel race</strong> (Manager <code>98384dc</code>): closed an optimistic-update race where <code>dataManager.patch</code> silently no-op&#39;d if the store fetch was still in flight at upload start.</li>
+<li><strong>Workflow media correlation</strong> (Workflows <code>0e792fb</code>): <code>_strapi-upload-media</code> now preserves <code>media_id</code> through input/output so <code>aggregate-media</code> can build its <code>byMediaId</code> map.</li>
+</ul>
+<h3>Notifications</h3>
+<ul>
+<li><strong>Story published / approved / unpublished</strong> (API <code>74e6d9b</code>, Workflows <code>15fbb1a</code>): added <code>StoryUnpublished</code> → editor+creator email notification (symmetry with <code>StoryPublished</code>). New <code>skystory-unpublished</code> email template seeded in EN/TH/RU.</li>
+<li><strong>Test-role grants</strong> (API <code>b26c78f</code>): granted <code>skystory_editor</code> + <code>skystory_creator</code> roles to <code>peter@andaman.co.th</code> (idempotent migration) so end-to-end tests see realistic fan-out instead of routing to other editors.</li>
+</ul>
+<h3>Caption editing</h3>
+<ul>
+<li><strong>Manager</strong> (<code>d9bfb4b</code>): added <code>MediaCaptionInput</code> to the media panel (mirrors existing alt-text debounce + optimistic patch). Added <code>safeFlushAll</code> helper that surfaces queued-op rejections instead of silently swallowing them.</li>
+</ul>
+<hr>
+<h2>2. SSA-621 — Pay-Before-Confirm / Payment Confirmation</h2>
+<ul>
+<li><strong>Customer email</strong> (API <code>4d42ac2</code>): new <code>booking-paid-customer</code> email template (EN/TH/RU) for the pay-before-confirm flow. Previously only an internal manager email fired on <code>BookingConfirmed</code>.</li>
+<li><strong>Bookings dispatcher</strong> (Workflows <code>bac3351</code>):<ul>
+<li>Added <code>BookingConfirmed → booking-paid-customer</code> and <code>BookingPaidInFull → booking-paid-customer</code> to member slugMap.</li>
+<li>Set <code>alwaysOutputData: true</code> on <code>fetch-booking-customer-notes</code> — fixed a pre-existing bug where bookings without customer notes never sent the manager email.</li>
+</ul>
+</li>
+<li><strong>Pending-bookings expiry</strong> (API <code>19d870a</code>): new <code>api.expire_pending_bookings</code> cron job — Phase 1.5 cleanup (decision D1).</li>
+</ul>
+<hr>
+<h2>3. SSA-619 — Booking Notes Consolidation</h2>
+<ul>
+<li><strong>i18n labels</strong> (API <code>888435c</code>): added TH + RU labels for the <code>CustomerSubmitted</code> booking-note-type. Idempotent.</li>
+<li><strong>Manager</strong> (<code>7dc3c97</code>): gated edit affordance on customer-submitted notes (D5).</li>
+</ul>
+<hr>
+<h2>4. Performance &amp; Indexing</h2>
+<ul>
+<li><strong>API bookings read indexes</strong> (<code>08601f5</code>): three targeted indexes prioritizing read performance:<ol>
+<li><code>analytics.client_interactions(entity_type, entity_id, created_at) WHERE entity_id IS NOT NULL</code> — eliminates the sort step on the booking-interaction LATERAL subquery.</li>
+<li><code>public.bookings(member_profile_id, created_at DESC)</code> composite — skips sort on member-detail view.</li>
+<li><code>public.organization_bookings(booking_id) WHERE status = &#39;active&#39;</code> partial — pre-filters at index level.</li>
+</ol>
+</li>
+<li><strong>Manager OngoingFlights</strong> (<code>ba26f30</code>): rate-limited fetches (15s min interval) + in-flight coalesce + debounced realtime callback. Mounted on every Manager page, was hitting an expensive <code>/api/flights/ongoing</code> endpoint in bursts.</li>
+<li><strong>Manager FlightPlanPicker</strong> (<code>d8f4239</code>): lifted state to parent, reducing 3 redundant <code>GET /api/flight-plans</code> to 1 per drawer-open.</li>
+</ul>
+<hr>
+<h2>5. Workflow Tooling &amp; CI/CD</h2>
+<ul>
+<li><strong>Content-level audit</strong> (Workflows <code>ec1b6ea</code>): <code>pnpm audit:content:local</code> and <code>audit:content:staging</code> fetch every workflow via REST, canonicalize (unwrap activeVersion, strip volatile metadata, replace credential IDs with names, normalize resource-locator values), and hash-compare against committed JSON. Stronger than the prior registry-only <code>activeVersionId</code> check — caught 3 real content drifts.</li>
+<li><strong>Surgical staging sync</strong> (<code>9237cd9</code>): new <code>--workflow &lt;relpath&gt;</code> flag on <code>sync:staging</code> for force-syncing specific files. Also fixed cross-folder ID-mapping bug — mapping is now built from ALL local workflows (36 entries) instead of just the filtered target list (was missing 33).</li>
+<li><strong>Dry-run + smart activate/deactivate</strong> (<code>2af4060</code>): <code>--dry-run</code> flag on <code>deploy:local</code> + <code>deploy:staging</code>. New <code>hasEnabledTrigger()</code> helper drives smart activate vs. deactivate. Pre-deactivate before <code>PUT</code> when workflow has no enabled trigger. <code>deploy:local</code> now records to <code>.versions/local.json</code> (closes asymmetry with <code>deploy:staging</code>).</li>
+<li><strong>Audit normalization</strong> (<code>e9a7921</code>): audit now normalizes text-embedded workflow IDs before hashing, symmetric with the sync&#39;s swap — eliminated false-positive drift.</li>
+<li><strong>Shared lib consolidation</strong> (<code>ee0c6f5</code>): five duplicated field-list copies across 9 scripts replaced with <code>scripts/lib/workflow-fields.js</code> + <code>scripts/lib/canonical.js</code>.</li>
+</ul>
+<h3>Reporting workflow stabilization</h3>
+<ul>
+<li><strong>Reporting Scheduler disabled</strong> (<code>86a2929</code>): the Reporting | Scheduler was firing every 5 minutes against an n8n.cloud plan execution limit, burning quota that other workflows (including SSA-621 verification) needed. Trigger disabled in source; workflow retained for future re-enable.</li>
+</ul>
+<h3>Production-pipeline fix</h3>
+<ul>
+<li><strong>Bookings event ID translation</strong> (<code>38f9227</code>): re-synced <code>bookings-event.json</code> after the Member Email workflow was recreated on staging with a new ID. Live-verified the corrected fan-out.</li>
+</ul>
+<hr>
+<h2>6. End-to-End Test Coverage Expansion</h2>
+<p>A substantial investment in <code>silkskyair-manager</code> E2E tests, primarily covering the SkyStories publish pipeline. Built incrementally as a &quot;staircase&quot; — each spec layers one more feature on the prior — so failures pinpoint the smallest broken step.</p>
+<h3>New test staircase (<code>2f1c260</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>Spec</th>
+<th>Locales</th>
+<th>Media</th>
+<th>Alt</th>
+<th>Caption</th>
+<th>Keyword</th>
+<th>Tour</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>publish-with-media</code></td>
+<td>1</td>
+<td>1</td>
+<td>Y</td>
+<td>–</td>
+<td>–</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>publish-with-two-media</code></td>
+<td>1</td>
+<td>2</td>
+<td>Y</td>
+<td>–</td>
+<td>–</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>publish-two-locale</code></td>
+<td>2</td>
+<td>0</td>
+<td>–</td>
+<td>–</td>
+<td>–</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>publish-two-locale-with-media</code></td>
+<td>2</td>
+<td>1</td>
+<td>Y</td>
+<td>–</td>
+<td>–</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>publish-comprehensive</code></td>
+<td>2</td>
+<td>2</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+</tr>
+<tr>
+<td><code>manager-skystory-link-tour</code></td>
+<td>UPDATE flow against existing published story</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<h3>Tour Save+Publish E2E (<code>02d9ef3</code>)</h3>
+<p>First E2E coverage of the tour Save→Publish path with <code>strapi_sync_map</code> verification.</p>
+<h3>Comprehensive spec — fixture and helper work</h3>
+<ul>
+<li><code>createKeywordViaTaxonomyUI</code> shared fixture (<code>10a7b05</code>) drives the Manager Taxonomy create-keyword flow, used by both keyword-creation and comprehensive specs.</li>
+<li><code>ensureTourSyncedToStrapi</code> shared helper (<code>b3b8eb0</code>) self-provisions a tour for the comprehensive spec via the publish API.</li>
+<li><code>verifyKeywordPrecondition</code> (<code>5405981</code>, <code>d4574bc</code>) checks Supabase (source of truth) rather than Strapi.</li>
+<li>Search-by-slug (not title) for deterministic tour selection on staging (<code>b629f20</code>) — staging has three tours all titled &quot;TEST&quot;.</li>
+<li>Per-locale find-by-id polling (<code>0a3bcda</code>) — Strapi v5 list endpoint refuses locale variants for content types mixing localized + non-localized fields.</li>
+<li>FlightRibbon popover dismissal via heading-click (<code>5c41b40</code>).</li>
+<li>N8n Notifications workflow assertion (<code>352fa53</code>) — polls n8n executions to assert the notification workflow succeeded, catching silent Zoho SMTP failures that the test was previously blind to.</li>
+<li>Opt-in screenshot capture (<code>3722557</code>) — 10 numbered PNGs of the full pipeline when <code>SSA_SCREENSHOT_DIR</code> is set.</li>
+<li>Single-test staging runs + env-var topology alignment (<code>b13cf28</code>) — renamed <code>E2E_MANAGER_ORIGIN</code>/<code>_ORIGIN</code> → <code>_BASE_URL</code> workspace-wide; removed hardcoded Strapi token; throws loudly when env vars missing.</li>
+</ul>
+<hr>
+<h2>7. New Repositories &amp; Documentation</h2>
+<h3>Initialized this week</h3>
+<ul>
+<li><strong><code>silkskyair-common</code></strong> — shared common code.</li>
+<li><strong><code>silkskyair-config</code></strong> — shared config.</li>
+<li><strong><code>silkskyair-utils</code></strong> — shared utilities.</li>
+<li><strong><code>silkskyair-docs</code></strong> — central planning + reviews repo.</li>
+</ul>
+<h3>Documentation produced</h3>
+<ul>
+<li><strong>Member Portal — 1st Review Implementation Plan</strong> (<code>silkskyair-docs/plans/member-portal-1st-review-2026-05-19.md</code>): 33 actionable items from the 12-page review delivered by Micheline / Panpaporn / Nuchada on 2026-05-19, organized into 11 workstreams (<code>MP1-W01..W11</code>) with user decisions per item.</li>
+<li><strong>Meta Conversions API (CAPI) Integration Plan</strong> (<code>silkskyair-docs/plans/meta-capi-purchase-integration.md</code>): dual-track Pixel + server-side CAPI for the booking Purchase event, with <code>fbclid</code>/<code>fbp</code>/<code>fbc</code> capture in <code>analytics.client_interactions.metadata</code>, retry + <code>analytics.events_sent</code> for observability, and shared <code>event_id = booking.reference_code</code> for dedup.</li>
+<li><strong>Partnership Portal Round-3 Remediation Plan</strong> (<code>silkskyair-docs/plans/partnership-portal-client-review.md</code>, added via orchestrator <code>16cb434</code>).</li>
+<li><strong>Staging deploy state snapshot</strong> (<code>silkskyair-orchestrator/plans/2026-05-17-staging-deploy-state.md</code>, <code>2997057</code>) — self-contained resume document tracking 5-pillar deploy status (DB / CMS / Workflows / Manager / WWW).</li>
+<li><strong>W21 planning documents</strong> (orchestrator <code>bad78df</code>).</li>
+<li><strong>Project Management Tools</strong> integrated into orchestrator (<code>d160ba7</code>).</li>
+</ul>
+<h3>UI library</h3>
+<ul>
+<li><strong><code>silkskyair-ui</code> <code>e9e401a</code></strong>: improved Component Base.</li>
+</ul>
+<h3>Member portal</h3>
+<ul>
+<li><strong><code>silkskyair-member</code> <code>05001b9</code></strong>: Globals added (foundation for the MP1 workstream).</li>
+</ul>
+<hr>
+<h2>8. Deploy Status (as of pause on 2026-05-17)</h2>
+<p>From the staging deploy state snapshot:</p>
+<table>
+<thead>
+<tr>
+<th>Pillar</th>
+<th>Local</th>
+<th>Staging</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Git develop branches</td>
+<td>21 commits across 5 repos</td>
+<td>Pre-session HEAD</td>
+<td>⏳ awaiting push develop→staging</td>
+</tr>
+<tr>
+<td>Supabase DB</td>
+<td>max migration <code>20260517170000</code></td>
+<td>max <code>20260516100000</code></td>
+<td>⏳ 10 migrations pending</td>
+</tr>
+<tr>
+<td>Strapi CMS</td>
+<td><code>tours</code> field on <code>sky-story</code></td>
+<td>400 on <code>?populate[0]=tours</code></td>
+<td>⏳ awaiting rebuild</td>
+</tr>
+<tr>
+<td>n8n staging</td>
+<td>35 workflows + admin-email + canonical sync infra</td>
+<td>36 workflows, 5 drift + 1 missing</td>
+<td>🛠 sync script fixes in progress</td>
+</tr>
+<tr>
+<td>Vercel Manager</td>
+<td>6 new commits</td>
+<td>200 OK</td>
+<td>⏳ awaiting push</td>
+</tr>
+<tr>
+<td>Vercel WWW</td>
+<td>3 new commits</td>
+<td>200 OK</td>
+<td>⏳ awaiting push</td>
+</tr>
+</tbody></table>
+<p>Subsequent days (2026-05-18 onward) completed the staging sync — workflow audits report 36/36 match, 0 drift on both environments after <code>9237cd9</code> + <code>86a2929</code> + <code>2af4060</code>.</p>
+<hr>
+<h2>9. Repo-by-Repo Commit Counts</h2>
+<table>
+<thead>
+<tr>
+<th>Repo</th>
+<th>Commits</th>
+<th>Theme</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>silkskyair-manager</code></td>
+<td>22</td>
+<td>E2E coverage, keyword/tour sync fixes, perf</td>
+</tr>
+<tr>
+<td><code>silkskyair-workflows</code></td>
+<td>16</td>
+<td>Sync architecture, tooling, SSA-621 dispatcher</td>
+</tr>
+<tr>
+<td><code>silkskyair-api</code></td>
+<td>13</td>
+<td>SkyStories migrations, SSA-621 + SSA-619 templates, indexes</td>
+</tr>
+<tr>
+<td><code>silkskyair-orchestrator</code></td>
+<td>4</td>
+<td>Planning docs, PM tools</td>
+</tr>
+<tr>
+<td><code>silkskyair-docs</code></td>
+<td>3</td>
+<td>Member Portal + Meta CAPI + Partnership plans</td>
+</tr>
+<tr>
+<td><code>silkskyair-cms</code></td>
+<td>2</td>
+<td><code>tours</code> relation on sky-story</td>
+</tr>
+<tr>
+<td><code>silkskyair-common</code></td>
+<td>1</td>
+<td>Initial commit</td>
+</tr>
+<tr>
+<td><code>silkskyair-config</code></td>
+<td>1</td>
+<td>Initial commit</td>
+</tr>
+<tr>
+<td><code>silkskyair-utils</code></td>
+<td>1</td>
+<td>Initial commit</td>
+</tr>
+<tr>
+<td><code>silkskyair-member</code></td>
+<td>1</td>
+<td>Globals</td>
+</tr>
+<tr>
+<td><code>silkskyair-ui</code></td>
+<td>1</td>
+<td>Improved Component Base</td>
+</tr>
+</tbody></table>
+<p>Quiet repos (no commits in window): <code>silkskyair-account</code>, <code>silkskyair-partner</code>, <code>silkskyair-reporting</code>, <code>silkskyair-skystories</code>, <code>silkskyair-www</code>.</p>
+<hr>
+<h2>Suggested Report Highlights</h2>
+<p>If you&#39;re presenting this to stakeholders:</p>
+<ol>
+<li><strong>SkyStories v2 pipeline is fully hardened end-to-end</strong> — story → keyword → tour relations all sync correctly across EN/TH/RU locales, with comprehensive E2E coverage that catches both code and infrastructure failures (Zoho rate-limits, Strapi v5 quirks).</li>
+<li><strong><code>sync_queue</code> retired</strong> — moved to direct execution + fail-loud admin emails. Less infrastructure, faster failure detection.</li>
+<li><strong>SSA-621 customer payment-confirmation email shipped</strong> in EN/TH/RU.</li>
+<li><strong>Workflow CI/CD upgraded</strong> — content-level audit (not just versionId), surgical sync, dry-run on all mutating scripts.</li>
+<li><strong>Planning groundwork laid</strong> for the next two major workstreams: Member Portal MP1 (33 review items) and Meta CAPI Purchase integration.</li>
+<li><strong>3 new shared repos initialized</strong> (common, config, utils, docs) plus the docs repo.</li>
+</ol>
+
+</article>
+</body>
+</html>

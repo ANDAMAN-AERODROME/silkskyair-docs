@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cancellation Flow (Partner-initiated)</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Cancellation Flow (Partner-initiated)</h1>
+<blockquote>
+<p><strong>Apps:</strong> Partner Portal (initiates) · BackOffice / Manager (receives notification + email) · Customer (receives confirmation email)
+<strong>Who uses it:</strong> Partner ops staff cancelling a booking on the customer&#39;s behalf; SilkSky back-office managers handling the cancellation request; the customer receiving the acknowledgement.
+<strong>What it does:</strong> Records a partner-initiated cancellation request as a <code>BookingCancellationRequested</code> booking event. That single event fans out to <strong>three</strong> parallel surfaces:</p>
+<ol>
+<li>Cancellation request banner on the partner&#39;s booking detail page (no more Cancel Booking button)</li>
+<li>In-app notification in BackOffice — bell badge + realtime toast for every <code>booking_manager</code> user</li>
+<li>Two emails via the n8n bookings-event dispatcher: one to the back-office team (review + decide), one to the customer (acknowledgement that the request was received)</li>
+</ol>
+</blockquote>
+<h2>Before you start</h2>
+<ul>
+<li><strong>Partner Portal staging:</strong> <code>https://staging.partner.silkskyair.com</code></li>
+<li><strong>BackOffice / Manager staging:</strong> <code>https://staging.manager.silkskyair.com</code></li>
+<li><strong>Account (partner-side):</strong> Sign in as a Partner Portal user attached to the partner organization that owns the booking (e.g. <code>peter@andaman.co.th</code> for Advance Aviation on local).</li>
+<li><strong>Account (back-office side):</strong> Sign in to Manager as any user with the <code>booking_manager</code> role.</li>
+<li><strong>Prerequisites:</strong> A booking in a cancellable status. On the partner detail page, the <strong>Cancel Booking</strong> button is only rendered when <code>isAmendable === true</code> and no cancellation request is already pending.</li>
+</ul>
+<h2>Step-by-step</h2>
+<h3>Step 1 — Open the booking on Partner Portal</h3>
+<p>From the Bookings list, click into the booking you want to cancel. On the booking detail page, the <strong>Cancel Booking</strong> button is shown at the top right next to the reference code.</p>
+<p><img src="../../../screenshots/bookings/cancellation-flow/01-booking-with-cancel-button.png" alt="Step 1 — Booking detail with Cancel Booking button"></p>
+<p><strong>What you should see:</strong> Booking header with reference code + status (e.g. <strong>Pending</strong>), tour title underneath, and a red-outlined <strong>Cancel Booking</strong> button at top right.</p>
+<h3>Step 2 — Open the cancellation dialog</h3>
+<p>Click <strong>Cancel Booking</strong>. A modal dialog opens centred over the page with a warning, a reason text area, and Cancel / Submit Request buttons.</p>
+<p><img src="../../../screenshots/bookings/cancellation-flow/02-cancel-dialog-open.png" alt="Step 2 — Cancel Booking dialog open"></p>
+<p><strong>What you should see:</strong> Modal titled <strong>Cancel Booking</strong>, line of warning copy (&quot;Cancellation is subject to operator approval.&quot;), labelled <strong>Reason for cancellation</strong> text area, secondary <strong>Cancel</strong> button and primary red <strong>Submit Request</strong> button.</p>
+<h3>Step 3 — Enter a reason and submit</h3>
+<p>Type a clear explanation of why the customer is asking to cancel. Free text — keep it short and specific, the back-office team will read it.</p>
+<p><img src="../../../screenshots/bookings/cancellation-flow/03-cancel-dialog-filled.png" alt="Step 3 — Reason filled in"></p>
+<p><strong>What you should see:</strong> Same dialog with the reason typed into the text area. <strong>Submit Request</strong> stays enabled until you click it.</p>
+<p>Click <strong>Submit Request</strong>. The dialog closes and the booking detail page refreshes.</p>
+<h3>Step 4 — Partner side: cancellation request banner</h3>
+<p>After submission, the booking detail page replaces the <strong>Cancel Booking</strong> button with an amber banner showing the request status and the reason that was just submitted. The booking remains in its current status (Pending / Confirmed) until back-office acts on the request.</p>
+<p><img src="../../../screenshots/bookings/cancellation-flow/04-cancel-success-banner.png" alt="Step 4 — Cancellation request banner on partner detail page"></p>
+<p><strong>What you should see:</strong> An amber <strong>Cancellation request pending. — [your reason]</strong> banner above Journey Details. The Cancel Booking button is gone. Event History shows a new <code>BookingCancellationRequested</code> entry.</p>
+<h3>Step 5 — BackOffice side: realtime toast</h3>
+<p>Within a few seconds of partner submitting, every BackOffice user with the <code>booking_manager</code> role sees a toast notification pushed live via Supabase Realtime. The toast surfaces the booking reference, the event type, and the partner-supplied reason.</p>
+<p><img src="../../../screenshots/bookings/cancellation-flow/05-manager-realtime-toast.png" alt="Step 5 — Realtime toast in BackOffice"></p>
+<p><strong>What you should see:</strong> A toast at top-right reading <code>Booking &lt;REF&gt; — Cancellation Requested — &lt;reason&gt;</code>. The toast is dismissable; missing it doesn&#39;t lose the notification — the bell still has the unread row.</p>
+<h3>Step 6 — BackOffice side: notification bell + dropdown</h3>
+<p>The notification bell in the BackOffice header shows the new unread count. Clicking the bell opens a dropdown listing every unread notification, most recent first. Each row links to the relevant booking and marks itself read on click.</p>
+<p><img src="../../../screenshots/bookings/cancellation-flow/06-manager-bell-dropdown.png" alt="Step 6 — Bell with badge + dropdown open"></p>
+<p><strong>What you should see:</strong> Bell icon in header with a numeric badge (e.g. <code>9+</code>). Dropdown lists rows of the form <strong>Booking <code>&lt;REF&gt;</code> — Cancellation Requested</strong>, with the reason on the second line and a relative timestamp (<code>JUST NOW</code>, <code>1M AGO</code>, etc.). Clicking a row navigates to the booking detail page in BackOffice and clears that row&#39;s unread state.</p>
+<h3>Step 7 — Manager and customer emails (background)</h3>
+<p>In parallel with the in-app notification, the n8n <code>bookings-event</code> workflow renders two emails through the existing <code>booking-manager-email</code> / <code>booking-member-email</code> sub-workflows:</p>
+<ul>
+<li><strong>Manager email</strong> — sent to every user with the <code>booking_manager</code> role. Template: <code>booking-cancellation-requested-manager</code>. Subject: <code>Booking &lt;REF&gt; — Cancellation Requested</code>. Body includes booking ref, tour, date/time, passenger count, contact name + email, and a <strong>Review Cancellation Request</strong> CTA linking back to the BackOffice booking page.</li>
+<li><strong>Customer email</strong> — sent to the booking&#39;s lead contact (<code>bookings_snapshot.contact.email</code>). Template: <code>booking-cancellation-requested-customer</code>. Subject: <code>Cancellation request received — Booking &lt;REF&gt;</code>. Body acknowledges receipt and tells the customer the team will follow up; no further action required from them.</li>
+</ul>
+<p>Both templates exist in EN, TH, and RU, selected per the booking&#39;s <code>locale</code>. The <code>sender_name</code> column (added in migration <code>20260527160000</code>) drives the SMTP From: header so the address is localised too.</p>
+<h2>Tips &amp; common questions</h2>
+<ul>
+<li><strong>Why are there two notification surfaces (bell + email) and not one?</strong> The bell + Realtime path is durable across n8n downtime (the DB trigger fires in the same transaction as the partner&#39;s cancel, before any HTTP hop). The email path delivers to users who aren&#39;t currently in BackOffice. Together they guarantee at least one manager sees the request, fast.</li>
+<li><strong>What status does the booking move to after Submit Request?</strong> None automatically. <code>BookingCancellationRequested</code> is a <em>request</em>, not a state transition — it doesn&#39;t change the booking&#39;s status. Back-office acts on it (approve → cancel, or decline) via a separate flow.</li>
+<li><strong>What stops a partner from submitting twice?</strong> The cancel route checks <code>booking_events</code> for an existing <code>BookingCancellationRequested</code> row for the booking. If one exists, the API returns <code>409 Conflict: A cancellation request is already pending</code> and the UI shows the banner instead of the button.</li>
+<li><strong>What if the n8n workflow is down when the partner submits?</strong> The booking event row is still inserted (the partner sees the banner) and the in-app notification still fans out (the DB trigger doesn&#39;t depend on n8n). Only the two emails are delayed — they fire when n8n recovers, via the same execution queue.</li>
+<li><strong>What if I want to cancel for a customer who needs an immediate refund?</strong> Submit the cancellation as usual, then handle the refund through the back-office payment workflow. The <code>BookingRefundPending</code> event type is part of the same dispatcher (see <code>bookings-event.json</code> slugMap), with its own template.</li>
+<li><strong>Locale of the emails — partner&#39;s, customer&#39;s, or the manager&#39;s?</strong> The booking&#39;s locale (set at booking creation). Manager template and customer template are both rendered in that locale. The sender name in the From: header matches.</li>
+</ul>
+<h2>Reference</h2>
+<ul>
+<li><strong>Code (partner):</strong> <code>silkskyair-partner/app/api/bookings/[id]/cancel/route.ts</code> · <code>silkskyair-partner/components/bookings/booking-cancel-dialog.tsx</code> · <code>silkskyair-partner/components/bookings/booking-detail-partner.tsx</code> (banner rendering)</li>
+<li><strong>Code (manager bell):</strong> <code>silkskyair-manager/components/notifications/notification-bell.tsx</code> (bell + dropdown) · <code>silkskyair-manager/lib/toast-emitter.ts</code> (global toast bus)</li>
+<li><strong>Migrations:</strong> <code>silkskyair-api/supabase/migrations/20260527150000_booking_cancellation_notifications.sql</code> (DB trigger fans out to <code>account.notifications</code>) · <code>silkskyair-api/supabase/migrations/20260215130000_booking_email_templates.sql</code> (manager template) · <code>silkskyair-api/supabase/migrations/20260528110000_booking_cancellation_requested_customer_template.sql</code> (customer template — F1.15 addition)</li>
+<li><strong>Workflow:</strong> <code>silkskyair-workflows/workflows/bookings/bookings-event.json</code> — Switch CR output routes to BOTH <code>fetch-booking-customer-notes</code> (manager pipeline) AND <code>prepare-member-email-data</code> (customer pipeline). Member slugMap entry <code>&#39;BookingCancellationRequested&#39;: &#39;booking-cancellation-requested-customer&#39;</code> selects the new template.</li>
+<li><strong>E2E:</strong><ul>
+<li><code>silkskyair-manager/e2e/manager-notification-bell.spec.ts</code> — partner cancel → bell badge + toast + click-to-read</li>
+<li><code>silkskyair-partner/e2e/partner-cancel-booking-email-fanout.spec.ts</code> — partner cancel → both n8n email branches succeed (asserted via n8n executions API since local SMTP goes through real Zoho, not MailPit)</li>
+</ul>
+</li>
+</ul>
+
+</article>
+</body>
+</html>

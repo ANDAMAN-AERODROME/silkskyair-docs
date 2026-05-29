@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multi-Tour Promotions</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Multi-Tour Promotions</h1>
+<blockquote>
+<p><strong>App:</strong> WebSite
+<strong>Who uses it:</strong> Marketing/campaigns building promotions; support agents helping customers redeem them.
+<strong>What it does:</strong> Promotions can apply to a specific tour, several tours, or all tours. When a promotion is active and the customer&#39;s chosen slot is in scope, the booking widget shows promo-adjusted pricing on the slot. When a promotion carries a <code>min_pax</code>, the widget clamps the passenger stepper so the customer can&#39;t reduce below the minimum.</p>
+</blockquote>
+<h2>Before you start</h2>
+<ul>
+<li><strong>Staging URL:</strong> <code>https://staging.www.silkskyair.com</code></li>
+<li><strong>Account:</strong> Not required.</li>
+<li><strong>Prerequisites:</strong> an active promotion exists in BackOffice with <code>min_pax</code> set, scoped to the tour the customer is booking.</li>
+</ul>
+<h2>Step-by-step</h2>
+<h3>Step 1 — Pax stepper clamped at <code>min_pax</code></h3>
+<p>Open the booking widget, pick a tour + date + slot, and set passengers to the promotion&#39;s <code>min_pax</code>. The decrement button becomes disabled and an inline note explains the floor.</p>
+<p><img src="../../../screenshots/bookings/multi-tour-promos/01-pax-stepper-clamp.png" alt="Step 1 — Pax stepper clamp"></p>
+<p><strong>What you should see:</strong> The − button on the adult stepper is disabled (greyed out) once you reach <code>min_pax</code>. A note below the stepper reads something like <em>&quot;Current promotion requires at least N passengers.&quot;</em></p>
+<h3>Step 2 — Above <code>min_pax</code> — clamp releases, note stays</h3>
+<p>Increment past <code>min_pax</code>. The decrement button re-enables; the note stays visible because the promotion is still applicable.</p>
+<p><img src="../../../screenshots/bookings/multi-tour-promos/02-above-min-pax.png" alt="Step 2 — Above min_pax"></p>
+<p><strong>What you should see:</strong> The − button is no longer disabled. The note remains.</p>
+<h3>Step 3 — Promo-discounted slot pricing</h3>
+<p>Slots that fall within the promotion&#39;s scope show a promo indicator (<code>[data-slot-promo=&quot;1&quot;]</code>).</p>
+<p><img src="../../../screenshots/bookings/multi-tour-promos/03-slot-promo-badge.png" alt="Step 3 — Slot promo indicator"></p>
+<p><strong>What you should see:</strong> A visual marker on slots covered by the promotion (often a price badge or pill). Slots outside the promo scope render without it.</p>
+<h2>Tips &amp; common questions</h2>
+<ul>
+<li><strong>The decrement won&#39;t go below my chosen number.</strong> That&#39;s the <code>min_pax</code> clamp. Read the inline note to see the minimum the active promotion requires.</li>
+<li><strong>Why don&#39;t I see a promo discount on some dates?</strong> The promotion&#39;s publish window may not cover that date, or the tour isn&#39;t in scope.</li>
+<li><strong>Can a customer use a deep-link to apply a promo?</strong> Yes — <code>/book?promo=&lt;slug&gt;</code> (the action-verb deep-link) writes the promo to BookingStore and the widget picks it up.</li>
+</ul>
+
+</article>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meta Conversions API (CAPI) Purchase Integration</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Meta Conversions API (CAPI) Purchase Integration</h1>
+<h2>Context</h2>
+<p>SilkSkyAir runs Facebook/Meta ad campaigns. When a booking is paid, Meta&#39;s ad optimizer needs a server-side Purchase signal so it can optimize ad spend toward converters and build lookalike audiences. Pixel ID <code>892779126509174</code> exists but receives nothing today.</p>
+<p>The earlier draft of this plan accumulated too much scope (consent re-engineering, browser Pixel install, separate <code>analytics.client_interactions</code> storage path, <code>analytics.events_sent</code> retry table, view extensions, token-rotation docs). <strong>This rewrite strips it back to the minimum viable shape: 6 logical steps.</strong></p>
+<p>What&#39;s deliberately out of scope this round:</p>
+<ul>
+<li>Browser-side Pixel snippet (server-only CAPI for now).</li>
+<li>Consent-banner re-engineering — the banner already exists. If a user has refused cookies, <code>_fbp</code>/<code>_fbc</code> aren&#39;t set by Facebook, so the system degrades naturally to &quot;no attribution → no CAPI&quot;.</li>
+<li><code>analytics.events_sent</code> idempotency table — Meta&#39;s own <code>event_id</code> dedup (48h window) is enough.</li>
+<li><code>api.bookings</code> view extension — the workflow can read <code>bookings.metadata</code> directly.</li>
+</ul>
+<h2>The 6 steps (verbatim from spec)</h2>
+<ol>
+<li>Capture FB attribution at landing → save in current session&#39;s <code>localStorage</code>.</li>
+<li>When booking flow activates, apply FB attribution as metadata.</li>
+<li>When booking is registered, ensure metadata is passed.</li>
+<li>Persist metadata on the server.</li>
+<li>Add a node to the BookingConfirmed n8n workflow that examines whether analytics booking metadata exists; if so, invoke a shared workflow.</li>
+<li>The shared workflow checks if Meta / FB / Pixel metadata exists and executes the CAPI call. Done.</li>
+</ol>
+<h2>Booking lifecycle</h2>
+<pre><code>www visitor lands  ──►  capture {fbclid, fbp, fbc, landing_url} → localStorage &#39;ssa:analytics:fb&#39;
+                                          │
+                booking widget activates  →  merge into BookingStore.metadata.analytics
+                                          │
+                                    submit.ts POST
+                                          │
+                  api.booking_register(p_metadata) → bookings.metadata.analytics (jsonb)
+                                          │
+                              customer pays via Omise
+                                          │
+            DB trigger inserts BookingConfirmed → n8n bookings-event.json BC branch
+                                          │
+            [NEW] IF booking.metadata.analytics exists → invoke shared workflow
+                                          │
+                  workflows/marketing/meta-capi-purchase.json
+                      ├ fetch booking + latest successful payment
+                      ├ check metadata.analytics for Meta keys (fbclid/fbp/fbc)
+                      ├ build CAPI Purchase event (hashed em/ph; raw fbc/fbp)
+                      └ POST graph.facebook.com/.../events
+</code></pre>
+<p>The BC branch already fans out to <code>fetch-booking-customer-notes</code> and <code>prepare-member-email-data</code>. The new IF + dispatch is a third sibling fan-out. <code>waitForSubWorkflow: false</code> — Meta latency must never block the existing email path or the webhook 200.</p>
+<hr>
+<h2>Implementation</h2>
+<h3>Step 1 + 2 — Capture at landing and apply to booking flow (silkskyair-www)</h3>
+<p><strong>New utility:</strong> <code>src/lib/analytics/fb-attribution.ts</code></p>
+<pre><code class="language-ts">// Pseudo
+captureFbAttribution(): void        // reads URL+cookies, writes localStorage &#39;ssa:analytics:fb&#39; if not already set
+readFbAttribution(): FbAttribution? // returns parsed object or null
+</code></pre>
+<p>Reads:</p>
+<ul>
+<li><code>fbclid</code> from <code>URLSearchParams(window.location.search).get(&#39;fbclid&#39;)</code></li>
+<li><code>_fbp</code> from <code>document.cookie</code></li>
+<li><code>_fbc</code> from <code>document.cookie</code></li>
+<li><code>landing_url</code> from <code>window.location.href</code></li>
+</ul>
+<p>Synthesizes <code>fbc</code> as <code>fb.1.&lt;unix_ms_at_capture&gt;.&lt;fbclid&gt;</code> only if <code>_fbc</code> cookie is absent but <code>fbclid</code> is present. Writes once per session; subsequent calls no-op if entry already exists.</p>
+<p><strong>Caller:</strong> <code>src/components/bookings/booking-floating-widget.ts</code> — call <code>captureFbAttribution()</code> on first widget mount (mirror the existing <code>partner</code>/<code>tour</code> URL-param capture around line 556).</p>
+<p>When the booking flow activates (modal open / &quot;book now&quot; click), call <code>readFbAttribution()</code> and merge the object into <code>BookingStore.metadata.analytics</code>.</p>
+<h3>Step 3 + 4 — Forward in submit and persist server-side</h3>
+<p><strong><code>src/lib/data/Bookings.ts</code></strong> — extend <code>BookingStore</code> so its <code>metadata</code> field has an optional <code>analytics?: { fbclid?, fbp?, fbc?, landing_url?, captured_at? }</code> shape.</p>
+<p><strong><code>src/components/bookings/api/bookings.ts</code></strong> — same shape on <code>SubmitBookingPayload</code>.</p>
+<p><strong><code>src/pages/api/bookings/submit.ts</code></strong> — extend the existing <code>bookingMetadata</code> object (already carries <code>partner_slug</code> / <code>attribution_source</code>) with an <code>analytics</code> key when the payload supplies it. The Supabase RPC <code>api.booking_register(..., p_metadata)</code> already accepts arbitrary jsonb and writes it to <code>bookings.metadata</code> — <strong>no migration needed.</strong></p>
+<p>Verification: after a booking submit with <code>?fbclid=test</code>, <code>SELECT metadata FROM bookings WHERE id = &#39;&lt;id&gt;&#39;</code> should show <code>{partner_slug?, attribution_source?, analytics: {fbclid: &#39;test&#39;, ...}}</code>.</p>
+<h3>Step 5 — BC branch IF + dispatch (silkskyair-workflows)</h3>
+<p><strong>File:</strong> <code>workflows/bookings/bookings-event.json</code></p>
+<p>On the Switch node&#39;s BC (BookingConfirmed) output (index 2), add a new IF node <code>if-has-analytics-metadata</code>:</p>
+<ul>
+<li>Condition: <code>{{ Object.keys($(&#39;fetch-booking&#39;).first().json.metadata?.analytics ?? {}).length &gt; 0 }}</code> (or simpler: <code>metadata.analytics.fbclid</code> exists OR <code>metadata.analytics.fbp</code> exists).</li>
+<li>TRUE → executeWorkflow node <code>call-meta-capi-purchase</code> (existing node in the file from earlier work — keep or revise).</li>
+<li>FALSE → dead-end (no dispatch).</li>
+</ul>
+<p><code>waitForSubWorkflow: false</code>. Existing sibling fan-outs (<code>fetch-booking-customer-notes</code>, <code>prepare-member-email-data</code>) untouched.</p>
+<h3>Step 6 — Shared workflow (Meta CAPI)</h3>
+<p><strong>File:</strong> <code>workflows/marketing/meta-capi-purchase.json</code> — already exists with 10 nodes from earlier. <strong>Significantly simplify</strong> to match the new design.</p>
+<p>Final shape (~8 nodes):</p>
+<ol>
+<li><code>workflow-trigger</code> — inputs: <code>booking_id</code>, optional <code>event_id</code>, optional <code>test_event_code</code>.</li>
+<li><code>get-config</code> — calls shared config-fetch for <code>supabase_url</code>.</li>
+<li><code>fetch-booking</code> — HTTP GET <code>bookings_snapshot?id=eq.X&amp;select=*</code> with <code>Accept-Profile: api</code> (booking row has contact, tour, reference_code, metadata).</li>
+<li><code>fetch-payment</code> — HTTP GET latest <code>payment_intents</code> with <code>status=successful</code> for value/currency.</li>
+<li><code>check-meta-keys</code> — IF: <code>booking.metadata.analytics.fbclid</code> OR <code>booking.metadata.analytics.fbp</code> exists. False → respond-skipped.</li>
+<li><code>build-capi-payload</code> — SHA-256 lower-cased + trimmed <code>em</code>/<code>ph</code> (digits only)/<code>fn</code>/<code>ln</code>/<code>external_id</code> (= member_profile_id). Raw <code>fbc</code> (synthesized from fbclid if not present), <code>fbp</code>. <code>value</code> = <code>payment.amount/100</code>, <code>currency</code> = <code>payment.currency</code>. <code>event_id</code> = <code>booking.reference_code</code>. <code>event_source_url</code> = <code>metadata.analytics.landing_url</code> || <code>https://silkskyair.com/</code>.</li>
+<li><code>post-to-meta</code> — HTTP POST <code>https://graph.facebook.com/v20.0/892779126509174/events</code>, httpHeaderAuth credential <code>AAC | SAA | Auth | Meta CAPI</code>. <code>onError: continueErrorOutput</code>.</li>
+<li><code>respond-sent</code> / <code>respond-skipped</code> / <code>respond-error</code> — terminal Set nodes.</li>
+</ol>
+<p>No retry, no events_sent table, no consent gate, no view-extension reads. Meta&#39;s <code>event_id</code> dedup handles double-fires; absence of analytics metadata short-circuits at the IF nodes.</p>
+<hr>
+<h2>Critical files</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>silkskyair-www/src/lib/analytics/fb-attribution.ts</code></td>
+<td><strong>NEW</strong> — capture/read helpers</td>
+</tr>
+<tr>
+<td><code>silkskyair-www/src/components/bookings/booking-floating-widget.ts</code></td>
+<td>Call capture on init; merge into BookingStore.metadata on flow activation</td>
+</tr>
+<tr>
+<td><code>silkskyair-www/src/lib/data/Bookings.ts</code></td>
+<td>Extend BookingStore.metadata.analytics shape</td>
+</tr>
+<tr>
+<td><code>silkskyair-www/src/components/bookings/api/bookings.ts</code></td>
+<td>Extend SubmitBookingPayload.metadata.analytics shape</td>
+</tr>
+<tr>
+<td><code>silkskyair-www/src/pages/api/bookings/submit.ts</code></td>
+<td>Fold analytics into bookingMetadata</td>
+</tr>
+<tr>
+<td><code>silkskyair-workflows/workflows/bookings/bookings-event.json</code></td>
+<td>Add <code>if-has-analytics-metadata</code> IF node + dispatch on BC branch</td>
+</tr>
+<tr>
+<td><code>silkskyair-workflows/workflows/marketing/meta-capi-purchase.json</code></td>
+<td>Simplify to ~8 nodes per the design above</td>
+</tr>
+</tbody></table>
+<p><strong>No database migrations.</strong> <code>bookings.metadata</code> is already a jsonb column that accepts arbitrary keys.</p>
+<h2>Reused infrastructure</h2>
+<table>
+<thead>
+<tr>
+<th>Existing thing</th>
+<th>Path</th>
+<th>Used for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>URL-param + cookie capture pattern</td>
+<td><code>booking-floating-widget.ts</code> ~L556 (existing <code>partner</code>/<code>tour</code> reads)</td>
+<td>Template for fbclid/fbp/fbc reads</td>
+</tr>
+<tr>
+<td><code>BookingStore</code> localStorage</td>
+<td><code>src/lib/data/Bookings.ts</code> (<code>aac.booking.db.v1</code>)</td>
+<td>Carry metadata.analytics across funnel</td>
+</tr>
+<tr>
+<td><code>bookingMetadata</code> accumulator</td>
+<td><code>submit.ts</code> (already carries partner_slug, attribution_source)</td>
+<td>Fold analytics in as another key</td>
+</tr>
+<tr>
+<td><code>api.booking_register(p_metadata)</code> RPC</td>
+<td>Existing</td>
+<td>Persists <code>bookings.metadata</code> jsonb — no change</td>
+</tr>
+<tr>
+<td>Switch node BC fan-out pattern</td>
+<td><code>bookings-event.json</code></td>
+<td>Add IF + executeWorkflow as third sibling</td>
+</tr>
+<tr>
+<td><code>_shared/config-fetch.json</code></td>
+<td><code>workflows/_shared/config-fetch.json</code></td>
+<td><code>supabase_url</code> for HTTP calls</td>
+</tr>
+<tr>
+<td><code>Accept-Profile: api</code> pattern</td>
+<td><code>bookings-event.json</code> <code>fetch-booking-customer-notes</code> node</td>
+<td>Call api-schema views/tables</td>
+</tr>
+<tr>
+<td><code>httpHeaderAuth</code> pattern</td>
+<td><code>workflows/skystories/_strapi-write-story-locale.json</code></td>
+<td>Bearer token for Meta CAPI</td>
+</tr>
+</tbody></table>
+<h2>Manual prerequisite</h2>
+<p>Create n8n credential <code>AAC | SAA | Auth | Meta CAPI</code> (httpHeaderAuth, header <code>Authorization</code>, value <code>Bearer &lt;Meta System User token&gt;</code>) in local, staging, and production n8n instances.</p>
+<hr>
+<h2>Verification</h2>
+<ol>
+<li><strong>Manual workflow test:</strong> in Meta Events Manager → generate <code>test_event_code</code>. In local n8n, &quot;Execute Workflow&quot; on <code>meta-capi-purchase</code> with <code>{booking_id: &lt;recent confirmed&gt;, test_event_code: &lt;code&gt;}</code>. Expect 200, Purchase event in Meta Test Events stream, Event Match Quality ≥ 5.</li>
+<li><strong>End-to-end (with attribution):</strong> open localhost www with <code>?fbclid=test-w22</code>, book + pay via Omise test card. Verify <code>bookings.metadata.analytics.fbclid = &#39;test-w22&#39;</code>; verify n8n <code>bookings-event</code> BC run shows IF branch TRUE and <code>meta-capi-purchase</code> executed green; verify event in Meta Events Manager with <code>event_id</code> = reference_code.</li>
+<li><strong>End-to-end (no attribution):</strong> book directly without <code>?fbclid</code>. Verify IF branch FALSE, no CAPI call, no n8n execution of the dispatcher.</li>
+<li><strong>Idempotency:</strong> re-fire the booking-events webhook with the same payload. Meta dedupes on <code>(event_name, event_id)</code> within 48h — no double conversion in Events Manager.</li>
+<li><strong>Ship:</strong> <code>pnpm sync:staging</code> for workflows + deploy www to staging Vercel; verify on <code>staging.silkskyair.com</code>; then <code>pnpm sync:production</code> + prod Vercel.</li>
+</ol>
+<h2>Notion tasks</h2>
+<p>The 6 tasks carry all implementation detail in their bodies; no separate sub-task pages. Each tagged <code>Week: W22</code>.</p>
+<ol>
+<li><strong>WWW | Analytics | Capture FB attribution at landing + apply when booking flow activates</strong> (covers steps 1-2)</li>
+<li><strong>WWW | Bookings | Forward analytics metadata through booking submit → bookings.metadata</strong> (covers steps 3-4)</li>
+<li><strong>Workflows | Bookings | Add IF + dispatch node on BookingConfirmed branch</strong> (covers step 5)</li>
+<li><strong>Workflows | Analytics | Simplify shared Meta CAPI workflow</strong> (covers step 6)</li>
+<li><strong>Workflows | Analytics | Create Meta CAPI credential + verify via Test Events</strong> (manual prereq + verify)</li>
+<li><strong>Workflows | Analytics | Deploy to staging + production</strong> (ship)</li>
+</ol>
+
+</article>
+</body>
+</html>

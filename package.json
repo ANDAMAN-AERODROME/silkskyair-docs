@@ -5,7 +5,8 @@
   "description": "Documentation source, training manuals, governance notes",
   "scripts": {
     "publish:dry": "tsx scripts/publish-to-notion.ts --dry-run",
-    "publish": "tsx scripts/publish-to-notion.ts"
+    "publish": "tsx scripts/publish-to-notion.ts",
+    "build:html": "tsx scripts/render-html.ts"
   },
   "dependencies": {
     "@notionhq/client": "^2.2.15",
@@ -14,6 +15,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
+    "marked": "^18.0.4",
     "tsx": "^4.19.0",
     "typescript": "^5.4.0"
   }
