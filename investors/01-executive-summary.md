@@ -1,6 +1,11 @@
 ---
 title: "Executive Summary"
 summary: "The whole thesis in three pages: a production aviation network platform, a white-label commercial layer on top, SilkSkyAir as the first operator — and why platform and architect compound the network investment."
+keypoints:
+  - "The platform is the asset | A production aviation network platform — sites, fleet, scheduling — already running."
+  - "Commerce is the value layer | A complete white-label commercial suite sits on top, proven live by SilkSkyAir."
+  - "Expansion is configuration | New heliports, aircraft, activities and operators are data and configuration, not projects."
+  - "Platform + architect compound | The codebase de-risks continuity; the architect de-risks evolution."
 ---
 
 # Executive Summary

@@ -1,6 +1,11 @@
 ---
 title: "Commercial Services — Value Added on the Network"
 summary: "A complete commerce stack — catalog, dynamic pricing, event-sourced bookings, payments, customers, resellers, marketing — built strictly on top of the network core, and packageable for any operator."
+keypoints:
+  - "A complete commerce stack | Catalog, dynamic pricing, bookings, payments, customers, resellers and marketing."
+  - "Every price is explainable | Component-based pricing with a full audit trail behind every booking."
+  - "Money settles itself | Two payment providers, commissions, VAT and withholding handled in-platform."
+  - "Packaged for any operator | The entire layer is white-label ready on the shared network core."
 ---
 
 # Commercial Services — Value Added on the Network
@@ -54,20 +59,13 @@ booking is therefore **self-explanatory and audit-ready**, and new pricing strat
 Booking status is never stored as a mutable field. It is **derived from an append-only
 event log** (`booking_current_status()` over `booking_events`):
 
-```mermaid
-stateDiagram-v2
-  [*] --> pending : BookingRegistered
-  pending --> approved : BookingApproved
-  pending --> declined : BookingDeclined
-  approved --> confirmed : BookingConfirmed (payment received)
-  confirmed --> completed : BookingCompleted (flight delivered)
-  confirmed --> cancelled : CancellationApproved
-  approved --> cancelled : CancellationApproved
-  note right of confirmed
-    Amendments (date changes, passenger
-    changes) append events without
-    destroying history
-  end note
+```viz-lifecycle
+01 | Registered | Customer books online | major
+02 | Approved | Operations confirms capacity
+03 | Confirmed | Payment received | major
+04 | Flown | Service delivered on the network
+05 | Completed | Settled, audited, archived | major
+note: Amendments, declines and cancellations are recorded the same way — nothing is ever overwritten
 ```
 
 More than forty event types cover registration, approval, payment, amendment requests and

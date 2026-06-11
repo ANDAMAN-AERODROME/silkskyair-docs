@@ -1,6 +1,11 @@
 ---
 title: "Expansion Roadmap"
 summary: "Three expansion axes — network nodes and fleet, aviation activities, white-label operators — with a four-stage operator program and the revenue surfaces each step opens."
+keypoints:
+  - "Network first | New nodes and aircraft are immediately productive across all operators and products."
+  - "Activities second | Transfers, charters and medevac activate on the engine that already exists."
+  - "Operators third | A four-stage white-label program scales the company into a two-sided platform."
+  - "Optionality preserved | Licensing, joint ventures or formal division — the boundaries already exist."
 ---
 
 # Expansion Roadmap

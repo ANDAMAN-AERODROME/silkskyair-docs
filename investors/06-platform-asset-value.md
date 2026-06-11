@@ -1,6 +1,11 @@
 ---
 title: "Platform Asset Value"
 summary: "The asset case in verifiable terms: measurable build scale, replacement-cost reasoning, retired risk, strategic optionality — and the key-person value of the platform architect."
+keypoints:
+  - "Measurable substance | 503 migrations, 8 applications, 26 modules — every claim re-countable from source."
+  - "Production-hardened | Real customers, partners and payment flows are encoded in the system's history."
+  - "Risk already retired | Integrations live, audit trails built in, no proprietary lock-in at the core."
+  - "The key person | Coherence, velocity and strategic direction concentrated in the platform architect."
 ---
 
 # Platform Asset Value

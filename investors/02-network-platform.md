@@ -1,6 +1,11 @@
 ---
 title: "The Network Platform"
 summary: "The core asset: a graph of helipads, heliports and routes, the aircraft fleet, and an operator-neutral scheduling and availability engine covering the full span of aviation activities."
+keypoints:
+  - "Sites and routes form a graph | Every helipad, heliport and aerodrome is a node; every route is sellable inventory."
+  - "One engine, every activity | Tours, charters, transfers, medevac and ferry run on the same scheduling core."
+  - "Operations run themselves | Availability, crews, disruptions and schedules are computed continuously."
+  - "Built to compound | Each new node raises the value of every existing node on the network."
 ---
 
 # The Network Platform
@@ -42,28 +47,10 @@ commercial concern.
 The model is deliberately graph-shaped: **airfields are nodes, network edges are routes**,
 and every flight the platform ever schedules is derived from that graph.
 
-```mermaid
-flowchart LR
-  subgraph NETWORK["Network graph (the asset)"]
-    AF1[Airfield / Helipad A] ---|edge: distance, flight time| AF2[Airfield / Helipad B]
-    AF2 --- AF3[Heliport C]
-  end
-
-  subgraph OPS["Operations derived from the graph"]
-    FP[Flight plan] --> M[Mission<br/>tour / charter / transfer / medevac / ferry]
-    M --> F[Flight]
-    F --> CREW[Crew assignment]
-    F --> COMP[Catering / transport / equipment]
-  end
-
-  subgraph FLEET["Fleet"]
-    AC[Aircraft] --> SCHED[Computed aircraft schedule]
-    AC --> MAINT[Maintenance & component log]
-  end
-
-  NETWORK --> FP
-  AC --> F
-  OEV[Operational events<br/>weather, maintenance, crew rest] -.blocks.-> SCHED
+```viz-network
+Sites become nodes | Every helipad, heliport and aerodrome joins the graph with its routes, timezone and operating data.
+Routes become inventory | Each connection carries distance and flight time — the raw material of every product sold on the network.
+Schedules compute themselves | Missions, crews, ferry legs and disruptions are resolved into flyable schedules automatically.
 ```
 
 ```pull

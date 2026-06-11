@@ -1,6 +1,11 @@
 ---
 title: "Architecture — Modern and Modular by Design"
 summary: "Independently deployable applications around a strongly-governed data core: current-generation stack, database-enforced security, event-driven automation, serverless operations."
+keypoints:
+  - "Audience-specific applications | Separate apps for operations, customers, partners and the public."
+  - "One strongly-governed core | PostgreSQL with security enforced in the database, across 16 domain schemas."
+  - "Event-driven automation | Bookings, payments, CRM and content connected by auditable workflows."
+  - "Serverless operations | No servers owned, near-zero ops overhead, elastic scale."
 ---
 
 # Architecture — Modern and Modular by Design
@@ -12,41 +17,14 @@ substance behind the claims of modernity and modularity.
 
 ## Platform topology
 
-```mermaid
-flowchart TB
-  subgraph PUBLIC["Public channels"]
-    WWW["silkskyair-www<br/>Astro storefront + booking engine<br/>(Azure Static Web Apps)"]
-  end
-
-  subgraph APPS["Audience-specific applications (Next.js 16 / React 19, Vercel)"]
-    MGR["silkskyair-manager<br/>back office · 26 permission-gated modules"]
-    MEM["silkskyair-member<br/>customer portal"]
-    PTR["silkskyair-partner<br/>reseller portal"]
-    ACC["silkskyair-account<br/>central account service"]
-  end
-
-  subgraph CORE["Data & automation core"]
-    API["silkskyair-api — Supabase / PostgreSQL<br/>503 migrations · 16 schemas · 140+ tables<br/>RLS security · edge functions"]
-    N8N["silkskyair-workflows — n8n<br/>20 event-driven workflows"]
-    CMS["silkskyair-cms — Strapi 5<br/>headless content, multi-locale"]
-  end
-
-  subgraph LIBS["Published shared libraries (GitHub Packages)"]
-    UI["@andaman-aerodrome/silkskyair-ui"]
-    REP["…/silkskyair-reporting"]
-    SKY["…/silkskyair-skystories"]
-  end
-
-  WWW --> API
-  WWW --> CMS
-  MGR --> API
-  MEM --> API
-  PTR --> API
-  ACC --> API
-  API -- webhooks --> N8N
-  N8N -- email · CRM · payments · publishing --> EXT["Omise · SCB · Zoho CRM · Short.io · Email"]
-  N8N --> CMS
-  LIBS -.consumed by.-> APPS
+```viz-ecosystem
+cell: OPERATIONS | Manager console | 26 permission-gated modules
+core: THE DATA CORE | One governed data platform | PostgreSQL · 16 schemas · security enforced in the database itself
+cell: PUBLIC | Storefront & booking | multilingual, search-optimized
+cell: CUSTOMERS | Member portal | bookings, amendments, payments
+cell: PARTNERS | Reseller portal | commissions & settlement
+cell: CONTENT | Headless CMS | marketing edits, no engineering
+cell: AUTOMATION | Workflow engine | 20 event-driven workflows
 ```
 
 ## A modern stack, end to end

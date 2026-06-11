@@ -1,6 +1,11 @@
 ---
 title: "White-Label Separation — One Network, Unlimited Operators"
 summary: "How the platform divides into a network platform plus unlimited white-label commercial operators — using tenancy, isolation and settlement mechanisms that already run in production."
+keypoints:
+  - "Tenancy is built in | Organizations, database-enforced isolation and per-tenant settlement run in production today."
+  - "Onboarding is provisioning | A new operator is a checklist of data and configuration, not a development project."
+  - "Three degrees of separation | From logical isolation to full corporate division — selectable per strategy."
+  - "SilkSkyAir proves it | Operator #1 exercises every white-label surface end to end."
 ---
 
 # White-Label Separation — One Network, Unlimited Operators
@@ -11,35 +16,11 @@ mechanisms that already exist in production, not a re-architecture.
 
 ## The target operating model
 
-```mermaid
-flowchart TB
-  subgraph AANP["ANDAMAN AERODROME NETWORK PLATFORM — owned & operated by the network company"]
-    direction LR
-    NET[Helipad / heliport network<br/>airfields + route edges]
-    FLEET[Aircraft fleet<br/>maintenance, schedules]
-    ENGINE[Scheduling & availability engine<br/>missions, crews, disruptions]
-    NET --- ENGINE
-    FLEET --- ENGINE
-  end
-
-  subgraph OPS["WHITE-LABEL COMMERCIAL OPERATORS — unlimited, each an `organization`"]
-    direction LR
-    OP1["SilkSkyAir<br/>(operator #1 — showcase)<br/>tours · bookings · payments"]
-    OP2["Operator #2<br/>e.g. island transfers brand"]
-    OP3["Operator #N<br/>e.g. charter / medevac brand"]
-  end
-
-  CH1[Branded websites] --> OP1
-  CH2[Member portals] --> OP1
-  CH3[Partner/reseller portals] --> OP1
-
-  OP1 -->|missions & capacity requests| ENGINE
-  OP2 -->|missions & capacity requests| ENGINE
-  OP3 -->|missions & capacity requests| ENGINE
-
-  ENGINE -->|availability, schedules, fulfilment| OP1
-  ENGINE --> OP2
-  ENGINE --> OP3
+```viz-tenancy
+op: SilkSkyAir | Helicopter tours — the live showcase operator | LIVE | storefront, members, partners
+op: Operator 2 | e.g. an island-transfers brand on the same engine | NEXT | storefront, members
+ghost: Operator N | Your brand here — provisioned, themed and live in weeks | OPEN | storefront
+foundation: Andaman Aerodrome Network Platform | Helipads, heliports & routes · aircraft fleet · scheduling and availability engine — owned and operated by the network company
 ```
 
 The network company runs the base layer and sells **capacity plus a turn-key commercial

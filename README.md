@@ -124,5 +124,12 @@ pnpm build:investor-pdf   # → investors/pdf/ (combined memorandum + per-chapte
 Visual directives (fenced code blocks rendered as template components in the PDFs;
 shown as readable code blocks on GitHub): `stats` (big-number cards, `VALUE | label`),
 `steps` (horizontal flow, `NN | Title | desc`), `layers` (layer-cake stack),
-`timeline` (stage timeline, `Marker | Title | desc`), `pull` (pull quote).
-Chapter frontmatter `summary:` feeds the section divider pages and the TOC.
+`timeline` (stage timeline, `Marker | Title | desc`), `pull` (pull quote), and the
+stylized infographics `viz-network` (route-map panorama + caption chips),
+`viz-lifecycle` (customer-journey track, `NN | Title | desc [| major]`, optional
+trailing `note:` line), `viz-tenancy` (`op:`/`ghost:` operator cards over a
+`foundation:` bar), `viz-ecosystem` (`cell:`/`core:` hub-and-ring grid).
+Chapter frontmatter: `summary:` feeds the divider pages and the TOC; `keypoints:`
+(list of `Title | desc`) fills the divider's "In this section" cards. Each divider
+also carries a per-section SVG motif and a 01–08 progress strip (see
+`scripts/build-investor-pdf.mjs`).

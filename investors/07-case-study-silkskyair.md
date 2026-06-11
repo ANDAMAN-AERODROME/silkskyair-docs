@@ -1,6 +1,11 @@
 ---
 title: "Case Study — SilkSkyAir, the First Operator"
 summary: "The reference implementation: a real helicopter-tour business running end-to-end on the platform — acquisition, booking, payment, fulfilment, resellers and settlement. The demo is a real company."
+keypoints:
+  - "A real business, end to end | From acquisition to repeat revenue with no manual glue between steps."
+  - "Resellers settle automatically | Partner commissions with Thai VAT and withholding mechanics built in."
+  - "Operated, not just launched | Releases, training manuals and review cycles document live operations."
+  - "The strongest sales asset | The next operator buys a system a working company already runs on."
 ---
 
 # Case Study — SilkSkyAir, the First Operator
