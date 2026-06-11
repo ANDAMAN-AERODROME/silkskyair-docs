@@ -21,7 +21,7 @@ be offered, as a package, to any commercial operator on the network
 | Product catalog | `tours` (+ `tours_i18n` translations, `tour_media`, departure points via `tour_airfields`) |
 | Base & seat pricing | `tour_pricing` — per aircraft, seat capacity, shared-flight discounting |
 | Real-time availability & quotes | availability engine + `cache` schema (operational rules first, pricing second) |
-| Bookings | `bookings` + event-sourced lifecycle (`booking_events`, 33 event types) |
+| Bookings | `bookings` + event-sourced lifecycle (`booking_events`, 40+ event types) |
 | Line-item pricing | `booking_price_components` — base, share discount, promotion, coupon, private premium, surcharge, tax |
 | Passenger manifests | `booking_passengers` — including per-passenger weight for flight safety |
 | Add-on sales | `ancillary_items`, `booking_ancillary_items` (meals, transfers, insurance) |
@@ -69,8 +69,9 @@ stateDiagram-v2
   end note
 ```
 
-Thirty-three event types cover registration, approval, payment, amendment requests and
-approvals, cancellation workflow, check-in and completion. The commercial benefit:
+More than forty event types cover registration, approval, payment, amendment requests and
+approvals, cancellation and refund workflows, partner attribution and completion. The
+commercial benefit:
 
 - **Disputes are resolvable from the record** — who changed what, when, is always known.
 - **Compliance posture** — regulators and auditors get a tamper-evident history for free.
