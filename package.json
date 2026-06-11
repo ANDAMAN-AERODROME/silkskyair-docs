@@ -6,7 +6,8 @@
   "scripts": {
     "publish:dry": "tsx scripts/publish-to-notion.ts --dry-run",
     "publish": "tsx scripts/publish-to-notion.ts",
-    "build:html": "tsx scripts/render-html.ts"
+    "build:html": "tsx scripts/render-html.ts",
+    "build:investor-pdf": "node scripts/build-investor-pdf.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^2.2.15",
@@ -14,8 +15,14 @@
     "gray-matter": "^4.0.3"
   },
   "devDependencies": {
+    "@fontsource/hanken-grotesk": "^5.2.8",
+    "@fontsource/ibm-plex-mono": "^5.2.7",
+    "@fontsource/inter": "^5.2.8",
     "@types/node": "^20.11.0",
     "marked": "^18.0.4",
+    "mermaid": "^11.15.0",
+    "pdf-lib": "^1.17.1",
+    "puppeteer": "^25.1.0",
     "tsx": "^4.19.0",
     "typescript": "^5.4.0"
   }

@@ -108,3 +108,15 @@ cd silkskyair-manager  && pnpm doc-shots     # specs 5–7
 ```
 
 Both write PNGs to `silkskyair-docs/screenshots/<domain>/<feature>/`. After capture, commit and push — Notion picks up the new images on the next page view.
+
+## Investor documentation (`investors/`)
+
+Investor-facing platform documentation (plain markdown, not published to Notion).
+PDF renditions use the **AAC document template** (`templates/aac/aac-template.css`) —
+the SilkSkyAir visual language (Hanken Grotesk/Inter, navy + slate) recast in a
+corporate/architectural register with a steel-blue accent and no gold.
+
+```bash
+pnpm install --ignore-workspace
+pnpm build:investor-pdf   # → investors/pdf/ (combined memorandum + per-chapter PDFs)
+```
