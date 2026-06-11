@@ -1,5 +1,6 @@
 ---
 title: "Executive Summary"
+summary: "The whole thesis in three pages: a production aviation network platform, a white-label commercial layer on top, SilkSkyAir as the first operator — and why platform and architect compound the network investment."
 ---
 
 # Executive Summary
@@ -18,6 +19,13 @@ suite**: product catalog, component-based dynamic pricing, event-sourced booking
 two integrated payment providers, customer identity, a reseller/commission network with
 Thai tax mechanics, marketing tooling and reporting. The commercial layer is built as
 **value-added services on the network platform**, and is white-label ready.
+
+```layers
+CHANNELS | branded storefronts · member portals · partner portals — per operator
+COMMERCIAL SERVICES | catalog · dynamic pricing · bookings · payments · commissions · marketing (white-label)
+NETWORK PLATFORM | network graph · fleet · missions · crews · scheduling & availability engine
+PHYSICAL ASSETS | helipads · heliports · aircraft — owned and operated by the company
+```
 
 **SilkSkyAir**, the company's helicopter-tour business, is the **first commercial operator
 built on the platform** — and the proof that the entire stack runs a real company:
@@ -53,6 +61,17 @@ expansion into compounding digital value:
 ## Why the platform is a high-value asset
 
 The claims are verifiable in the source repositories, not asserted:
+
+```stats
+503 | ordered database migrations
+16 | dedicated DB schemas
+8 | applications & services
+26 | back-office modules
+20 | automation workflows
+3 | published libraries
+40+ | booking lifecycle events
+19 | repositories
+```
 
 - **Scale of build:** 503 ordered database migrations across 16 schemas (140+ active
   tables), 8 deployable applications/services, 3 published shared libraries, 20
@@ -92,10 +111,9 @@ program include capacity and network fees, white-label licensing, transaction-le
 participation, operator-facing services, and the company's own commercial operations,
 with SilkSkyAir as the living showcase.
 
-**The platform is the multiplier on the network investment: every helipad, heliport and
-aircraft the company adds becomes immediately schedulable, sellable and shareable across
-an unlimited number of commercial businesses — on infrastructure the company already
-owns.**
+```pull
+The platform is the multiplier on the network investment: every helipad, heliport and aircraft the company adds becomes immediately schedulable, sellable and shareable across an unlimited number of commercial businesses — on infrastructure the company already owns.
+```
 
 ---
 

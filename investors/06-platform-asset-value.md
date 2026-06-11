@@ -1,5 +1,6 @@
 ---
 title: "Platform Asset Value"
+summary: "The asset case in verifiable terms: measurable build scale, replacement-cost reasoning, retired risk, strategic optionality — and the key-person value of the platform architect."
 ---
 
 # Platform Asset Value
@@ -13,6 +14,17 @@ materials. What this chapter provides is the **verifiable substance** any such f
 would rest on.
 
 ## What exists, measurably
+
+```stats
+503 | ordered database migrations
+16 | dedicated DB schemas
+140+ | tables in active service
+30 | environment seed files
+8 | applications & services
+26 | back-office modules
+20 | automation workflows
+40+ | booking lifecycle events
+```
 
 All numbers below are derived directly from the repositories and can be re-counted at any
 time:

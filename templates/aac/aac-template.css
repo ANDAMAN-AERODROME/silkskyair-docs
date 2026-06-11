@@ -160,9 +160,9 @@ hr {
   display: flex;
   align-items: baseline;
   gap: 4mm;
-  padding: 3.2mm 0;
+  padding: 2.2mm 0;
   border-bottom: 0.5pt solid var(--aac-line);
-  font-size: 10.5pt;
+  font-size: 9.8pt;
 }
 .aac-toc li .no {
   font-family: var(--aac-font-mono);
@@ -171,7 +171,7 @@ hr {
   min-width: 9mm;
 }
 .aac-toc li .t { font-weight: 600; color: var(--aac-navy-deep); }
-.aac-toc li .d { color: var(--aac-ink-subtle); font-size: 9pt; margin-left: auto; text-align: right; max-width: 70mm; }
+.aac-toc li .d { color: var(--aac-ink-subtle); font-size: 7.8pt; line-height: 1.45; margin-left: auto; text-align: right; max-width: 88mm; }
 
 /* ════════════════════ Section / chapter chrome ════════════════════ */
 
@@ -304,3 +304,213 @@ ol li::marker { color: var(--aac-steel); font-family: var(--aac-font-mono); font
 
 /* chapter footer nav links are noise in print */
 .aac-chapter > em:last-child, .aac-chapter p:last-child em:only-child { color: var(--aac-ink-subtle); }
+
+/* ════════════════════ Visual components ════════════════════ */
+
+/* ── Chapter divider page ── */
+.aac-divider {
+  break-before: page;
+  break-after: page;
+  height: 257mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  color: #e2e8f0;
+  background:
+    linear-gradient(rgba(47, 139, 255, 0.06) 0.5pt, transparent 0.5pt),
+    linear-gradient(90deg, rgba(47, 139, 255, 0.06) 0.5pt, transparent 0.5pt),
+    linear-gradient(165deg, var(--aac-panel) 0%, var(--aac-navy-deep) 80%, var(--aac-navy) 100%);
+  background-size: 9mm 9mm, 9mm 9mm, cover;
+  padding: 16mm;
+  position: relative;
+  overflow: hidden;
+}
+.aac-divider .big-no {
+  position: absolute;
+  top: 4mm;
+  right: 10mm;
+  font-family: var(--aac-font-mono);
+  font-size: 92pt;
+  font-weight: 600;
+  color: transparent;
+  -webkit-text-stroke: 0.8pt rgba(47, 139, 255, 0.55);
+  letter-spacing: 0.02em;
+}
+.aac-divider .doc-ref {
+  font-family: var(--aac-font-mono);
+  font-size: 7.5pt;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--aac-steel-bright);
+  margin-bottom: 5mm;
+}
+.aac-divider h1 {
+  font-size: 27pt;
+  color: #ffffff;
+  max-width: 145mm;
+  margin-bottom: 5mm;
+}
+.aac-divider .summary {
+  font-size: 11.5pt;
+  line-height: 1.55;
+  color: #b9c3cf;
+  max-width: 140mm;
+  border-top: 0.6pt solid rgba(47, 139, 255, 0.45);
+  padding-top: 5mm;
+}
+
+/* ── Stat cards ── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 4), 1fr);
+  gap: 3mm;
+  margin: 1.4em 0;
+  break-inside: avoid;
+}
+.stat {
+  border: 0.5pt solid var(--aac-line);
+  border-top: 1.6pt solid var(--aac-steel);
+  border-radius: var(--aac-radius);
+  background: #ffffff;
+  padding: 3.2mm 3.5mm 2.8mm;
+}
+.stat .v {
+  font-family: var(--aac-font-mono);
+  font-size: 17pt;
+  font-weight: 600;
+  color: var(--aac-navy);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+.stat .l {
+  font-size: 7.2pt;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--aac-ink-subtle);
+  margin-top: 1.6mm;
+  line-height: 1.4;
+}
+
+/* ── Step flow (horizontal chevron chain) ── */
+.aac-steps {
+  display: flex;
+  align-items: stretch;
+  gap: 2mm;
+  margin: 1.4em 0;
+  break-inside: avoid;
+}
+.aac-steps .step {
+  flex: 1;
+  position: relative;
+  background: var(--aac-surface-muted);
+  border: 0.5pt solid var(--aac-line);
+  border-left: 1.6pt solid var(--aac-steel);
+  border-radius: var(--aac-radius);
+  padding: 2.8mm 3mm 2.4mm;
+}
+.aac-steps .step .n {
+  font-family: var(--aac-font-mono);
+  font-size: 7pt;
+  color: var(--aac-steel);
+  letter-spacing: 0.18em;
+  margin-bottom: 1.2mm;
+}
+.aac-steps .step .t {
+  font-size: 8.6pt;
+  font-weight: 700;
+  color: var(--aac-navy-deep);
+  line-height: 1.3;
+  margin-bottom: 1mm;
+}
+.aac-steps .step .d { font-size: 7.6pt; color: var(--aac-ink-muted); line-height: 1.45; }
+.aac-steps .step:not(:last-child)::after {
+  content: "›";
+  position: absolute;
+  right: -2.2mm;
+  top: 50%;
+  transform: translateY(-55%);
+  color: var(--aac-steel-bright);
+  font-size: 13pt;
+  font-weight: 700;
+  z-index: 2;
+}
+
+/* ── Layer cake ── */
+.aac-layers { margin: 1.4em 0; break-inside: avoid; }
+.aac-layers .layer {
+  display: flex;
+  align-items: baseline;
+  gap: 4mm;
+  padding: 3.4mm 5mm;
+  margin-bottom: 1.6mm;
+  border-radius: var(--aac-radius);
+}
+.aac-layers .layer .t {
+  font-size: 9.5pt;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.aac-layers .layer .d { font-size: 8.6pt; line-height: 1.45; }
+.aac-layers .layer:nth-child(1) { background: var(--aac-surface-muted); border: 0.5pt dashed var(--aac-line-strong); color: var(--aac-ink-muted); }
+.aac-layers .layer:nth-child(1) .t { color: var(--aac-ink-subtle); }
+.aac-layers .layer:nth-child(2) { background: var(--aac-steel-faint); border: 0.5pt solid #b9dcff; color: var(--aac-navy-deep); }
+.aac-layers .layer:nth-child(2) .t { color: var(--aac-steel); }
+.aac-layers .layer:nth-child(3) { background: var(--aac-navy); color: #d7e3f2; }
+.aac-layers .layer:nth-child(3) .t { color: #ffffff; }
+.aac-layers .layer:nth-child(4) { background: var(--aac-panel); color: #b9c3cf; }
+.aac-layers .layer:nth-child(4) .t { color: var(--aac-steel-bright); }
+
+/* ── Stage timeline ── */
+.aac-timeline { margin: 1.6em 0; break-inside: avoid; }
+.aac-timeline .stage {
+  display: grid;
+  grid-template-columns: 26mm 1fr;
+  gap: 5mm;
+  position: relative;
+  padding: 0 0 5mm 0;
+}
+.aac-timeline .stage::before {
+  content: "";
+  position: absolute;
+  left: 29mm;
+  top: 2mm;
+  bottom: -2mm;
+  width: 0.7pt;
+  background: var(--aac-line-strong);
+}
+.aac-timeline .stage:last-child::before { display: none; }
+.aac-timeline .stage .marker {
+  font-family: var(--aac-font-mono);
+  font-size: 8pt;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: var(--aac-navy);
+  border-radius: var(--aac-radius);
+  padding: 1.6mm 2.4mm;
+  align-self: start;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+.aac-timeline .stage .body .t { font-size: 10pt; font-weight: 700; color: var(--aac-navy-deep); margin-bottom: 0.8mm; }
+.aac-timeline .stage .body .d { font-size: 8.8pt; color: var(--aac-ink-muted); line-height: 1.5; }
+
+/* ── Pull quote ── */
+.aac-pull {
+  margin: 1.8em 0;
+  padding: 5mm 6mm;
+  border-top: 1.6pt solid var(--aac-steel);
+  border-bottom: 0.5pt solid var(--aac-line);
+  font-size: 13.5pt;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--aac-navy);
+  letter-spacing: -0.005em;
+  break-inside: avoid;
+}
+.aac-pull::before { content: "▍"; color: var(--aac-steel-bright); margin-right: 2mm; }

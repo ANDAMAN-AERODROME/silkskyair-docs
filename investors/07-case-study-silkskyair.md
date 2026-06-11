@@ -1,5 +1,6 @@
 ---
 title: "Case Study — SilkSkyAir, the First Operator"
+summary: "The reference implementation: a real helicopter-tour business running end-to-end on the platform — acquisition, booking, payment, fulfilment, resellers and settlement. The demo is a real company."
 ---
 
 # Case Study — SilkSkyAir, the First Operator
@@ -11,8 +12,15 @@ white-label capability an operator licensee would buy is exercised here in produ
 
 ## The business, as run on the platform
 
-**Acquisition → booking → payment → fulfilment → repeat**, with no manual glue between
-the steps:
+```steps
+01 | Acquisition | multilingual storefront, campaigns, CRM
+02 | Booking | real-time availability & component pricing
+03 | Payment | cards & PromptPay, auto-reconciled
+04 | Fulfilment | missions, crews, schedules on the core
+05 | Relationship | member portal & canonical profiles
+```
+
+No manual glue between the steps:
 
 1. **Acquisition.** A multilingual storefront (`silkskyair-www`, Astro) serves the tour
    catalog, editorial SkyStories content, promotions and campaign landing pages with QR

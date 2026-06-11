@@ -1,5 +1,6 @@
 ---
 title: "The Network Platform"
+summary: "The core asset: a graph of helipads, heliports and routes, the aircraft fleet, and an operator-neutral scheduling and availability engine covering the full span of aviation activities."
 ---
 
 # The Network Platform
@@ -65,9 +66,13 @@ flowchart LR
   OEV[Operational events<br/>weather, maintenance, crew rest] -.blocks.-> SCHED
 ```
 
-The consequence for expansion is structural: **adding a heliport to the network is a data
-operation, not a software project.** A new node plus its edges immediately participates in
-route planning, scheduling, availability and every commercial product downstream.
+```pull
+Adding a heliport to the network is a data operation, not a software project.
+```
+
+The consequence for expansion is structural: a new node plus its edges immediately
+participates in route planning, scheduling, availability and every commercial product
+downstream.
 
 ## The scheduling and availability engine
 

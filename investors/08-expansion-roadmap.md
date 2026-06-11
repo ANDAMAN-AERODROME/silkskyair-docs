@@ -1,5 +1,6 @@
 ---
 title: "Expansion Roadmap"
+summary: "Three expansion axes — network nodes and fleet, aviation activities, white-label operators — with a four-stage operator program and the revenue surfaces each step opens."
 ---
 
 # Expansion Roadmap
@@ -11,9 +12,9 @@ financial projections belong to management's financial materials.
 
 ## The expansion thesis in one line
 
-> Every new node and every new aircraft added to the network is immediately productive
-> across all operators and all activity types, because the platform turns physical
-> expansion into a data operation.
+```pull
+Every new node and every new aircraft added to the network is immediately productive across all operators and all activity types, because the platform turns physical expansion into a data operation.
+```
 
 ## Axis 1 — Network expansion (the primary focus)
 
@@ -51,25 +52,12 @@ The mission-type taxonomy makes new aviation business lines additive:
 The [separation model](04-white-label-separation.md) defines the product; the rollout is
 deliberately staged:
 
-**Stage 1 — Second internal brand.** Launch one additional commercial brand (e.g. a
-transfers brand) as a separate `organization` on the shared deployment. Purpose: exercise
-the tenant boundary end-to-end and produce the operator-onboarding playbook from a live
-run, at zero external risk.
-
-**Stage 2 — First external operator.** Onboard an independent operator under the
-playbook: own branding, catalog, payment accounts, staff and reseller network — on
-network capacity under commercial agreements. Purpose: validate the licensing motion and
-the support model.
-
-**Stage 3 — Operator program at scale.** Productize onboarding (tenant provisioning,
-theming, CMS spaces, payment connection) into a repeatable package; the marginal operator
-approaches pure configuration cost. At this stage the company operates a genuine
-two-sided platform: network capacity on one side, commercial operators on the other.
-
-**Stage 4 — Structural options.** With the program proven, the already-existing
-boundaries (schemas, privilege namespaces, repositories) support whichever structure the
-company chooses: licensing, joint ventures per market, or formal division into a network
-company and commercial entities.
+```timeline
+Stage 1 | Second internal brand | Launch one additional commercial brand (e.g. a transfers brand) as a separate organization on the shared deployment. Purpose: exercise the tenant boundary end-to-end and produce the operator-onboarding playbook from a live run, at zero external risk.
+Stage 2 | First external operator | Onboard an independent operator under the playbook: own branding, catalog, payment accounts, staff and reseller network — on network capacity under commercial agreements. Purpose: validate the licensing motion and the support model.
+Stage 3 | Operator program at scale | Productize onboarding (tenant provisioning, theming, CMS spaces, payment connection) into a repeatable package; the marginal operator approaches pure configuration cost. The company now operates a genuine two-sided platform: network capacity on one side, commercial operators on the other.
+Stage 4 | Structural options | With the program proven, the already-existing boundaries (schemas, privilege namespaces, repositories) support whichever structure the company chooses: licensing, joint ventures per market, or formal division into a network company and commercial entities.
+```
 
 ## Revenue surfaces this roadmap opens
 

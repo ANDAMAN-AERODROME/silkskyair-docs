@@ -1,5 +1,6 @@
 ---
 title: "White-Label Separation — One Network, Unlimited Operators"
+summary: "How the platform divides into a network platform plus unlimited white-label commercial operators — using tenancy, isolation and settlement mechanisms that already run in production."
 ---
 
 # White-Label Separation — One Network, Unlimited Operators
@@ -114,16 +115,11 @@ content — the defining economics of a platform business.
 
 The same design supports three increasingly strong separation models, in order of effort:
 
-1. **Logical separation (available now)** — all tenants in one deployment, isolated by
-   organizations + RLS + module privileges. Right for onboarding speed.
-2. **Branded-channel separation (available now)** — per-operator storefront/portal
-   deployments (the apps are independently deployable today) over the shared core.
-3. **Corporate separation (structural option)** — because network tables, commercial
-   tables and applications are already partitioned by schema, privilege namespace and
-   repository, the platform can be split into **two products owned by two entities** —
-   the network platform and a commercial-suite licensee — along boundaries that already
-   exist. This is the option that lets the company divide the platform cleanly if the
-   network business and commercial businesses are ever held or sold separately.
+```timeline
+Level 1 | Logical separation — available now | All tenants in one deployment, isolated by organizations + RLS + module privileges. Right for onboarding speed.
+Level 2 | Branded-channel separation — available now | Per-operator storefront and portal deployments over the shared core; the applications are independently deployable today.
+Level 3 | Corporate separation — structural option | Network tables, commercial tables and applications are already partitioned by schema, privilege namespace and repository, so the platform can be split into two products owned by two entities — the network platform and a commercial-suite licensee. This is what lets the company divide the platform cleanly if the network and commercial businesses are ever held or sold separately.
+```
 
 ## SilkSkyAir: tenant #1 as proof
 

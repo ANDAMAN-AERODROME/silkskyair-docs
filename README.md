@@ -120,3 +120,9 @@ corporate/architectural register with a steel-blue accent and no gold.
 pnpm install --ignore-workspace
 pnpm build:investor-pdf   # → investors/pdf/ (combined memorandum + per-chapter PDFs)
 ```
+
+Visual directives (fenced code blocks rendered as template components in the PDFs;
+shown as readable code blocks on GitHub): `stats` (big-number cards, `VALUE | label`),
+`steps` (horizontal flow, `NN | Title | desc`), `layers` (layer-cake stack),
+`timeline` (stage timeline, `Marker | Title | desc`), `pull` (pull quote).
+Chapter frontmatter `summary:` feeds the section divider pages and the TOC.

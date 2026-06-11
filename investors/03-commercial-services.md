@@ -1,5 +1,6 @@
 ---
 title: "Commercial Services — Value Added on the Network"
+summary: "A complete commerce stack — catalog, dynamic pricing, event-sourced bookings, payments, customers, resellers, marketing — built strictly on top of the network core, and packageable for any operator."
 ---
 
 # Commercial Services — Value Added on the Network
@@ -117,9 +118,13 @@ thus a **structured, portable asset**, not rows scattered across a booking table
 
 Every capability above consumes the network core and adds margin on top of it:
 
-```
-network capacity (AANP)  →  products (tours/charters/transfers)  →  channels (web, members,
-partners)  →  payments & settlement  →  customer relationships  →  repeat revenue
+```steps
+01 | Network capacity | AANP scheduling & availability
+02 | Products | tours · charters · transfers
+03 | Channels | web, member & partner portals
+04 | Payments & settlement | cards, QR, commissions
+05 | Relationships | canonical customer profiles
+06 | Repeat revenue | the loop compounds
 ```
 
 The layer is comprehensive enough to run a real business today — demonstrated by

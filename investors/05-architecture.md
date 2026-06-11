@@ -1,5 +1,6 @@
 ---
 title: "Architecture — Modern and Modular by Design"
+summary: "Independently deployable applications around a strongly-governed data core: current-generation stack, database-enforced security, event-driven automation, serverless operations."
 ---
 
 # Architecture — Modern and Modular by Design
