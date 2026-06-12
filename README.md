@@ -121,6 +121,14 @@ pnpm install --ignore-workspace
 pnpm build:investor-pdf   # → investors/pdf/ (combined memorandum + per-chapter PDFs)
 ```
 
+**Versioning.** `investors/version.json` is the single source of truth (document id,
+version, issue date, classification, revision history). The build stamps the version on
+the cover, page headers, back cover and a Document Control page (with the full revision
+history) after the TOC, and archives each issue as
+`investors/pdf/archive/AAC-Investor-Documentation-v<version>.pdf`. To issue a new
+version: bump `version` and `issued`, append a `history` entry describing the changes,
+rebuild, commit. The build fails if the current version has no matching history entry.
+
 Visual directives (fenced code blocks rendered as template components in the PDFs;
 shown as readable code blocks on GitHub): `stats` (big-number cards, `VALUE | label`),
 `steps` (horizontal flow, `NN | Title | desc`), `layers` (layer-cake stack),

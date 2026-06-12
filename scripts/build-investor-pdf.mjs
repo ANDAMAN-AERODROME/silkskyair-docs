@@ -41,10 +41,19 @@ const OUT = path.join(SRC, "pdf");
 const TPL_CSS = readFileSync(path.join(ROOT, "templates/aac/aac-template.css"), "utf8");
 const MERMAID_JS = readFileSync(path.join(ROOT, "node_modules/mermaid/dist/mermaid.min.js"), "utf8");
 
-const DOC_ID = "AAC-INV-001";
-const DOC_DATE = "June 2026";
-const CLASSIFICATION = "Confidential — Investor Use Only";
+const DOC_META = JSON.parse(readFileSync(path.join(SRC, "version.json"), "utf8"));
+const DOC_ID = DOC_META.id;
+const DOC_DATE = new Date(DOC_META.issued + "T00:00:00Z")
+  .toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+const VERSION = DOC_META.version;
+const CLASSIFICATION = DOC_META.classification;
 const SECTIONS = ["01", "02", "03", "04", "05", "06", "07", "08"];
+
+/* document-control sanity: the issued version must be the last history entry */
+const last = DOC_META.history[DOC_META.history.length - 1];
+if (!last || last.version !== VERSION) {
+  throw new Error(`version.json: current version ${VERSION} has no matching final history entry (found ${last?.version}). Add a history entry when bumping the version.`);
+}
 
 /* ── fonts (embedded from @fontsource via file:// URLs) ── */
 const font = (pkg, file) =>
@@ -321,9 +330,39 @@ const COVER = (title, subtitle) => `
   <div class="meta">
     <div><div class="k">Document</div><div class="v">${DOC_ID}</div></div>
     <div><div class="k">Issued</div><div class="v">${DOC_DATE}</div></div>
-    <div><div class="k">Version</div><div class="v">1.0</div></div>
+    <div><div class="k">Version</div><div class="v">v${VERSION}</div></div>
     <div><div class="k">Classification</div><div class="v">${CLASSIFICATION}</div></div>
   </div>
+</section>`;
+
+/* formal document-control page: meta block + revision history */
+const DOC_CONTROL = `
+<section class="aac-chapter" id="document-control">
+  <div class="chapter-head">
+    <div class="eyebrow">${DOC_ID} · Document Control</div>
+    <h1>Document Control</h1>
+  </div>
+  <table>
+    <tr><th style="width:34mm">Document</th><td>${DOC_ID} — ${esc(DOC_META.title)}</td></tr>
+    <tr><th>Current version</th><td>v${VERSION}</td></tr>
+    <tr><th>Issued</th><td>${esc(DOC_META.issued)}</td></tr>
+    <tr><th>Prepared by</th><td>${esc(DOC_META.preparedBy)}</td></tr>
+    <tr><th>Classification</th><td>${CLASSIFICATION}</td></tr>
+  </table>
+  <h2>Revision history</h2>
+  <table>
+    <thead><tr><th style="width:18mm">Version</th><th style="width:24mm">Date</th><th>Changes</th></tr></thead>
+    <tbody>
+      ${[...DOC_META.history].reverse()
+        .map((h) => `<tr><td><code>v${esc(h.version)}</code></td><td>${esc(h.date)}</td><td>${esc(h.summary)}</td></tr>`)
+        .join("\n")}
+    </tbody>
+  </table>
+  <p style="margin-top:4mm; font-size:8.6pt; color:#64748b;">This document is issued under
+  version control. The authoritative source is the <code>investors/</code> directory of the
+  <code>silkskyair-docs</code> repository; each issued version is archived as
+  <code>AAC-Investor-Documentation-v&lt;version&gt;.pdf</code>. Verify the version above
+  against the page headers before relying on a printed copy.</p>
 </section>`;
 
 const BACK_COVER = `
@@ -340,7 +379,7 @@ const BACK_COVER = `
   </div>
   <div class="foot">
     <span>Platform Architecture Office</span>
-    <span>${DOC_ID} · ${DOC_DATE} · ${CLASSIFICATION}</span>
+    <span>${DOC_ID} · v${VERSION} · ${DOC_DATE} · ${CLASSIFICATION}</span>
   </div>
 </section>`;
 
@@ -387,7 +426,7 @@ async function printPdf(page, html, { headerFooter }) {
     ...common,
     displayHeaderFooter: true,
     headerTemplate: `<div style="width:100%;font-family:'IBM Plex Mono',monospace;font-size:6.4pt;letter-spacing:0.18em;color:#64748b;padding:0 16mm;display:flex;justify-content:space-between;text-transform:uppercase;">
-        <span>Andaman Aerodrome — Network Platform</span><span>${DOC_ID}</span></div>`,
+        <span>Andaman Aerodrome — Network Platform</span><span>${DOC_ID} · v${VERSION}</span></div>`,
     footerTemplate: `<div style="width:100%;font-family:'IBM Plex Mono',monospace;font-size:6.4pt;letter-spacing:0.14em;color:#64748b;padding:0 16mm;display:flex;justify-content:space-between;text-transform:uppercase;">
         <span>${CLASSIFICATION}</span><span>Page <span class="pageNumber"></span> / <span class="totalPages"></span></span></div>`,
   });
@@ -426,13 +465,20 @@ const coverPdf = await printPdf(
 const combinedMarked = makeMarked("anchor");
 const bodyPdf = await printPdf(
   page,
-  htmlDocument(TOC(chapters) + chapters.map((c) => chapterHtml(c, combinedMarked, { divider: true })).join("\n")),
+  htmlDocument(TOC(chapters) + DOC_CONTROL + chapters.map((c) => chapterHtml(c, combinedMarked, { divider: true })).join("\n")),
   { headerFooter: true }
 );
 const backPdf = await printPdf(page, htmlDocument(BACK_COVER), { headerFooter: false });
 const combined = await mergePdfs([coverPdf, bodyPdf, backPdf]);
 writeFileSync(path.join(OUT, "AAC-Investor-Documentation.pdf"), combined);
 console.log("✓ AAC-Investor-Documentation.pdf");
+
+// archive the issued version (immutable record per version)
+const ARCHIVE = path.join(OUT, "archive");
+mkdirSync(ARCHIVE, { recursive: true });
+const archiveName = `AAC-Investor-Documentation-v${VERSION}.pdf`;
+writeFileSync(path.join(ARCHIVE, archiveName), combined);
+console.log(`✓ archive/${archiveName}`);
 
 // 2) Standalone chapter documents (divider page acts as a mini-cover)
 const soloMarked = makeMarked("plain");
