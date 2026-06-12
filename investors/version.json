@@ -1,0 +1,25 @@
+{
+  "id": "AAC-INV-001",
+  "title": "Investor Documentation",
+  "version": "1.2.0",
+  "issued": "2026-06-12",
+  "classification": "Confidential — Investor Use Only",
+  "preparedBy": "Platform Architecture Office",
+  "history": [
+    {
+      "version": "1.0.0",
+      "date": "2026-06-11",
+      "summary": "Initial issue — nine-section investor documentation suite (network platform, commercial services, white-label separation, architecture, asset value, case study, roadmap)."
+    },
+    {
+      "version": "1.1.0",
+      "date": "2026-06-11",
+      "summary": "Visual upgrade — section divider pages, stat cards, step flows, stage timelines, layer diagram, cover constellation."
+    },
+    {
+      "version": "1.2.0",
+      "date": "2026-06-12",
+      "summary": "Stylized infographics replacing technical diagrams; divider pages with key points and progress strip; back cover; document control and revision history introduced."
+    }
+  ]
+}
