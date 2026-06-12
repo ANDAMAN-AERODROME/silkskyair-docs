@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Platform Architecture Whitepaper</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+
+.theme-executive h1 {
+  color: #032b5b; border-bottom: 3px solid #032b5b; font-size: 2.25em;
+  padding-bottom: .35em; letter-spacing: -0.01em;
+}
+.theme-executive h2 { color: #032b5b; border-bottom: 1px solid #d1d9e0; margin-top: 2.2em; }
+.theme-executive h3 { color: #0a3d73; }
+.theme-executive a { color: #0a5ad6; }
+.theme-executive blockquote {
+  border-left: .25em solid #032b5b; background: #f3f6fb; color: #2b3a4a;
+  padding: .75em 1em; border-radius: 0 8px 8px 0;
+}
+.theme-executive table {
+  display: table; box-shadow: 0 1px 2px rgba(3,43,91,.06);
+  border-radius: 8px; overflow: hidden;
+}
+.theme-executive thead th { background: #032b5b; color: #ffffff; border-color: #032b5b; }
+.theme-executive tbody tr:nth-child(2n) td { background: #f3f6fb; }
+.theme-executive .mermaid {
+  margin: 1.75rem 0; text-align: center; background: #ffffff;
+  border: 1px solid #e3e9f1; border-radius: 12px; padding: 1.25rem;
+}
+@media print {
+  body { padding: 0 !important; }
+  .theme-executive { max-width: none; }
+  .theme-executive h1, .theme-executive h2, .theme-executive thead th {
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .theme-executive h2 { break-before: page; page-break-before: always; }
+  .theme-executive .mermaid, .theme-executive table, .theme-executive blockquote {
+    break-inside: avoid; page-break-inside: avoid;
+  }
+}
+</style>
+</head>
+<body>
+<article class="markdown-body theme-executive">
+<h1>SilkSkyAir Platform — Architecture Whitepaper</h1>
+<p><strong>Andaman Aerodrome Company (AAC)</strong> · Thailand&#39;s premium air-mobility platform
+<strong>Subject:</strong> Platform architecture &amp; infrastructure  ·  <strong>Date:</strong> June 2026  ·  <strong>Status:</strong> As built</p>
+<blockquote>
+<p>An architectural introduction to the SilkSkyAir platform — the story of how the system is built,
+not the business it serves. It maps the application silos, the shared data foundation, the
+automation that ties them together, and the infrastructure they run on. Technical terms are defined
+in the glossary; recurring operating costs are inventoried in Section 9.</p>
+</blockquote>
+<hr>
+<h2>1. Abstract</h2>
+<p>SilkSkyAir is a <strong>cloud-native, multi-application platform</strong> built as a single monorepo of around
+sixteen components. Its design follows one consistent idea: <strong>a set of purpose-built applications —
+one per audience, each at its own URL — all sit on a single shared data foundation and reach the
+outside world through one automation layer.</strong></p>
+<p>The applications are thin, audience-specific front ends. The intelligence lives below them: a single
+<strong>PostgreSQL</strong> database (managed by <strong>Supabase</strong>) that is the system&#39;s source of truth, a small set of
+secure <strong>server-side functions</strong>, and an <strong>n8n</strong> automation layer that acts as the integration bus to
+every external service (payments, CRM, content, email, marketing). Everything is hosted on managed
+cloud platforms — <strong>Vercel</strong>, <strong>Supabase</strong>, <strong>Strapi Cloud</strong>, <strong>n8n Cloud</strong> — with source code,
+continuous integration, and private package distribution on <strong>GitHub</strong>, and runs in three isolated
+environments in the Singapore region.</p>
+<p>This document introduces that architecture top to bottom.</p>
+<hr>
+<h2>2. Architectural principles</h2>
+<p>A handful of decisions shape everything else in the platform:</p>
+<ul>
+<li><strong>One application per audience (silos by URL).</strong> Each audience has a dedicated app at its own
+address — public site, members, partners, staff, and identity. This keeps each app small, focused,
+and independently deployable.</li>
+<li><strong>One shared data foundation.</strong> All apps read and write the same central database. There is one
+source of truth; no app owns its own private copy of the data.</li>
+<li><strong>Shared building blocks, not copy-paste.</strong> Common UI and data-access code is published as private
+packages and reused across apps, so they stay consistent.</li>
+<li><strong>Automation as the integration bus.</strong> Apps do not call external services directly. Database events
+flow into <strong>n8n</strong>, which orchestrates every outbound integration. Integrations can change without
+touching app code.</li>
+<li><strong>Event sourcing for the things that matter.</strong> Bookings, identity, and content changes are recorded
+as an immutable history of events — a built-in, tamper-evident audit trail.</li>
+<li><strong>Managed cloud over owned servers.</strong> Every layer runs on a managed platform, so a small team can
+operate the system reliably.</li>
+<li><strong>Three isolated environments.</strong> Develop, Staging, and Production are fully separate, so changes are
+proven before customers ever see them.</li>
+</ul>
+<hr>
+<h2>3. The application silos</h2>
+<p>The platform&#39;s front end is <strong>five web applications</strong>, each owning one audience and one URL. Four are
+built with <strong>Next.js 16 / React 19</strong>; the public site uses <strong>Astro 5</strong>. All are hosted on <strong>Vercel</strong>.
+A sixth address serves the content system (Strapi).</p>
+<table>
+<thead>
+<tr>
+<th>Silo</th>
+<th>Production URL</th>
+<th>Built with</th>
+<th>Architectural role</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Public site</strong></td>
+<td><code>andaman.co.th</code> · <code>www.silkskyair.com</code></td>
+<td>Astro 5</td>
+<td>Storefront — tours, live pricing &amp; availability, booking entry point, marketing analytics</td>
+</tr>
+<tr>
+<td><strong>Member</strong></td>
+<td><code>member.silkskyair.com</code></td>
+<td>Next.js 16</td>
+<td>Authenticated customer area — trips, payments, profile; departure maps</td>
+</tr>
+<tr>
+<td><strong>Partner</strong></td>
+<td><code>partner.silkskyair.com</code></td>
+<td>Next.js 16</td>
+<td>Authenticated reseller area — bookings, team &amp; commissions</td>
+</tr>
+<tr>
+<td><strong>Manager</strong></td>
+<td><code>manager.silkskyair.com</code></td>
+<td>Next.js 16</td>
+<td>Internal operations cockpit — bookings, flights, pricing, partners, content, campaigns, reporting</td>
+</tr>
+<tr>
+<td><strong>Account</strong></td>
+<td><code>account.silkskyair.com</code></td>
+<td>Next.js 16</td>
+<td>Identity provider — single sign-on shared across the staff/partner apps</td>
+</tr>
+<tr>
+<td><strong>CMS</strong></td>
+<td><code>cms.silkskyair.com</code></td>
+<td>Strapi 5 (Strapi Cloud)</td>
+<td>Headless content management for the public site</td>
+</tr>
+</tbody></table>
+<p>Notes that matter architecturally:</p>
+<ul>
+<li><strong>The public site is content- and conversion-oriented.</strong> Astro renders fast, mostly-static pages;
+its content comes from Strapi, and it carries the platform&#39;s marketing analytics (see Section 6).</li>
+<li><strong>Member, Partner, and Manager are authenticated applications.</strong> They share a design system and
+data-access libraries, and they sign in through <strong>Account</strong> rather than holding their own logins.</li>
+<li><strong>Manager is the largest silo.</strong> It is the operational surface for the whole business and enforces
+<strong>role-based access</strong> so each staff function sees only what it should.</li>
+<li><strong>Account is the identity silo.</strong> It exists purely to centralise authentication and session
+management across the other apps.</li>
+</ul>
+<hr>
+<h2>4. The complete architecture</h2>
+<p>The diagram below is the <strong>whole platform on one page</strong> — every silo, the shared foundation, the
+automation bus, and the external services. The layers read top to bottom: audiences use the apps; the
+apps share private packages and the Supabase foundation; the database emits events to the n8n bus; and
+the bus reaches every external service. GitHub and Vercel form the delivery and hosting plane.</p>
+<div class="mermaid">
+flowchart TB
+  subgraph USERS["Audiences"]
+    direction LR
+    U1["Travellers"]
+    U2["Members"]
+    U3["Partners"]
+    U4["Staff & Operations"]
+  end
+
+  subgraph APPS["Application silos — hosted on Vercel"]
+    direction LR
+    WWW["Public site<br/>andaman.co.th<br/>Astro 5"]
+    MEM["Member<br/>member.silkskyair.com<br/>Next.js 16"]
+    PAR["Partner<br/>partner.silkskyair.com<br/>Next.js 16"]
+    MAN["Manager<br/>manager.silkskyair.com<br/>Next.js 16"]
+    ACC["Account — SSO<br/>account.silkskyair.com<br/>Next.js 16"]
+  end
+
+  PKG["Shared private packages — GitHub Packages<br/>@andaman-aerodrome/ ui · skystories · reporting"]
+
+  subgraph SB["Supabase — one project per environment (ap-southeast-1)"]
+    direction LR
+    EF["Edge functions<br/>bookings · verify · reporting-dispatch"]
+    PG["PostgreSQL — source of truth<br/>schemas: public · payments · pricing · availability<br/>cache · reporting · analytics · skystories · account"]
+    AX["Auth<br/>email · magic-link · OTP"]
+    ST["Storage<br/>9 buckets"]
+  end
+
+  N8N["n8n — automation & integration bus<br/>~37 workflows"]
+  STRAPI["Strapi CMS<br/>cms.silkskyair.com"]
+
+  subgraph EXT["External services"]
+    direction LR
+    OMISE["Omise<br/>payments (card · PromptPay)"]
+    SCB["SCB<br/>PromptPay callbacks"]
+    ZOHO["Zoho<br/>CRM · PageSense · SalesIQ"]
+    MAPS["Google Maps"]
+    MKT["Marketing & analytics<br/>GTM · StatCounter · Meta CAPI"]
+    SHORT["Short.io<br/>go.silkskyair.com"]
+    MAIL["Email (SMTP)"]
+  end
+
+  subgraph PLANE["Delivery & hosting plane"]
+    direction LR
+    GH["GitHub<br/>source · CI/CD · package registry"]
+    VER["Vercel<br/>hosting · CDN"]
+  end
+
+  U1 --> WWW
+  U2 --> MEM
+  U3 --> PAR
+  U4 --> MAN
+
+  MEM --> PKG
+  PAR --> PKG
+  MAN --> PKG
+  ACC --> PKG
+
+  MEM -->|SSO| ACC
+  PAR -->|SSO| ACC
+  MAN -->|SSO| ACC
+
+  APPS --> SB
+  WWW --> STRAPI
+  WWW --> MKT
+  MEM --> MAPS
+  SCB --> MEM
+
+  EF --> PG
+  PG -->|database events| N8N
+  N8N --> OMISE
+  N8N --> ZOHO
+  N8N --> STRAPI
+  N8N --> MAIL
+  N8N --> MKT
+  MAN --> SHORT
+
+  GH --> VER
+  GH -->|migrations + deploys| SB
+  VER --> APPS
+
+  classDef core fill:#032b5b,stroke:#021d3d,color:#ffffff;
+  classDef bus fill:#0a3d73,stroke:#021d3d,color:#ffffff;
+  class EF,PG,AX,ST core;
+  class N8N bus;
+</div>
+<p><strong>How to read it.</strong> Each audience touches exactly one app. The authenticated apps share private
+packages and sign in through Account. Every app relies on the <strong>Supabase</strong> foundation; bookings in
+particular go through the secure <strong><code>bookings</code></strong> function rather than writing the database directly. The
+database emits <strong>events</strong> that the <strong>n8n</strong> bus turns into outbound actions — taking payment, syncing
+the CRM and the CMS, sending email, and reporting marketing conversions. The rest of the document walks
+each layer in turn.</p>
+<hr>
+<h2>5. Data &amp; backend foundation</h2>
+<p>The foundation is <strong>Supabase</strong> — a managed platform that bundles a PostgreSQL database, authentication,
+file storage, and server-side functions. There is <strong>one Supabase project per environment</strong>.</p>
+<h3>The database — one source of truth</h3>
+<p>A single <strong>PostgreSQL</strong> database holds all platform data. The schema is sizeable and disciplined: it is
+managed through roughly <strong>560 versioned migrations</strong> and organised into clear <strong>schemas</strong> (namespaces)
+by domain:</p>
+<table>
+<thead>
+<tr>
+<th>Schema / domain</th>
+<th>Holds</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>public</code> (bookings, members, orgs)</td>
+<td>Bookings, passengers, members, partners/organisations</td>
+</tr>
+<tr>
+<td><code>payments</code>, <code>pricing</code></td>
+<td>Payment requests/intents, promotions, commissions</td>
+</tr>
+<tr>
+<td><code>availability</code>, <code>cache</code></td>
+<td>Schedule availability and pre-computed caches</td>
+</tr>
+<tr>
+<td><code>skystories</code></td>
+<td>&quot;Sky Stories&quot; content data layer</td>
+</tr>
+<tr>
+<td><code>reporting</code>, <code>analytics</code></td>
+<td>Report definitions, schedules, runs, analytics</td>
+</tr>
+<tr>
+<td><code>account</code></td>
+<td>Identity sessions and authentication events</td>
+</tr>
+</tbody></table>
+<p><strong>Event sourcing.</strong> The critical domains — <strong>bookings</strong>, <strong>identity (account)</strong>, and <strong>content
+(skystories)</strong>, along with aircraft and tours — record changes as an <strong>append-only stream of events</strong>.
+These event tables are protected against update or delete at the database level, giving the business a
+complete, tamper-evident <strong>audit trail</strong> and the ability to reconstruct exactly how any record reached
+its current state.</p>
+<h3>Server-side functions (edge functions)</h3>
+<p>Three <strong>edge functions</strong> run trusted logic server-side, next to the database:</p>
+<ul>
+<li><strong><code>bookings</code></strong> — the controlled entry point for creating and changing bookings; apps call it rather
+than writing booking tables directly.</li>
+<li><strong><code>verify</code></strong> — unified email/identity verification (OTP and signed-token verification).</li>
+<li><strong><code>reporting-dispatch</code></strong> — executes scheduled reports and advances their schedule.</li>
+</ul>
+<h3>Authentication</h3>
+<p>Authentication supports <strong>email/password, magic-link, and email OTP</strong>. Phone/SMS sign-up is configured
+but disabled; social OAuth (Google/Apple/Facebook) is scaffolded but not yet enabled. Sessions and
+sign-in events are recorded in the <code>account</code> schema.</p>
+<h3>Storage</h3>
+<p>File storage is organised into <strong>nine buckets</strong>, split by sensitivity — <strong>public</strong> buckets for content
+(<code>tours</code>, <code>airfields</code>, <code>sky-stories</code>, <code>coupons</code>, <code>campaigns</code>, <code>integrations</code>) and <strong>private</strong> buckets
+for sensitive artefacts (<code>members</code>, <code>bookings</code>, <code>reports</code>).</p>
+<h3>Access control</h3>
+<p><strong>Row-level security</strong> is enforced in the database, so each user and partner can reach only their own
+data. The rules live with the data, not only in the applications.</p>
+<hr>
+<h2>6. Automation &amp; integration</h2>
+<p>The platform deliberately <strong>does not call external services from inside the apps</strong>. Instead, the
+database emits events, and a managed <strong>n8n</strong> instance (the <em>integration bus</em>) orchestrates everything
+that must happen next. Around <strong>37 workflows</strong> are organised by purpose:</p>
+<table>
+<thead>
+<tr>
+<th>Workflow group</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Bookings</strong></td>
+<td>Creation trigger and lifecycle event routing</td>
+</tr>
+<tr>
+<td><strong>Payments</strong></td>
+<td>Omise webhook handling and payment-status updates</td>
+</tr>
+<tr>
+<td><strong>CRM sync</strong></td>
+<td>Bidirectional Zoho sync — leads, deals, product catalogue</td>
+</tr>
+<tr>
+<td><strong>Transactional email</strong></td>
+<td>Booking, verification, invitation, and magic-link emails</td>
+</tr>
+<tr>
+<td><strong>Content sync</strong></td>
+<td>Sky Stories ↔ Strapi (content, media, translations)</td>
+</tr>
+<tr>
+<td><strong>Reporting</strong></td>
+<td>Polls for due report schedules and dispatches them</td>
+</tr>
+<tr>
+<td><strong>Marketing attribution</strong></td>
+<td>Meta Conversions API purchases and campaign publishing</td>
+</tr>
+</tbody></table>
+<p><strong>Worked example — a booking.</strong> A request from the public site or partner app calls the <strong><code>bookings</code></strong>
+edge function, which records the booking as events in the database. Those events flow to <strong>n8n</strong>, which
+takes payment through <strong>Omise</strong> (with <strong>SCB</strong> handling certain PromptPay/QR callbacks), creates the deal
+in <strong>Zoho CRM</strong>, sends the confirmation email, and reports the conversion to <strong>Meta</strong>. Business rules
+live in one place; the integrations hang off the bus.</p>
+<p><strong>Content and marketing.</strong> <strong>Strapi</strong> (the headless CMS) feeds the public site&#39;s tours, pages, and
+stories, and stays in sync with the database through n8n. The public site also carries a pluggable
+<strong>analytics</strong> layer that fans events out to <strong>Google Tag Manager</strong>, <strong>StatCounter</strong>, <strong>Zoho
+PageSense</strong>, and the <strong>Meta Conversions API</strong>, under a consent gate. <strong>Short.io</strong> (<code>go.silkskyair.com</code>)
+produces short links and QR codes for campaigns.</p>
+<hr>
+<h2>7. Infrastructure, environments &amp; delivery</h2>
+<h3>Managed cloud</h3>
+<p>Every layer runs on a managed platform: <strong>Vercel</strong> (app hosting + CDN), <strong>Supabase</strong> (database, auth,
+storage, functions), <strong>Strapi Cloud</strong> (content), <strong>n8n Cloud</strong> (automation), and <strong>GitHub</strong> (source,
+CI/CD, private packages). The data and compute are hosted in the <strong>Singapore region</strong>
+(<code>ap-southeast-1</code>), the closest major hub to Thailand.</p>
+<h3>Three isolated environments and the release pipeline</h3>
+<p>Each environment — <strong>Develop</strong>, <strong>Staging</strong>, <strong>Production</strong> — has its own Vercel deployments, its own
+Supabase project, its own Strapi Cloud instance, and (for the upper two) its own n8n instance. Changes
+flow left to right, and most of the delivery is automatic per branch:</p>
+<div class="mermaid">
+flowchart TB
+  GH["GitHub — ~16 repositories<br/>(branches: develop · staging · main)"]
+  subgraph AUTO["Automatic, per branch"]
+    direction LR
+    V["Vercel<br/>builds & deploys the apps"]
+    M["Supabase<br/>applies database migrations"]
+    P["GitHub Actions<br/>publishes shared packages"]
+  end
+  N["n8n workflows<br/>synced into each environment<br/>(deliberate, separate step)"]
+
+  GH --> AUTO
+  GH -.->|manual sync| N
+
+  subgraph ENVS["Isolated environments"]
+    direction LR
+    DEV["Develop"]
+    STG["Staging"]
+    PRD["Production"]
+  end
+  AUTO --> ENVS
+  DEV ==>|promote| STG ==>|release| PRD
+
+  classDef core fill:#032b5b,stroke:#021d3d,color:#ffffff;
+  classDef prod fill:#032b5b,stroke:#021d3d,color:#ffffff;
+  class GH core;
+  class PRD prod;
+</div>
+<ul>
+<li><strong>Applications</strong> — Vercel builds and deploys each app to the environment matching its branch.</li>
+<li><strong>Database</strong> — schema changes are <strong>migration files</strong>; on merge, each environment&#39;s Supabase project
+applies them automatically. Schema is never changed by hand, so environments stay reproducible.</li>
+<li><strong>Shared libraries</strong> — GitHub Actions builds and publishes the <code>@andaman-aerodrome/*</code> packages to the
+private registry, tagged per branch.</li>
+<li><strong>Automation</strong> — n8n workflows are the one exception: they are <strong>synced into each environment as a
+deliberate, separate step</strong>, not carried by a code push.</li>
+</ul>
+<blockquote>
+<p>The cost of this maturity is duplication: the platform effectively runs <strong>three copies</strong> of its core
+services (Supabase ×3, Strapi ×3, n8n ×2). This is inventoried in Section 9.</p>
+</blockquote>
+<hr>
+<h2>8. Security architecture</h2>
+<p>Security is structural, not bolted on:</p>
+<ul>
+<li><strong>Single sign-on.</strong> The <strong>Account</strong> silo is the identity provider; the other staff/partner apps hold
+no separate passwords, and access is granted or revoked centrally.</li>
+<li><strong>Role-based access.</strong> Manager separates finance, operations, and content responsibilities by role.</li>
+<li><strong>Row-level security.</strong> The database restricts every user and partner to their own data.</li>
+<li><strong>Payment isolation.</strong> Card data is handled by <strong>Omise</strong>; the platform never stores card numbers.
+Inbound payment webhooks (Omise, and SCB PromptPay callbacks) are <strong>signature-verified</strong>.</li>
+<li><strong>Environment &amp; secret isolation.</strong> Production data is separate from testing systems, and credentials
+are managed per environment, never committed to code.</li>
+</ul>
+<div class="mermaid">
+flowchart LR
+  U["Staff or partner"] --> APP["Opens Manager / Partner app"]
+  APP --> Q{"Already signed in?"}
+  Q -->|No| SSO["Redirect to Account<br/>(single sign-on)"]
+  SSO --> OK
+  Q -->|Yes| OK["Access granted —<br/>only what the role allows"]
+  classDef sso fill:#0a3d73,stroke:#021d3d,color:#ffffff;
+  class SSO sso;
+</div>
+<hr>
+<h2>9. Recurring-cost services</h2>
+<p>The platform pays for a set of <strong>managed third-party services</strong> to operate. They are inventoried here
+for completeness; figures are left for Finance.</p>
+<blockquote>
+<p><strong>About the numbers:</strong> the cost column is intentionally left blank for <strong>Finance to complete</strong> from
+actual invoices. The engineering team has confirmed <em>which</em> services are in use and <em>what they are
+for</em>; no dollar figures are estimated. Where a service has a free tier, that is noted.</p>
+</blockquote>
+<h3>A. Core platform &amp; infrastructure (definitely recurring)</h3>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>What it&#39;s for</th>
+<th>How it&#39;s billed</th>
+<th>Instances / scope</th>
+<th>Monthly cost</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Vercel</strong></td>
+<td>Hosting &amp; CDN for all 5 web apps</td>
+<td>Per project / team seats</td>
+<td>5 apps</td>
+<td><code>__________</code></td>
+</tr>
+<tr>
+<td><strong>Supabase</strong></td>
+<td>Database, auth, storage, edge functions</td>
+<td>Per project</td>
+<td><strong>3</strong> (develop / staging / production)</td>
+<td><code>__________</code></td>
+</tr>
+<tr>
+<td><strong>Strapi Cloud</strong></td>
+<td>Headless CMS for the public site</td>
+<td>Per project</td>
+<td><strong>3</strong> (per environment)</td>
+<td><code>__________</code></td>
+</tr>
+<tr>
+<td><strong>n8n Cloud</strong></td>
+<td>Automation &amp; integration bus</td>
+<td>Per instance / plan</td>
+<td><strong>2</strong> (production + staging)</td>
+<td><code>__________</code></td>
+</tr>
+<tr>
+<td><strong>GitHub</strong></td>
+<td>Source code, CI/CD &amp; private package registry</td>
+<td>Per user / org plan</td>
+<td>Org-wide (~16 repos)</td>
+<td><code>__________</code></td>
+</tr>
+<tr>
+<td><strong>Omise</strong></td>
+<td>Card &amp; PromptPay payment processing</td>
+<td><strong>% per transaction</strong> (+ fixed fee)</td>
+<td>Live + test</td>
+<td><em>Varies with sales</em></td>
+</tr>
+<tr>
+<td><strong>Domain names</strong></td>
+<td>Web addresses (<code>silkskyair.com</code>, <code>andaman.co.th</code>)</td>
+<td>Annual registration</td>
+<td>2+ domains</td>
+<td><code>______ / yr</code></td>
+</tr>
+</tbody></table>
+<h3>B. Business, marketing &amp; tooling (confirm plan/tier with Finance)</h3>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>What it&#39;s for</th>
+<th>How it&#39;s billed</th>
+<th>Notes</th>
+<th>Monthly cost</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Zoho</strong></td>
+<td>CRM, PageSense (analytics), SalesIQ (live chat)</td>
+<td>Per user / suite</td>
+<td>Multiple Zoho products</td>
+<td><code>__________</code></td>
+</tr>
+<tr>
+<td><strong>Google Maps Platform</strong></td>
+<td>Departure maps in the member app</td>
+<td>Usage-based (free credit, then per use)</td>
+<td>Depends on traffic</td>
+<td><code>__________</code></td>
+</tr>
+<tr>
+<td><strong>StatCounter</strong></td>
+<td>Website visitor analytics</td>
+<td>Monthly plan (free tier)</td>
+<td>Confirm tier</td>
+<td><code>__________</code></td>
+</tr>
+<tr>
+<td><strong>Short.io</strong></td>
+<td>Campaign short links &amp; QR (<code>go.silkskyair.com</code>)</td>
+<td>Monthly plan (free tier)</td>
+<td>Confirm tier</td>
+<td><code>__________</code></td>
+</tr>
+<tr>
+<td><strong>Notion</strong></td>
+<td>Internal documentation</td>
+<td>Per user</td>
+<td>Confirm seats</td>
+<td><code>__________</code></td>
+</tr>
+</tbody></table>
+<h3>C. Configured but not currently billing</h3>
+<ul>
+<li><strong>Meta Conversions API</strong> — advertising measurement; <strong>the API is free</strong> (cost is the ad budget, which sits outside the platform).</li>
+<li><strong>SCB PromptPay callbacks</strong> — bank-side; no platform subscription identified (verify any merchant/bank fees with Finance).</li>
+<li><strong>Twilio (SMS auth)</strong> — configured in the auth layer but <strong>disabled</strong>; not billing.</li>
+<li><strong>Mailpit</strong> — local-only email testing; <strong>never billed</strong>.</li>
+</ul>
+<h3>Cost summary (for Finance to complete)</h3>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Services</th>
+<th>Estimated monthly cost</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Hosting, infrastructure &amp; developer platform</td>
+<td>Vercel, Supabase ×3, Strapi ×3, n8n ×2, GitHub</td>
+<td><code>__________</code></td>
+</tr>
+<tr>
+<td>Payments</td>
+<td>Omise</td>
+<td><code>______</code> <em>(varies with sales)</em></td>
+</tr>
+<tr>
+<td>Sales, marketing &amp; analytics</td>
+<td>Zoho, Google Maps, StatCounter, Short.io</td>
+<td><code>__________</code></td>
+</tr>
+<tr>
+<td>Team tooling</td>
+<td>Notion</td>
+<td><code>__________</code></td>
+</tr>
+<tr>
+<td>Domains</td>
+<td>silkskyair.com, andaman.co.th</td>
+<td><code>______ / yr</code></td>
+</tr>
+<tr>
+<td><strong>Total recurring</strong></td>
+<td></td>
+<td><strong><code>__________</code></strong></td>
+</tr>
+</tbody></table>
+<p><em>Figures to be supplied by Finance from actual invoices. The services listed are confirmed in use by the engineering team.</em></p>
+<hr>
+<h2>10. Glossary</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Next.js / React</strong></td>
+<td>Framework and library for the interactive app silos (member, partner, manager, account).</td>
+</tr>
+<tr>
+<td><strong>Astro</strong></td>
+<td>Framework for the fast, content-heavy public site.</td>
+</tr>
+<tr>
+<td><strong>Monorepo</strong></td>
+<td>All ~16 components live in one coordinated set of repositories.</td>
+</tr>
+<tr>
+<td><strong>Private package</strong></td>
+<td>Shared code (e.g. the design system) published privately so every app uses the same version.</td>
+</tr>
+<tr>
+<td><strong>Supabase / PostgreSQL</strong></td>
+<td>Managed backend (database, auth, storage, functions) built on the PostgreSQL database.</td>
+</tr>
+<tr>
+<td><strong>Schema</strong></td>
+<td>A namespace inside the database that groups related tables by domain.</td>
+</tr>
+<tr>
+<td><strong>Edge function</strong></td>
+<td>A small, secure program that runs server-side, next to the database.</td>
+</tr>
+<tr>
+<td><strong>Event sourcing</strong></td>
+<td>Recording changes as an immutable sequence of events — a complete audit trail.</td>
+</tr>
+<tr>
+<td><strong>Row-level security (RLS)</strong></td>
+<td>Database rules ensuring each user/partner sees only their own data.</td>
+</tr>
+<tr>
+<td><strong>n8n</strong></td>
+<td>The automation tool used as the platform&#39;s integration bus.</td>
+</tr>
+<tr>
+<td><strong>Strapi</strong></td>
+<td>The headless content management system feeding the public site.</td>
+</tr>
+<tr>
+<td><strong>Omise / SCB</strong></td>
+<td>Payment gateway (Omise) and bank PromptPay callbacks (SCB).</td>
+</tr>
+<tr>
+<td><strong>Zoho</strong></td>
+<td>CRM plus website analytics (PageSense) and live chat (SalesIQ).</td>
+</tr>
+<tr>
+<td><strong>Vercel / CDN</strong></td>
+<td>Hosting service and the global delivery network that makes apps fast.</td>
+</tr>
+<tr>
+<td><strong>GitHub / CI/CD</strong></td>
+<td>Source code, automated build/test/release, and the private package registry.</td>
+</tr>
+<tr>
+<td><strong>Migration</strong></td>
+<td>A recorded database change, applied automatically to each environment.</td>
+</tr>
+<tr>
+<td><strong>Environment</strong></td>
+<td>An isolated copy of the platform (Develop / Staging / Production).</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>11. Appendix — components &amp; URL map</h2>
+<h3>Repositories (≈16 components)</h3>
+<table>
+<thead>
+<tr>
+<th>Component(s)</th>
+<th>Role</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>silkskyair-www</code></td>
+<td>Public site</td>
+<td>Astro front end</td>
+</tr>
+<tr>
+<td><code>silkskyair-member</code>, <code>-partner</code>, <code>-manager</code>, <code>-account</code></td>
+<td>Authenticated apps + identity (SSO)</td>
+<td>Next.js front ends</td>
+</tr>
+<tr>
+<td><code>silkskyair-api</code></td>
+<td>Database, migrations, edge functions</td>
+<td>Supabase (PostgreSQL)</td>
+</tr>
+<tr>
+<td><code>silkskyair-cms</code></td>
+<td>Content management</td>
+<td>Strapi 5</td>
+</tr>
+<tr>
+<td><code>silkskyair-workflows</code></td>
+<td>n8n automation workflows</td>
+<td>Automation</td>
+</tr>
+<tr>
+<td><code>silkskyair-ui</code>, <code>-skystories</code>, <code>-reporting</code></td>
+<td>Shared design system, data layer, reporting</td>
+<td>Private packages</td>
+</tr>
+<tr>
+<td><code>silkskyair-orchestrator</code></td>
+<td>Cross-app test &amp; E2E orchestration</td>
+<td>Tooling</td>
+</tr>
+<tr>
+<td><code>silkskyair-docs</code></td>
+<td>This documentation library</td>
+<td>Docs</td>
+</tr>
+<tr>
+<td><code>silkskyair-common</code>, <code>-config</code>, <code>-utils</code></td>
+<td>Reserved placeholders</td>
+<td>(empty)</td>
+</tr>
+</tbody></table>
+<h3>Environment &amp; address map</h3>
+<table>
+<thead>
+<tr>
+<th>Environment</th>
+<th>Public site</th>
+<th>Apps</th>
+<th>Backend</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Production</strong></td>
+<td><code>andaman.co.th</code>, <code>www.silkskyair.com</code></td>
+<td><code>member.</code> / <code>partner.</code> / <code>manager.</code> / <code>account.silkskyair.com</code></td>
+<td>Supabase (prod) · Strapi <code>cms.silkskyair.com</code> · n8n <code>andamanaerodrome.app.n8n.cloud</code></td>
+</tr>
+<tr>
+<td><strong>Staging</strong></td>
+<td><code>staging.silkskyair.com</code></td>
+<td><code>staging.*.silkskyair.com</code></td>
+<td>Supabase (staging) · Strapi Cloud (staging) · n8n (staging)</td>
+</tr>
+<tr>
+<td><strong>Develop</strong></td>
+<td><code>develop.silkskyair.com</code></td>
+<td>local / developer machines</td>
+<td>Supabase (develop) · Strapi Cloud (develop) · local n8n</td>
+</tr>
+</tbody></table>
+<hr>
+<p><em>Prepared by the Platform / Engineering team for Andaman Aerodrome Company. Describes the platform as
+built and running as of June 2026. Recurring-cost figures in Section 9 are to be completed by Finance.</em></p>
+
+</article>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: "base",
+    themeVariables: {
+      primaryColor: "#eaf1f9",
+      primaryBorderColor: "#032b5b",
+      primaryTextColor: "#032b5b",
+      lineColor: "#5b6b7f",
+      secondaryColor: "#f3f6fb",
+      tertiaryColor: "#ffffff",
+      fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif"
+    }
+  });
+</script>
+</body>
+</html>

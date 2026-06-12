@@ -6,7 +6,8 @@
   "scripts": {
     "publish:dry": "tsx scripts/publish-to-notion.ts --dry-run",
     "publish": "tsx scripts/publish-to-notion.ts",
-    "build:html": "tsx scripts/render-html.ts"
+    "build:html": "tsx scripts/render-html.ts",
+    "export:ssa": "tsx scripts/export-ssa-briefing.ts"
   },
   "dependencies": {
     "@notionhq/client": "^2.2.15",

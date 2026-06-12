@@ -40,7 +40,7 @@ const REPO_ROOT = path.resolve(__dirname, "..");
 const MANUALS_DIR = path.join(REPO_ROOT, "manuals");
 
 // Content roots to render (relative to repo root). README is added explicitly.
-const ROOT_DIRS = ["manuals", "plans", "weekly-reports", "weekly-statements"];
+const ROOT_DIRS = ["manuals", "plans", "weekly-reports", "weekly-statements", "briefings"];
 const SKIP_DIRS = new Set(["node_modules", ".cache", ".git"]);
 
 marked.setOptions({ gfm: true });
@@ -50,6 +50,7 @@ interface Doc {
   relFromRoot: string; // e.g. "manuals/domains/partners/create.md"
   body: string;
   title: string;
+  brand: boolean; // frontmatter `brand: executive` → on-brand presentation theme
 }
 
 function findMarkdown(absDir: string, out: string[]): void {
@@ -83,7 +84,8 @@ function loadDocs(): Doc[] {
       (parsed.data.title as string | undefined) ??
       firstHeading(parsed.content) ??
       path.basename(abs, ".md");
-    return { abs, relFromRoot, body: parsed.content, title };
+    const brand = (parsed.data.brand as string | undefined) === "executive";
+    return { abs, relFromRoot, body: parsed.content, title, brand };
   });
 }
 
@@ -103,6 +105,31 @@ function rewriteMdLinks(md: string): string {
   return md.replace(
     /\]\((?!https?:)([^)\s]+?)\.md(#[^)\s]*)?\)/g,
     (_full, target, anchor) => `](${target}.html${anchor ?? ""})`,
+  );
+}
+
+// ── mermaid extraction ─────────────────────────────────────────────────────
+// Pull ```mermaid fenced blocks out *before* Markdown parsing so their raw
+// contents (arrows like `-->`, `<br/>` labels, `#hex` colors) survive untouched,
+// then re-insert them as <div class="mermaid"> *after* parsing for the browser
+// to render. Markdown never sees the diagram source, so it can't mangle it.
+
+function extractMermaid(md: string): { md: string; blocks: string[] } {
+  const blocks: string[] = [];
+  const out = md.replace(/```mermaid\s*\n([\s\S]*?)```/g, (_m, code) => {
+    const i = blocks.length;
+    blocks.push(String(code).replace(/\s+$/, ""));
+    return `\n\nMERMAIDBLOCK${i}ENDMERMAIDBLOCK\n\n`;
+  });
+  return { md: out, blocks };
+}
+
+function reinsertMermaid(html: string, blocks: string[]): string {
+  // The placeholder is a bare text line, so marked wraps it in <p>…</p>; match
+  // both the wrapped and unwrapped forms.
+  return html.replace(
+    /<p>\s*MERMAIDBLOCK(\d+)ENDMERMAIDBLOCK\s*<\/p>|MERMAIDBLOCK(\d+)ENDMERMAIDBLOCK/g,
+    (_m, a, b) => `<div class="mermaid">\n${blocks[Number(a ?? b)]}\n</div>`,
   );
 }
 
@@ -177,19 +204,83 @@ body {
 .markdown-body ul, .markdown-body ol { padding-left: 2em; }
 `;
 
-function htmlShell(title: string, bodyHtml: string): string {
+// Opt-in, on-brand presentation layer (frontmatter `brand: executive`). Scoped
+// to `.theme-executive` so non-branded docs (manuals, plans, reports) are
+// unaffected. Brand navy #032b5b; print rules give clean Print → PDF output.
+const BRAND_STYLE = `
+.theme-executive h1 {
+  color: #032b5b; border-bottom: 3px solid #032b5b; font-size: 2.25em;
+  padding-bottom: .35em; letter-spacing: -0.01em;
+}
+.theme-executive h2 { color: #032b5b; border-bottom: 1px solid #d1d9e0; margin-top: 2.2em; }
+.theme-executive h3 { color: #0a3d73; }
+.theme-executive a { color: #0a5ad6; }
+.theme-executive blockquote {
+  border-left: .25em solid #032b5b; background: #f3f6fb; color: #2b3a4a;
+  padding: .75em 1em; border-radius: 0 8px 8px 0;
+}
+.theme-executive table {
+  display: table; box-shadow: 0 1px 2px rgba(3,43,91,.06);
+  border-radius: 8px; overflow: hidden;
+}
+.theme-executive thead th { background: #032b5b; color: #ffffff; border-color: #032b5b; }
+.theme-executive tbody tr:nth-child(2n) td { background: #f3f6fb; }
+.theme-executive .mermaid {
+  margin: 1.75rem 0; text-align: center; background: #ffffff;
+  border: 1px solid #e3e9f1; border-radius: 12px; padding: 1.25rem;
+}
+@media print {
+  body { padding: 0 !important; }
+  .theme-executive { max-width: none; }
+  .theme-executive h1, .theme-executive h2, .theme-executive thead th {
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .theme-executive h2 { break-before: page; page-break-before: always; }
+  .theme-executive .mermaid, .theme-executive table, .theme-executive blockquote {
+    break-inside: avoid; page-break-inside: avoid;
+  }
+}
+`;
+
+// Client-side diagram rendering. UMD build (classic script) for broad
+// compatibility, including pages opened directly from disk (file://).
+const MERMAID_SCRIPT = `
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: "base",
+    themeVariables: {
+      primaryColor: "#eaf1f9",
+      primaryBorderColor: "#032b5b",
+      primaryTextColor: "#032b5b",
+      lineColor: "#5b6b7f",
+      secondaryColor: "#f3f6fb",
+      tertiaryColor: "#ffffff",
+      fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif"
+    }
+  });
+</script>`;
+
+function htmlShell(
+  title: string,
+  bodyHtml: string,
+  opts: { brand?: boolean; mermaid?: boolean } = {},
+): string {
+  const articleClass = opts.brand ? "markdown-body theme-executive" : "markdown-body";
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)}</title>
-<style>${STYLE}</style>
+<style>${STYLE}${opts.brand ? BRAND_STYLE : ""}</style>
 </head>
 <body>
-<article class="markdown-body">
+<article class="${articleClass}">
 ${bodyHtml}
 </article>
+${opts.mermaid ? MERMAID_SCRIPT : ""}
 </body>
 </html>
 `;
@@ -207,9 +298,14 @@ async function main() {
     }
     md = rewriteMdLinks(md);
     md = rewriteImages(md, relPrefixToRoot(doc.relFromRoot));
-    const bodyHtml = await marked.parse(md);
+    const { md: mdNoMermaid, blocks } = extractMermaid(md);
+    let bodyHtml = await marked.parse(mdNoMermaid);
+    if (blocks.length) bodyHtml = reinsertMermaid(bodyHtml, blocks);
     const outPath = doc.abs.replace(/\.md$/, ".html");
-    writeFileSync(outPath, htmlShell(doc.title, bodyHtml));
+    writeFileSync(
+      outPath,
+      htmlShell(doc.title, bodyHtml, { brand: doc.brand, mermaid: blocks.length > 0 }),
+    );
     count++;
     console.log(`  ✓ ${doc.relFromRoot.replace(/\.md$/, ".html")}`);
   }
