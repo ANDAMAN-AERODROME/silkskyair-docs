@@ -114,7 +114,6 @@ Thailand-focused payment gateway handling **all card and PromptPay QR payments**
 - **Test vs live:** selected purely by which keys are supplied per environment (`pkey_test_*` / `skey_test_*` vs `pkey_live_*` / `skey_live_*`). Manager and member **must run in the same mode**. Keys are provisioned in each app's Vercel project (staging + production); none are committed to the repos.
 - **Config var names:** `OMISE_PUBLIC_KEY`, `OMISE_SECRET_KEY`.
 - **Key locations:** `lib/integrations/omise.ts` (manager, member, partner), payment API routes in each app, `silkskyair-workflows/workflows/payments/omise.json`, `silkskyair-api` `payments` schema migrations.
-- **Known gap:** the production Omise webhook still needs HMAC signature verification (noted in `silkskyair-workflows/CLAUDE.md`).
 
 <a id="scb"></a>
 ### 3.2 SCB Open Banking (dormant)
@@ -313,7 +312,3 @@ These are **our own** systems, listed so nobody mistakes them for third-party ve
 
 - `silkskyair-common`, `silkskyair-config`, `silkskyair-utils`, `silkskyair-supabase`, and `silkskyair-operator` currently contain **no code** (empty/unborn repositories) — no dependencies to document. The Supabase project actually lives in `silkskyair-api`.
 - `silkskyair-orchestrator` is the local coordination workspace (E2E harness, env distribution, workflow dependency matrix) — it consumes the services above but hosts nothing itself.
-
-## 12. Credential hygiene
-
-All third-party credentials should live in the platform's secret stores: **Vercel project env vars** (apps), **n8n credentials** (workflow integrations), **Supabase vault / `system_config`** (backend), and GitHub Actions secrets (CI). Values must never be committed to git or reproduced in documentation — this page intentionally lists variable *names* only. When onboarding a new environment, request credentials through the engineering lead rather than copying `.env` files between machines.

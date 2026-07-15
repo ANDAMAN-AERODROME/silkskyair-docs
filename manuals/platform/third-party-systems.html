@@ -339,7 +339,6 @@ body {
 <li><strong>Test vs live:</strong> selected purely by which keys are supplied per environment (<code>pkey_test_*</code> / <code>skey_test_*</code> vs <code>pkey_live_*</code> / <code>skey_live_*</code>). Manager and member <strong>must run in the same mode</strong>. Keys are provisioned in each app&#39;s Vercel project (staging + production); none are committed to the repos.</li>
 <li><strong>Config var names:</strong> <code>OMISE_PUBLIC_KEY</code>, <code>OMISE_SECRET_KEY</code>.</li>
 <li><strong>Key locations:</strong> <code>lib/integrations/omise.ts</code> (manager, member, partner), payment API routes in each app, <code>silkskyair-workflows/workflows/payments/omise.json</code>, <code>silkskyair-api</code> <code>payments</code> schema migrations.</li>
-<li><strong>Known gap:</strong> the production Omise webhook still needs HMAC signature verification (noted in <code>silkskyair-workflows/CLAUDE.md</code>).</li>
 </ul>
 <p><a id="scb"></a></p>
 <h3>3.2 SCB Open Banking (dormant)</h3>
@@ -538,8 +537,6 @@ body {
 <li><code>silkskyair-common</code>, <code>silkskyair-config</code>, <code>silkskyair-utils</code>, <code>silkskyair-supabase</code>, and <code>silkskyair-operator</code> currently contain <strong>no code</strong> (empty/unborn repositories) — no dependencies to document. The Supabase project actually lives in <code>silkskyair-api</code>.</li>
 <li><code>silkskyair-orchestrator</code> is the local coordination workspace (E2E harness, env distribution, workflow dependency matrix) — it consumes the services above but hosts nothing itself.</li>
 </ul>
-<h2>12. Credential hygiene</h2>
-<p>All third-party credentials should live in the platform&#39;s secret stores: <strong>Vercel project env vars</strong> (apps), <strong>n8n credentials</strong> (workflow integrations), <strong>Supabase vault / <code>system_config</code></strong> (backend), and GitHub Actions secrets (CI). Values must never be committed to git or reproduced in documentation — this page intentionally lists variable <em>names</em> only. When onboarding a new environment, request credentials through the engineering lead rather than copying <code>.env</code> files between machines.</p>
 
 </article>
 
