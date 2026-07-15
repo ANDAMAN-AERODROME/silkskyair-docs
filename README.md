@@ -33,9 +33,12 @@ manuals/
 │       ├── payment-before-confirmation.md
 │       ├── multi-tour-promos.md
 │       └── customer-notes.md
-└── releases/                               ← AXIS 2: release compilations
-    ├── index.md                            ← "Releases" landing
-    └── w22.md                              ← W22 Release Manual (links to feature pages)
+├── releases/                               ← AXIS 2: release compilations
+│   ├── index.md                            ← "Releases" landing
+│   └── w22.md                              ← W22 Release Manual (links to feature pages)
+└── platform/                               ← AXIS 3: cross-cutting engineering reference
+    ├── index.md                            ← "Platform" landing
+    └── third-party-systems.md              ← Third-party systems & dependencies inventory
 ```
 
 **Conventions:**

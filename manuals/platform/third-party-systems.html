@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Third-Party Systems &amp; Dependencies</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2.5rem 1.25rem 6rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.6; color: #1f2328; background: #ffffff;
+}
+.markdown-body { max-width: 900px; margin: 0 auto; }
+.markdown-body h1, .markdown-body h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+.markdown-body h1 { font-size: 2em; margin: .67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1.8em; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 1.5em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: .875em; background: #eff1f3; padding: .2em .4em; border-radius: 6px;
+}
+.markdown-body pre {
+  background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto;
+}
+.markdown-body pre code { background: none; padding: 0; font-size: .85em; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { border: 1px solid #d1d9e0; padding: 6px 13px; }
+.markdown-body th { background: #f6f8fa; font-weight: 600; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; height: auto; border: 1px solid #d1d9e0; border-radius: 6px; }
+.markdown-body blockquote {
+  margin: 0; padding: 0 1em; color: #59636e; border-left: .25em solid #d1d9e0;
+}
+.markdown-body hr { height: 1px; background: #d1d9e0; border: 0; margin: 2rem 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+</style>
+</head>
+<body>
+<article class="markdown-body">
+<h1>Third-Party Systems &amp; Dependencies</h1>
+<blockquote>
+<p><strong>Scope:</strong> Every external (third-party) system, SaaS platform, and hosted service the SilkSkyAir / Andaman Aerodrome platform depends on — what it does for us, which repositories integrate with it, how it is configured, and how it varies across environments.
+<strong>Not covered:</strong> npm/library dependencies that are pure code (React, Tailwind, zod, …) — only <em>systems</em> we depend on at runtime, build time, or in operations.
+<strong>Snapshot:</strong> July 2026, compiled from committed code, config, migrations, and workflow definitions across all 19 platform repositories. Configuration is referenced by <strong>variable name only — never by value</strong>.</p>
+</blockquote>
+<hr>
+<h2>1. Quick-reference matrix</h2>
+<table>
+<thead>
+<tr>
+<th>System</th>
+<th>Category</th>
+<th>Criticality</th>
+<th>Used by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="#supabase">Supabase</a></td>
+<td>Backend: DB / Auth / Storage / Edge Functions</td>
+<td>Core — platform down without it</td>
+<td>api, www, manager, member, account, partner, reporting, skystories, orchestrator, workflows</td>
+</tr>
+<tr>
+<td><a href="#n8n">n8n Cloud</a></td>
+<td>Workflow automation / integration hub</td>
+<td>Core — email, CRM, payments webhooks</td>
+<td>workflows, api, manager, member, partner</td>
+</tr>
+<tr>
+<td><a href="#strapi">Strapi Cloud</a></td>
+<td>Headless CMS + managed PostgreSQL</td>
+<td>Core — all www content</td>
+<td>cms, www, manager, workflows</td>
+</tr>
+<tr>
+<td><a href="#vercel">Vercel</a></td>
+<td>Hosting (all Next.js/Astro apps)</td>
+<td>Core</td>
+<td>www, manager, member, account, partner</td>
+</tr>
+<tr>
+<td><a href="#omise">Omise</a></td>
+<td>Payment gateway (cards + PromptPay)</td>
+<td>Core — all revenue</td>
+<td>manager, member, partner, workflows, api</td>
+</tr>
+<tr>
+<td><a href="#zoho-crm">Zoho CRM</a></td>
+<td>CRM (leads, deals, products)</td>
+<td>High</td>
+<td>workflows, manager, api</td>
+</tr>
+<tr>
+<td><a href="#zoho-mail">Zoho Mail (SMTP)</a></td>
+<td>Transactional email</td>
+<td>High</td>
+<td>workflows</td>
+</tr>
+<tr>
+<td><a href="#github">GitHub</a></td>
+<td>Source control, CI/CD, package registry, Pages</td>
+<td>Core (build/deploy chain)</td>
+<td>all repos</td>
+</tr>
+<tr>
+<td><a href="#azure-swa">Azure Static Web Apps</a></td>
+<td>Hosting (legacy andaman.co.th)</td>
+<td>Medium</td>
+<td>andaman-www</td>
+</tr>
+<tr>
+<td><a href="#google-maps">Google Maps Platform</a></td>
+<td>Maps (JS API, static maps, embeds)</td>
+<td>Medium</td>
+<td>www, member, ui, andaman-www</td>
+</tr>
+<tr>
+<td><a href="#mux">Mux</a></td>
+<td>Video streaming (HLS)</td>
+<td>Medium</td>
+<td>api (config), member (playback)</td>
+</tr>
+<tr>
+<td><a href="#gtm">Google Tag Manager / gtag</a></td>
+<td>Tag management &amp; analytics</td>
+<td>Medium</td>
+<td>www, andaman-www</td>
+</tr>
+<tr>
+<td><a href="#meta-capi">Meta Pixel + Conversions API</a></td>
+<td>Ad attribution (server-side purchase events)</td>
+<td>Medium</td>
+<td>www, workflows</td>
+</tr>
+<tr>
+<td><a href="#statcounter">StatCounter</a></td>
+<td>Web analytics</td>
+<td>Low</td>
+<td>www, member, andaman-www</td>
+</tr>
+<tr>
+<td><a href="#zoho-pagesense">Zoho PageSense</a></td>
+<td>Heatmaps / session analytics</td>
+<td>Low</td>
+<td>www</td>
+</tr>
+<tr>
+<td><a href="#zoho-salesiq">Zoho SalesIQ</a></td>
+<td>Live-chat widget</td>
+<td>Low</td>
+<td>www</td>
+</tr>
+<tr>
+<td><a href="#shortio">Short.io</a></td>
+<td>URL shortener + QR codes (<code>go.silkskyair.com</code>)</td>
+<td>Low</td>
+<td>manager, workflows</td>
+</tr>
+<tr>
+<td><a href="#db-ip">DB-IP</a></td>
+<td>Geo-IP dataset (IP → country)</td>
+<td>Low</td>
+<td>api, manager</td>
+</tr>
+<tr>
+<td><a href="#scb">SCB Open Banking</a></td>
+<td>Bank/PromptPay API (sandbox, dormant)</td>
+<td>Dormant</td>
+<td>member</td>
+</tr>
+<tr>
+<td><a href="#notion">Notion</a></td>
+<td>Docs publishing target</td>
+<td>Internal tooling</td>
+<td>docs</td>
+</tr>
+<tr>
+<td><a href="#whatsapp">WhatsApp / Chaty</a></td>
+<td>Customer chat entry points</td>
+<td>Low</td>
+<td>www, andaman-www</td>
+</tr>
+<tr>
+<td><a href="#ckeditor">CKEditor Cloud</a></td>
+<td>Rich-text editor CDN</td>
+<td>Low</td>
+<td>cms</td>
+</tr>
+<tr>
+<td><a href="#godaddy">GoDaddy Managed WordPress</a></td>
+<td>Origin of legacy andaman.co.th export</td>
+<td>Legacy</td>
+<td>andaman-www</td>
+</tr>
+<tr>
+<td><a href="#cdns">Google Fonts / jsDelivr CDNs</a></td>
+<td>Font &amp; script CDNs</td>
+<td>Low</td>
+<td>andaman-www, docs (+ CSP allowances)</td>
+</tr>
+<tr>
+<td><a href="#openai">OpenAI</a></td>
+<td>Supabase Studio AI assistant (local dev only)</td>
+<td>Dev-only</td>
+<td>api</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>2. Core platform services</h2>
+<p><a id="supabase"></a></p>
+<h3>2.1 Supabase (Supabase Cloud)</h3>
+<p>The primary backend for the entire platform: managed PostgreSQL, authentication/SSO sessions, object storage (avatars, passports, QR codes, report output, media), Deno Edge Functions, Realtime, and PostgREST/RPC APIs.</p>
+<ul>
+<li><p><strong>Integration:</strong> <code>@supabase/supabase-js</code> + <code>@supabase/ssr</code> SDKs in every app; Supabase CLI + <code>psql</code> for migrations; edge functions import the SDK from <code>esm.sh</code>. The <code>skystories</code> and <code>reporting</code> packages bind caller-provided Supabase clients to their own Postgres schemas.</p>
+</li>
+<li><p><strong>Projects / environments</strong> (region <code>ap-southeast-1</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Environment</th>
+<th>Project ref</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Production</td>
+<td><code>sinxjnvesyrrkydhtqts</code></td>
+<td>Direct DB host <code>db.sinxjnvesyrrkydhtqts.supabase.co</code></td>
+</tr>
+<tr>
+<td>Staging</td>
+<td><code>blwsmtiesyzityzkxqve</code></td>
+<td><strong>Must</strong> connect via IPv4 session pooler <code>aws-1-ap-southeast-1.pooler.supabase.com:5432</code> (<code>pool_mode=session</code>) — direct host is IPv6-only</td>
+</tr>
+<tr>
+<td>Develop</td>
+<td><code>urmnfmvvhtwlodgwsukb</code></td>
+<td></td>
+</tr>
+<tr>
+<td>Local</td>
+<td>Docker via Supabase CLI</td>
+<td><code>127.0.0.1:54321</code> (API) / <code>:54322</code> (DB)</td>
+</tr>
+</tbody></table>
+</li>
+<li><p><strong>Config var names:</strong> <code>SUPABASE_URL</code> / <code>NEXT_PUBLIC_SUPABASE_URL</code> / <code>PUBLIC_SUPABASE_URL</code>, <code>SUPABASE_ANON_KEY</code> / <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code>, <code>SUPABASE_SERVICE_ROLE_KEY</code>, <code>SUPABASE_DB_URL</code>, <code>DATABASE_URL</code>, <code>SUPABASE_PASSWORD</code>, <code>PROJECT_REF</code>.</p>
+</li>
+<li><p><strong>Key locations:</strong> <code>silkskyair-api/supabase/</code> (config, ~450 migrations, seeds, edge functions), <code>lib/supabase/*</code> client factories in each Next.js app, <code>silkskyair-www/src/lib/supabase/client.ts</code>, <code>silkskyair-orchestrator/.env*</code> (per-environment endpoints).</p>
+</li>
+</ul>
+<p><a id="n8n"></a></p>
+<h3>2.2 n8n (n8n Cloud + local Docker)</h3>
+<p>The integration hub. All outbound automation runs through n8n workflows: booking lifecycle events, Omise payment webhooks, Zoho CRM sync, all transactional email, campaign publishing (Strapi + Short.io), Meta CAPI dispatch, magic-link auth emails, and reporting dispatch. The apps deliberately have <strong>no direct email/CRM SDKs</strong> — they fire n8n webhooks instead.</p>
+<ul>
+<li><p><strong>Integration:</strong> inbound webhooks (<code>/webhook/...</code>) authenticated with an <code>X-API-Key</code> header (Header Auth credential &quot;AAC | SAA | Auth | Internal Services&quot;); the n8n public REST API (<code>/api/v1/workflows</code>, header <code>X-N8N-API-KEY</code>) is used by the deployer scripts in <code>silkskyair-workflows</code>. Supabase edge functions and DB triggers POST to n8n; webhook base URLs live in the <code>system_config</code> table with env vars as fallback.</p>
+</li>
+<li><p><strong>Environments:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Environment</th>
+<th>Host</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Production / develop</td>
+<td><code>https://andamanaerodrome.app.n8n.cloud</code></td>
+</tr>
+<tr>
+<td>Staging</td>
+<td><code>https://staging-andamanaerodrome.app.n8n.cloud</code></td>
+</tr>
+<tr>
+<td>Local</td>
+<td><code>http://localhost:5678</code> (docker-compose: <code>n8nio/n8n</code> + <code>postgres:15-alpine</code>)</td>
+</tr>
+</tbody></table>
+<p>Each environment has its own workflow IDs, credential IDs, and data-table IDs — mapped by <code>silkskyair-workflows/scripts/lib/deployer.js</code> from the <code>.env.*</code> files (<code>N8N_WF_*</code>, <code>N8N_CRED_*</code>).</p>
+</li>
+<li><p><strong>Config var names:</strong> <code>N8N_WEBHOOK_URL</code> / <code>N8N_WEBHOOK_BASE_URL</code>, <code>N8N_WEBHOOK_API_KEY</code> / <code>WEBHOOK_API_KEY</code>, <code>N8N_BASE_URL</code>, <code>N8N_API_KEY</code>, <code>N8N_PROJECT_ID</code>, <code>N8N_PAYMENT_REQUEST_WEBHOOK</code>, <code>N8N_ZOHO_DEAL_STAGES_WEBHOOK</code>, <code>NEXT_PUBLIC_N8N_URL</code>; DB config keys <code>n8n_webhook_base_url</code>, <code>n8n_api_key</code>, <code>booking_webhook</code>.</p>
+</li>
+<li><p><strong>Key locations:</strong> <code>silkskyair-workflows/workflows/**</code> (all definitions), <code>silkskyair-api/supabase/functions/_shared/n8n.ts</code>, <code>silkskyair-manager/lib/n8n/</code>, <code>silkskyair-partner/lib/n8n/</code>, <code>silkskyair-orchestrator/N8N_WORKFLOW_DEPENDENCY_MATRIX.md</code> (full workflow inventory).</p>
+</li>
+</ul>
+<p><a id="strapi"></a></p>
+<h3>2.3 Strapi (Strapi Cloud)</h3>
+<p>Headless CMS for all public website content: tours, sky stories, static pages, promotions, campaign landing pages, booking-widget config, and analytics component config. Runs on Strapi Cloud with managed PostgreSQL (SQLite locally).</p>
+<ul>
+<li><p><strong>Integration:</strong> REST API with bearer tokens (<code>fetch</code>, no SDK) from www and manager; the n8n &quot;Campaigns Publisher&quot; workflow POSTs landing pages to <code>/api/landings</code>; a Strapi publish event triggers a Vercel production rebuild via n8n. Content moves between environments with <code>strapi transfer</code> (remote transfer enabled) and a custom media-upload script.</p>
+</li>
+<li><p><strong>Environments:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Environment</th>
+<th>Host</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Production</td>
+<td><code>https://cms.silkskyair.com</code> (Strapi Cloud)</td>
+</tr>
+<tr>
+<td>Staging</td>
+<td><code>https://hopeful-nature-255f0bdea0.strapiapp.com</code></td>
+</tr>
+<tr>
+<td>Develop</td>
+<td><code>https://bold-poem-7acdec93b3.strapiapp.com</code></td>
+</tr>
+<tr>
+<td>Local</td>
+<td><code>http://localhost:1337</code> (SQLite)</td>
+</tr>
+</tbody></table>
+</li>
+<li><p><strong>Config var names:</strong> <code>STRAPI_URL</code> / <code>STRAPI_BASE_URL</code>, <code>STRAPI_TOKEN</code> / <code>STRAPI_API_TOKEN</code>, <code>STRAPI_WORKFLOWS_URL</code>, <code>STRAPI_UPLOAD_SCRIPT_TOKEN</code>; transfer: <code>STAGING_URL</code>, <code>STAGING_PULL_TOKEN</code>, <code>DEVELOP_URL</code>, <code>DEVELOP_PUSH_TOKEN</code>, <code>PRODUCTION_URL</code>, <code>PRODUCTION_PUSH_TOKEN</code>; CMS internals: <code>DATABASE_*</code>, <code>APP_KEYS</code>, <code>API_TOKEN_SALT</code>, <code>ADMIN_JWT_SECRET</code>, <code>TRANSFER_TOKEN_SALT</code>, <code>JWT_SECRET</code>, <code>ENCRYPTION_KEY</code>, <code>PUBLIC_URL</code>.</p>
+</li>
+<li><p><strong>Key locations:</strong> <code>silkskyair-cms/</code> (the Strapi app), <code>silkskyair-www/src/lib/strapi.ts</code>, <code>silkskyair-manager/lib/strapi/</code>, <code>silkskyair-workflows/workflows/campaigns/publisher.json</code>, <code>silkskyair-api</code> <code>strapi_sync_map</code> table + skystories sync functions.</p>
+</li>
+</ul>
+<hr>
+<h2>3. Payments</h2>
+<p><a id="omise"></a></p>
+<h3>3.1 Omise</h3>
+<p>Thailand-focused payment gateway handling <strong>all card and PromptPay QR payments</strong> (currency THB, amounts in satang), including 3-D Secure redirects.</p>
+<ul>
+<li><strong>Integration:</strong><ul>
+<li>Server-side: <code>omise</code> npm SDK (charges, sources) in manager, member, and partner.</li>
+<li>Client-side: hosted <strong>Omise.js</strong> (<code>https://cdn.omise.co/omise.js</code>, <code>window.OmiseCard</code>) for card tokenization; <code>vault.omise.co</code> and <code>api.omise.co</code> allow-listed in CSP. QR images are served from Omise&#39;s own S3 bucket (<code>omise-gateway-production.s3.ap-southeast-1.amazonaws.com</code>) — this is Omise infrastructure, not a separate AWS dependency.</li>
+<li>Webhooks: Omise <code>charge.complete</code> / <code>charge.create</code> / <code>charge.failure</code> events POST to the n8n <code>/webhook/omise</code> workflow, which updates <code>payment_intents</code> via RPC. Failures escalate by email to <code>ops@silkskyair.com</code>.</li>
+</ul>
+</li>
+<li><strong>Test vs live:</strong> selected purely by which keys are supplied per environment (<code>pkey_test_*</code> / <code>skey_test_*</code> vs <code>pkey_live_*</code> / <code>skey_live_*</code>). Manager and member <strong>must run in the same mode</strong>. Keys are provisioned in each app&#39;s Vercel project (staging + production); none are committed to the repos.</li>
+<li><strong>Config var names:</strong> <code>OMISE_PUBLIC_KEY</code>, <code>OMISE_SECRET_KEY</code>.</li>
+<li><strong>Key locations:</strong> <code>lib/integrations/omise.ts</code> (manager, member, partner), payment API routes in each app, <code>silkskyair-workflows/workflows/payments/omise.json</code>, <code>silkskyair-api</code> <code>payments</code> schema migrations.</li>
+<li><strong>Known gap:</strong> the production Omise webhook still needs HMAC signature verification (noted in <code>silkskyair-workflows/CLAUDE.md</code>).</li>
+</ul>
+<p><a id="scb"></a></p>
+<h3>3.2 SCB Open Banking (dormant)</h3>
+<p>SCB (Siam Commercial Bank) PromptPay QR generation + inbound payment webhooks. <strong>Sandbox credentials only; the live payment flow runs through Omise.</strong> Webhook shared-secret validation code remains in <code>silkskyair-member/lib/utils/webhook.ts</code>; the <code>app/api/scb/*</code> routes referenced in the README no longer exist.</p>
+<ul>
+<li><strong>Config var names:</strong> <code>SCB_API_KEY</code>, <code>SCB_API_SECRET</code>, <code>SCB_MERCHANT_ID</code>, <code>SCB_BILLER_ID</code>, <code>SCB_CALLBACK_SHARED_SECRET</code>.</li>
+</ul>
+<hr>
+<h2>4. CRM, email &amp; customer communication</h2>
+<p><a id="zoho-crm"></a></p>
+<h3>4.1 Zoho CRM</h3>
+<p>CRM of record. n8n workflows create Leads from new members, create/update/delete Deals from bookings and booking events, sync Tours → Products, and fetch deal stages/fields/pipelines. The manager app maps Zoho deal stages to booking statuses.</p>
+<ul>
+<li><strong>Integration:</strong> n8n <code>zohoCrm</code> node + direct REST to <code>https://www.zohoapis.com/crm/v2/...</code> using the OAuth2 credential &quot;AAC | SSA | Zoho | Accounts&quot;. Apps never call Zoho directly — manager proxies through n8n webhooks. Integration registry rows live in the Supabase <code>integrations</code> table (slugs <code>zoho-deal-stages</code>, <code>zoho-products</code>, <code>zoho-deal-fields</code>, <code>member-zoho-lead</code>, <code>booking-zoho-deal</code>).</li>
+<li><strong>Key locations:</strong> <code>silkskyair-workflows/workflows/zoho/*.json</code>, <code>silkskyair-manager/app/api/crm/zoho/*</code>, <code>silkskyair-api</code> Zoho integration migrations.</li>
+</ul>
+<p><a id="zoho-mail"></a></p>
+<h3>4.2 Zoho Mail (SMTP)</h3>
+<p>All transactional email: booking manager notifications, booking member emails, team/member invitations, magic-link sign-in emails, payment-request emails. Sent from n8n <code>emailSend</code> nodes via the SMTP credential &quot;AAC | SSA | Zoho | SMTP&quot;; authorized sender <code>system@silkskyair.com</code> (workflow config key <code>zoho_mail_from_address</code>).</p>
+<ul>
+<li><strong>Config var names (n8n stack):</strong> <code>ZOHO_SMTP_USER</code>, <code>ZOHO_SMTP_PASSWORD</code>, <code>N8N_CRED_ZOHO_SMTP</code>.</li>
+<li><strong>Key locations:</strong> <code>silkskyair-workflows/workflows/notifications/*.json</code>, <code>workflows/auth/member-magic-link-email.json</code>.</li>
+</ul>
+<p><a id="zoho-pagesense"></a></p>
+<h3>4.3 Zoho PageSense</h3>
+<p>Heatmaps / session analytics on the public website. Loaded from <code>cdn.pagesense.io</code>; configuration comes from Strapi with env fallback.</p>
+<ul>
+<li><strong>Config var names:</strong> <code>PUBLIC_PAGESENSE_SPACE</code>, <code>PUBLIC_PAGESENSE_PROJECT</code>.</li>
+<li><strong>Key location:</strong> <code>silkskyair-www/src/components/analytics/PageSense.astro</code>.</li>
+</ul>
+<p><a id="zoho-salesiq"></a></p>
+<h3>4.4 Zoho SalesIQ</h3>
+<p>Live-chat widget on the public website (<code>salesiq.zohopublic.com</code>), consent-gated.</p>
+<ul>
+<li><strong>Config var name:</strong> <code>PUBLIC_SALESIQ_WIDGET_CODE</code>.</li>
+<li><strong>Key location:</strong> <code>silkskyair-www/src/components/analytics/SalesIQ.astro</code>.</li>
+</ul>
+<p><a id="whatsapp"></a></p>
+<h3>4.5 WhatsApp (wa.me) &amp; Chaty</h3>
+<p>Customer chat entry points: <code>wa.me</code> click-to-chat links on the SilkSkyAir contact page; the legacy andaman.co.th export bundles the <strong>Chaty</strong> (Premio) multi-channel chat widget WordPress plugin.</p>
+<hr>
+<h2>5. Marketing, analytics &amp; attribution</h2>
+<p><a id="gtm"></a></p>
+<h3>5.1 Google Tag Manager / Google tag</h3>
+<ul>
+<li><strong>silkskyair-www:</strong> GTM container <code>GTM-M7C3BGJG</code> with <strong>Google Consent Mode v2</strong> (EU-region consent defaults). Vars: <code>PUBLIC_GTM_ID</code>, <code>PUBLIC_GTM_CONSENT_GATED</code>. Also Google Search Console verification via <code>PUBLIC_GOOGLE_SITE_VERIFICATION</code>.</li>
+<li><strong>andaman-www (legacy):</strong> <code>gtag.js</code> with tag <code>GT-TQS9STJZ</code> plus the Google Site Kit WordPress plugin, baked into the static export.</li>
+</ul>
+<p><a id="meta-capi"></a></p>
+<h3>5.2 Meta Pixel + Conversions API (CAPI)</h3>
+<p>Server-side ad attribution: the website captures <code>fbclid</code> / <code>_fbp</code> / <code>_fbc</code>, and on booking confirmation an n8n workflow fires a server-side <strong>Purchase</strong> event to <code>graph.facebook.com</code> CAPI. Outcomes are recorded as <code>MetaCapiSent</code> / <code>MetaCapiSkipped</code> / <code>MetaCapiFailed</code> booking events. Authenticated with a Meta System User token held as the n8n credential &quot;AAC | SAA | Auth | Meta CAPI&quot; (<code>N8N_CRED_META_CAPI</code>).</p>
+<ul>
+<li><strong>Full manual:</strong> see <a href="../domains/meta-capi/index.html">Meta CAPI domain manuals</a>.</li>
+</ul>
+<p><a id="statcounter"></a></p>
+<h3>5.3 StatCounter</h3>
+<p>Page-view/visitor analytics via <code>statcounter.com/counter/counter.js</code> + noscript pixel. Used on the public website (production only, consent-gated, plus a custom event sink), on member public payment pages, and in the legacy andaman.co.th export.</p>
+<ul>
+<li><strong>Config var names:</strong> <code>PUBLIC_STATCOUNTER_PROJECT</code> / <code>NEXT_PUBLIC_STATCOUNTER_PROJECT</code>, <code>PUBLIC_STATCOUNTER_SECURITY</code> / <code>NEXT_PUBLIC_STATCOUNTER_SECURITY</code>.</li>
+</ul>
+<p><a id="shortio"></a></p>
+<h3>5.4 Short.io</h3>
+<p>URL shortener behind <code>go.silkskyair.com</code> — short links + PNG QR codes for published campaigns (QR images are re-uploaded to Supabase storage). Called from the manager publish route and the n8n Campaigns Publisher via <code>https://api.short.io</code>.</p>
+<ul>
+<li><strong>Config var names:</strong> <code>SHORTIO_API_KEY</code>, <code>SHORTIO_DOMAIN</code>; workflow config keys <code>shortio_api_key</code>, <code>shortio_domain</code>.</li>
+</ul>
+<p><a id="db-ip"></a></p>
+<h3>5.5 DB-IP (Geo-IP dataset)</h3>
+<p>IP → country resolution for reporting/geo attribution. The free <strong>DB-IP Country Lite</strong> CSV (CC-BY-4.0, no API key) is downloaded monthly from <code>download.db-ip.com</code> into the <code>geo.ip_ranges</code> table — triggered from the manager settings UI or <code>silkskyair-api/scripts/refresh-geo-ip.sh</code>.</p>
+<hr>
+<h2>6. Maps &amp; media</h2>
+<p><a id="google-maps"></a></p>
+<h3>6.1 Google Maps Platform</h3>
+<ul>
+<li><strong>www:</strong> Maps JavaScript API (libraries <code>marker,places</code>) for helipad/tour maps + an iframe embed on promotions. Vars: <code>PUBLIC_GOOGLE_MAPS_API_KEY</code>, <code>PUBLIC_GOOGLE_MAP_ID</code>.</li>
+<li><strong>member:</strong> departure-airfield maps via the shared <code>LocationMap</code> component. Var: <code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code>.</li>
+<li><strong>ui (shared library):</strong> <code>LocationMap</code> renders the Static Maps API and Google Maps directions links; the API key is passed as a component prop by the consuming app.</li>
+<li><strong>andaman-www (legacy):</strong> embedded <code>maps.google.com</code> iframe on the contact page.</li>
+</ul>
+<p><a id="mux"></a></p>
+<h3>6.2 Mux</h3>
+<p>Video hosting/streaming (HLS) for check-in safety-briefing videos and Sky Stories media. Playback fetches <code>https://stream.mux.com/{playbackId}.m3u8</code> (member app uses <code>hls.js</code>; <code>*.mux.com</code> allow-listed in CSP). Server-side asset management uses <code>@mux/mux-node</code>; credentials are stored in the <code>system_config</code> table (keys <code>mux_token_id</code>, <code>mux_token_secret</code>, <code>safety_video_urls</code>).</p>
+<hr>
+<h2>7. Hosting, delivery &amp; developer platforms</h2>
+<p><a id="vercel"></a></p>
+<h3>7.1 Vercel</h3>
+<p>Hosts every Next.js/Astro app via the native GitHub↔Vercel integration (no GitHub Actions deploy workflows):</p>
+<table>
+<thead>
+<tr>
+<th>App</th>
+<th>Production domain</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>silkskyair-www</td>
+<td><code>www.silkskyair.com</code></td>
+<td>Astro + <code>@astrojs/vercel</code> adapter — static build in production, SSR in previews (<code>VERCEL_ENV</code>)</td>
+</tr>
+<tr>
+<td>silkskyair-manager</td>
+<td><code>manager.silkskyair.com</code></td>
+<td>custom install script pins <code>@andaman-aerodrome/*</code> package tags to the git branch (<code>VERCEL_GIT_COMMIT_REF</code>)</td>
+</tr>
+<tr>
+<td>silkskyair-member</td>
+<td><code>my.silkskyair.com</code></td>
+<td></td>
+</tr>
+<tr>
+<td>silkskyair-account</td>
+<td><code>account.silkskyair.com</code></td>
+<td>SSO hub for all apps</td>
+</tr>
+<tr>
+<td>silkskyair-partner</td>
+<td><code>partners.silkskyair.com</code></td>
+<td></td>
+</tr>
+</tbody></table>
+<p>Staging uses <code>staging-*</code> / <code>staging.*</code> subdomain variants. Environment variables (Supabase, Omise, n8n, Strapi, …) are provisioned per Vercel project. Non-production deployments load the Vercel Live toolbar (<code>vercel.live</code>). An n8n workflow triggers a production rebuild when Strapi content is published (<code>N8N_WF_STRAPI_VERCEL_BUILD</code>).</p>
+<p><a id="azure-swa"></a></p>
+<h3>7.2 Azure Static Web Apps</h3>
+<p>Hosts the legacy static export of <code>andaman.co.th</code> (<code>andaman-www</code>). Deployed by GitHub Actions (<code>Azure/static-web-apps-deploy@v1</code>) with branch mapping <code>main</code> → Production, <code>staging</code> → Staging, <code>develop</code> → Development. Secret name: <code>AZURE_STATIC_WEB_APPS_API_TOKEN</code>.</p>
+<p><a id="github"></a></p>
+<h3>7.3 GitHub (org <code>ANDAMAN-AERODROME</code>)</h3>
+<ul>
+<li><strong>Source control</strong> for all 19 repos.</li>
+<li><strong>GitHub Packages</strong> (<code>npm.pkg.github.com</code>): private npm registry for the <code>@andaman-aerodrome/*</code> scope — <code>silkskyair-ui</code>, <code>silkskyair-skystories</code>, <code>silkskyair-reporting</code>. Consumers authenticate via <code>.npmrc</code> (<code>NPM_TOKEN</code> / <code>NODE_AUTH_TOKEN</code>).</li>
+<li><strong>GitHub Actions:</strong> package publish pipelines in <code>silkskyair-ui</code>, <code>silkskyair-skystories</code>, <code>silkskyair-reporting</code> (per-branch dist-tags: <code>main</code> → <code>latest</code>, otherwise the branch name; version suffixed with the short SHA), plus the Azure SWA deploy in <code>andaman-www</code>. The app repos have no Actions — they deploy through Vercel.</li>
+<li><strong>GitHub Pages + raw.githubusercontent.com:</strong> serves the rendered HTML of this docs repo and the screenshot images referenced from Notion.</li>
+</ul>
+<p><a id="godaddy"></a></p>
+<h3>7.4 GoDaddy Managed WordPress (legacy origin)</h3>
+<p>The original <code>andaman.co.th</code> WordPress site was hosted on GoDaddy Managed WordPress; its static export still carries GoDaddy <code>wsimg.com</code> traffic-instrumentation scripts and the WordPress plugin stack (Yoast SEO, Elementor + Pro, Unlimited Elements, Blocksy theme, Chaty). These are baked assets in <code>andaman-www</code>, not live server dependencies.</p>
+<p><a id="cdns"></a></p>
+<h3>7.5 Public CDNs</h3>
+<ul>
+<li><strong>Google Fonts</strong> (<code>fonts.googleapis.com</code> / <code>fonts.gstatic.com</code>): loaded at runtime by the legacy andaman.co.th export and the docs briefing export. The current apps self-host fonts (Hanken Grotesk, Inter as local assets); several CSPs merely allow-list the Google Fonts hosts.</li>
+<li><strong>jsDelivr</strong> (<code>cdn.jsdelivr.net</code>): Mermaid diagram rendering in generated docs HTML.</li>
+<li><strong>CKEditor Cloud</strong> (<code>cdn.ckeditor.com</code>, <code>proxy-event.ckeditor.com</code>): <a id="ckeditor"></a>rich-text editor assets for the Strapi admin (via <code>@ckeditor/strapi-plugin-ckeditor</code>).</li>
+<li><strong>Omise CDN</strong> (<code>cdn.omise.co</code>, <code>vault.omise.co</code>): see <a href="#omise">Omise</a>.</li>
+</ul>
+<hr>
+<h2>8. Internal tooling dependencies</h2>
+<p><a id="notion"></a></p>
+<h3>8.1 Notion</h3>
+<p>Publishing target for this documentation library: <code>silkskyair-docs/scripts/publish-to-notion.ts</code> mirrors the <code>manuals/</code> tree into Notion via <code>@notionhq/client</code> (+ <code>@tryfabric/martian</code>). Vars: <code>NOTION_TOKEN</code>, <code>DOCS_PARENT_PAGE_ID</code>.</p>
+<p><a id="openai"></a></p>
+<h3>8.2 OpenAI (local dev only)</h3>
+<p>Wired only into Supabase Studio&#39;s built-in AI assistant for local development (<code>silkskyair-api/supabase/config.toml</code>: <code>openai_api_key = &quot;env(OPENAI_API_KEY)&quot;</code>). No application code calls OpenAI.</p>
+<h3>8.3 Browser automation (local, not SaaS)</h3>
+<p>Playwright (E2E tests + documentation screenshots, driven from <code>silkskyair-orchestrator</code>) and Puppeteer (investor PDF rendering in <code>silkskyair-docs</code>) run headless Chromium locally. Listed for completeness — no hosted service involved.</p>
+<hr>
+<h2>9. Configured-but-disabled scaffolding</h2>
+<p>Present in <code>silkskyair-api/supabase/config.toml</code> as standard Supabase scaffolding, all currently <strong>disabled</strong> — potential future integrations, not active dependencies:</p>
+<ul>
+<li><strong>Twilio</strong> (SMS OTP) — <code>SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN</code></li>
+<li><strong>SendGrid</strong> (SMTP example, commented) — <code>SENDGRID_API_KEY</code></li>
+<li><strong>AWS S3</strong> (experimental storage backend) — <code>S3_HOST</code>, <code>S3_REGION</code>, <code>S3_ACCESS_KEY</code>, <code>S3_SECRET_KEY</code></li>
+<li><strong>External OAuth providers</strong> (Apple, Google, GitHub, Auth0, Firebase, AWS Cognito, Clerk, …) — all <code>enabled = false</code></li>
+<li><strong>hCaptcha / Cloudflare Turnstile</strong> — commented out</li>
+</ul>
+<p>The SCB integration (<a href="#scb">§3.2</a>) is similarly dormant.</p>
+<hr>
+<h2>10. First-party hosts that look external</h2>
+<p>These are <strong>our own</strong> systems, listed so nobody mistakes them for third-party vendors:</p>
+<table>
+<thead>
+<tr>
+<th>Host</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>account.silkskyair.com</code></td>
+<td>SilkSkyAir SSO/identity hub (silkskyair-account app) — all apps delegate sign-in to it</td>
+</tr>
+<tr>
+<td><code>go.silkskyair.com</code></td>
+<td>Our branded short-link domain (backed by Short.io)</td>
+</tr>
+<tr>
+<td><code>cms.silkskyair.com</code></td>
+<td>Our production Strapi Cloud instance behind a custom domain</td>
+</tr>
+<tr>
+<td><code>manager.</code> / <code>my.</code> / <code>partners.</code> / <code>www.silkskyair.com</code>, <code>andaman.co.th</code></td>
+<td>First-party apps (see hosting matrix)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>11. Repository coverage notes</h2>
+<ul>
+<li><code>silkskyair-common</code>, <code>silkskyair-config</code>, <code>silkskyair-utils</code>, <code>silkskyair-supabase</code>, and <code>silkskyair-operator</code> currently contain <strong>no code</strong> (empty/unborn repositories) — no dependencies to document. The Supabase project actually lives in <code>silkskyair-api</code>.</li>
+<li><code>silkskyair-orchestrator</code> is the local coordination workspace (E2E harness, env distribution, workflow dependency matrix) — it consumes the services above but hosts nothing itself.</li>
+</ul>
+<h2>12. Credential hygiene</h2>
+<p>All third-party credentials should live in the platform&#39;s secret stores: <strong>Vercel project env vars</strong> (apps), <strong>n8n credentials</strong> (workflow integrations), <strong>Supabase vault / <code>system_config</code></strong> (backend), and GitHub Actions secrets (CI). Values must never be committed to git or reproduced in documentation — this page intentionally lists variable <em>names</em> only. When onboarding a new environment, request credentials through the engineering lead rather than copying <code>.env</code> files between machines.</p>
+
+</article>
+
+</body>
+</html>

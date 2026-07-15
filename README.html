@@ -68,9 +68,12 @@ weekly-statements/  # Weekly statements
 │       ├── payment-before-confirmation.md
 │       ├── multi-tour-promos.md
 │       └── customer-notes.md
-└── releases/                               ← AXIS 2: release compilations
-    ├── index.md                            ← &quot;Releases&quot; landing
-    └── w22.md                              ← W22 Release Manual (links to feature pages)
+├── releases/                               ← AXIS 2: release compilations
+│   ├── index.md                            ← &quot;Releases&quot; landing
+│   └── w22.md                              ← W22 Release Manual (links to feature pages)
+└── platform/                               ← AXIS 3: cross-cutting engineering reference
+    ├── index.md                            ← &quot;Platform&quot; landing
+    └── third-party-systems.md              ← Third-party systems &amp; dependencies inventory
 </code></pre>
 <p><strong>Conventions:</strong></p>
 <ul>
@@ -123,6 +126,33 @@ NOTION_TOKEN=secret_xxx DOCS_PARENT_PAGE_ID=&lt;parent-page-id&gt; pnpm publish
 cd silkskyair-manager  &amp;&amp; pnpm doc-shots     # specs 5–7
 </code></pre>
 <p>Both write PNGs to <code>silkskyair-docs/screenshots/&lt;domain&gt;/&lt;feature&gt;/</code>. After capture, commit and push — Notion picks up the new images on the next page view.</p>
+<h2>Investor documentation (<code>investors/</code>)</h2>
+<p>Investor-facing platform documentation (plain markdown, not published to Notion).
+PDF renditions use the <strong>AAC document template</strong> (<code>templates/aac/aac-template.css</code>) —
+the SilkSkyAir visual language (Hanken Grotesk/Inter, navy + slate) recast in a
+corporate/architectural register with a steel-blue accent and no gold.</p>
+<pre><code class="language-bash">pnpm install --ignore-workspace
+pnpm build:investor-pdf   # → investors/pdf/ (combined memorandum + per-chapter PDFs)
+</code></pre>
+<p><strong>Versioning.</strong> <code>investors/version.json</code> is the single source of truth (document id,
+version, issue date, classification, revision history). The build stamps the version on
+the cover, page headers, back cover and a Document Control page (with the full revision
+history) after the TOC, and archives each issue as
+<code>investors/pdf/archive/AAC-Investor-Documentation-v&lt;version&gt;.pdf</code>. To issue a new
+version: bump <code>version</code> and <code>issued</code>, append a <code>history</code> entry describing the changes,
+rebuild, commit. The build fails if the current version has no matching history entry.</p>
+<p>Visual directives (fenced code blocks rendered as template components in the PDFs;
+shown as readable code blocks on GitHub): <code>stats</code> (big-number cards, <code>VALUE | label</code>),
+<code>steps</code> (horizontal flow, <code>NN | Title | desc</code>), <code>layers</code> (layer-cake stack),
+<code>timeline</code> (stage timeline, <code>Marker | Title | desc</code>), <code>pull</code> (pull quote), and the
+stylized infographics <code>viz-network</code> (route-map panorama + caption chips),
+<code>viz-lifecycle</code> (customer-journey track, <code>NN | Title | desc [| major]</code>, optional
+trailing <code>note:</code> line), <code>viz-tenancy</code> (<code>op:</code>/<code>ghost:</code> operator cards over a
+<code>foundation:</code> bar), <code>viz-ecosystem</code> (<code>cell:</code>/<code>core:</code> hub-and-ring grid).
+Chapter frontmatter: <code>summary:</code> feeds the divider pages and the TOC; <code>keypoints:</code>
+(list of <code>Title | desc</code>) fills the divider&#39;s &quot;In this section&quot; cards. Each divider
+also carries a per-section SVG motif and a 01–08 progress strip (see
+<code>scripts/build-investor-pdf.mjs</code>).</p>
 
 </article>
 
